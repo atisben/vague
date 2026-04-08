@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# bs-config — read/write ~/.bastack/config.yaml
+#
+# Usage:
+#   bs-config get <key>
+#   bs-config set <key> <value>
+#   bs-config list
+#
+# Env override: BASTACK_HOME (default: ~/.bastack)
+
+set -euo pipefail
+
+STATE_DIR="${BASTACK_HOME:-$HOME/.bastack}"
+CONFIG_FILE="$STATE_DIR/config.yaml"
+
+CONFIG_HEADER='# bastack configuration
+# proactive: true    # auto-suggest skills based on context
+# telemetry: local   # local | off
+'
+
+case "${1:-}" in
+  get)
+    KEY="${2:?Usage: bs-config get <key>}"
+    grep -E "^${KEY}:" "$CONFIG_FILE" 2>/dev/null | tail -1 | awk '{print $2}' | tr -d '[:space:]' || true
+    ;;
+  set)
+    KEY="${2:?Usage: bs-config set <key> <value>}"
+    VALUE="${3:?Usage: bs-config set <key> <value>}"
+    mkdir -p "$STATE_DIR"
+    if [ ! -f "$CONFIG_FILE" ]; then
+      printf '%s' "$CONFIG_HEADER" > "$CONFIG_FILE"
+    fi
+    ESC_VALUE="$(printf '%s' "$VALUE" | head -1 | sed 's/[&/\]/\\&/g')"
+    if grep -qE "^${KEY}:" "$CONFIG_FILE" 2>/dev/null; then
+      _tmpfile="$(mktemp "${CONFIG_FILE}.XXXXXX")"
+      sed "/^${KEY}:/s/.*/${KEY}: ${ESC_VALUE}/" "$CONFIG_FILE" > "$_tmpfile" && mv "$_tmpfile" "$CONFIG_FILE"
+    else
+      echo "${KEY}: ${VALUE}" >> "$CONFIG_FILE"
+    fi
+    ;;
+  list)
+    cat "$CONFIG_FILE" 2>/dev/null || echo "(no config yet)"
+    ;;
+  *)
+    echo "Usage: bs-config {get|set|list} [key] [value]"
+    exit 1
+    ;;
+esac

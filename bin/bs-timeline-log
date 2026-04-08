@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# bs-timeline-log — append a session event to the project timeline
+# Usage: bs-timeline-log '{"skill":"ship","event":"started","branch":"main"}'
+#
+# Required fields: skill, event (started|completed)
+# Optional: branch, outcome, duration_s, session
+# Silently skips on validation failure (non-blocking).
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+eval "$("$SCRIPT_DIR/bs-slug" 2>/dev/null)" || true
+BASTACK_HOME="${BASTACK_HOME:-$HOME/.bastack}"
+mkdir -p "$BASTACK_HOME/projects/$SLUG"
+
+INPUT="${1:-}"
+[ -z "$INPUT" ] && exit 0
+
+# Require skill and event fields
+if ! printf '%s' "$INPUT" | bun -e "
+  const j = JSON.parse(await Bun.stdin.text());
+  if (!j.skill || !j.event) process.exit(1);
+" 2>/dev/null; then
+  exit 0
+fi
+
+# Inject timestamp if absent
+if ! printf '%s' "$INPUT" | bun -e "
+  const j = JSON.parse(await Bun.stdin.text());
+  if (!j.ts) process.exit(1);
+" 2>/dev/null; then
+  INPUT=$(printf '%s' "$INPUT" | bun -e "
+    const j = JSON.parse(await Bun.stdin.text());
+    j.ts = new Date().toISOString();
+    console.log(JSON.stringify(j));
+  " 2>/dev/null) || exit 0
+fi
+
+echo "$INPUT" >> "$BASTACK_HOME/projects/$SLUG/timeline.jsonl"

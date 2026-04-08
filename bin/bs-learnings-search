@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# bs-learnings-search — read and filter project learnings
+# Usage: bs-learnings-search [--type TYPE] [--query KEYWORD] [--limit N]
+#
+# Applies confidence decay (observed/inferred: -1pt per 30 days),
+# deduplicates by key+type (latest winner), and outputs formatted text.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+eval "$("$SCRIPT_DIR/bs-slug" 2>/dev/null)" || true
+BASTACK_HOME="${BASTACK_HOME:-$HOME/.bastack}"
+
+TYPE=""
+QUERY=""
+LIMIT=10
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --type)  TYPE="$2";  shift 2 ;;
+    --query) QUERY="$2"; shift 2 ;;
+    --limit) LIMIT="$2"; shift 2 ;;
+    *) shift ;;
+  esac
+done
+
+LEARNINGS_FILE="$BASTACK_HOME/projects/$SLUG/learnings.jsonl"
+[ -f "$LEARNINGS_FILE" ] || exit 0
+
+cat "$LEARNINGS_FILE" | bun -e "
+const lines = (await Bun.stdin.text()).trim().split('\n').filter(Boolean);
+const now = Date.now();
+const type = '${TYPE}';
+const query = '${QUERY}'.toLowerCase();
+const limit = ${LIMIT};
+
+const entries = [];
+for (const line of lines) {
+  try {
+    const e = JSON.parse(line);
+    if (!e.key || !e.type) continue;
+    let conf = e.confidence || 5;
+    if (e.source === 'observed' || e.source === 'inferred') {
+      const days = Math.floor((now - new Date(e.ts).getTime()) / 86400000);
+      conf = Math.max(0, conf - Math.floor(days / 30));
+    }
+    e._conf = conf;
+    entries.push(e);
+  } catch {}
+}
+
+// Dedup: latest winner per key+type
+const seen = new Map();
+for (const e of entries) {
+  const dk = e.key + '|' + e.type;
+  const existing = seen.get(dk);
+  if (!existing || new Date(e.ts) > new Date(existing.ts)) seen.set(dk, e);
+}
+
+let results = Array.from(seen.values());
+if (type)  results = results.filter(e => e.type === type);
+if (query) results = results.filter(e =>
+  (e.key || '').toLowerCase().includes(query) ||
+  (e.insight || '').toLowerCase().includes(query)
+);
+
+results.sort((a, b) => b._conf !== a._conf
+  ? b._conf - a._conf
+  : new Date(b.ts) - new Date(a.ts)
+);
+results = results.slice(0, limit);
+if (!results.length) process.exit(0);
+
+const byType = {};
+for (const e of results) {
+  if (!byType[e.type]) byType[e.type] = [];
+  byType[e.type].push(e);
+}
+
+const counts = Object.entries(byType).map(([t, arr]) => arr.length + ' ' + t + (arr.length > 1 ? 's' : ''));
+console.log('LEARNINGS: ' + results.length + ' loaded (' + counts.join(', ') + ')');
+console.log('');
+
+for (const [t, arr] of Object.entries(byType)) {
+  console.log('## ' + t.charAt(0).toUpperCase() + t.slice(1) + 's');
+  for (const e of arr) {
+    console.log('- [' + e.key + '] conf:' + e._conf + '/10  ' + e.source + '  ' + (e.ts || '').split('T')[0]);
+    console.log('  ' + e.insight);
+  }
+  console.log('');
+}
+" 2>/dev/null || exit 0
