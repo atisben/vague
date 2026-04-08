@@ -15,6 +15,112 @@ Claude Code session
 
 ---
 
+## What Gets Injected Into the LLM
+
+When the user types `/ship` (or any skill), this is what ends up in the LLM's context window, in order:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         LLM CONTEXT WINDOW                              │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ 1. CLAUDE.md  (project-level, always present)                    │   │
+│  │                                                                  │   │
+│  │    - Skill routing table (which /command maps to which skill)    │   │
+│  │    - Project description and stack                               │   │
+│  │    - Testing framework and commands                              │   │
+│  │    ~ 1–3 KB                                                      │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ 2. SKILL.md  (the invoked skill's full instruction set)          │   │
+│  │                                                                  │   │
+│  │    - Frontmatter (name, version, allowed tools)                  │   │
+│  │    - Preamble bash block  ◄── Claude executes this first         │   │
+│  │    - Step-by-step instructions for the skill                     │   │
+│  │    - AskUserQuestion patterns, decision trees                    │   │
+│  │    - Handoff block                                               │   │
+│  │    ~ 3–8 KB per skill                                            │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│               Claude executes the preamble bash block                   │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ 3. PREAMBLE STDOUT  (runtime context, injected as tool output)   │   │
+│  │                                                                  │   │
+│  │    BRANCH:    feat/my-feature                                    │   │
+│  │    SLUG:      bastien-myrepo                                     │   │
+│  │    PROACTIVE: true                                               │   │
+│  │    TELEMETRY: local                                              │   │
+│  │    LEARNINGS: 12 entries                                         │   │
+│  │                                                                  │   │
+│  │    LEARNINGS: 3 loaded (2 pitfalls, 1 pattern)                   │   │
+│  │    ## Pitfalls                                                   │   │
+│  │    - [n-plus-one] conf:8/10  observed  2025-03-01               │   │
+│  │      Always use includes(:user) on list queries.                 │   │
+│  │    - [missing-rollback] conf:7/10  observed  2025-03-14         │   │
+│  │      Wrap status transitions in transactions.                    │   │
+│  │    ## Patterns                                                   │   │
+│  │    - [slug-derivation] conf:9/10  observed  2025-04-01          │   │
+│  │      Slug always comes from git remote, not dirname.             │   │
+│  │                                                                  │   │
+│  │    ~ 0.5–2 KB depending on learnings count                       │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│            Claude then reads additional files per skill logic           │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ 4. ON-DEMAND READS  (skill-specific, injected as tool outputs)   │   │
+│  │                                                                  │   │
+│  │    /office-hours      → prior design docs (if any)              │   │
+│  │    /plan-ceo-review   → most recent design doc                   │   │
+│  │    /plan-eng-review   → design doc + CEO plan doc                │   │
+│  │    /design-*          → DESIGN.md (if present)                  │   │
+│  │    /ship              → git diff, git log, test output           │   │
+│  │    /review            → full git diff                            │   │
+│  │    /investigate       → stack trace, git log, error logs         │   │
+│  │    /retro             → git log --stat, prior retro doc          │   │
+│  │                                                                  │   │
+│  │    ~ 1–50 KB depending on diff/log size                          │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                              │                                          │
+│                              ▼                                          │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │ 5. CONVERSATION HISTORY  (accumulated during the session)        │   │
+│  │                                                                  │   │
+│  │    - User messages and AskUserQuestion responses                 │   │
+│  │    - Tool call outputs (bash, read, write, edit)                 │   │
+│  │    - Claude's own prior responses in this session                │   │
+│  │                                                                  │   │
+│  │    ~ grows throughout the session                                │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Approximate Token Budget Per Skill Invocation
+
+| Layer | Typical size | Notes |
+|-------|-------------|-------|
+| CLAUDE.md | ~500–1,000 tokens | Grows if you add project context |
+| SKILL.md | ~1,500–4,000 tokens | Varies by skill complexity |
+| Preamble output | ~100–500 tokens | Grows with learnings surfaced |
+| On-demand reads | ~500–15,000 tokens | Git diffs are the biggest variable |
+| Conversation history | ~500–10,000 tokens | Grows across multi-turn sessions |
+| **Total at invocation** | **~3,000–30,000 tokens** | Well within 200K context window |
+
+### What Is NOT Injected
+
+- Full `learnings.jsonl` (only top 3, surfaced by `bs-learnings-search`)
+- Full `timeline.jsonl` (never read by skills — write-only from skills)
+- `skill-usage.jsonl` analytics (only read by `bs-analytics`, not by LLM)
+- Other projects' data (scoped strictly to `$SLUG`)
+
+---
+
 ## State Directory Layout
 
 ```
