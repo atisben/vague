@@ -49,6 +49,8 @@ What should I use as the design input?
 
 If DESIGN.md exists, always read it for typography, colors, spacing, and constraints.
 
+If DESIGN.md does NOT exist and no shotgun files are found, warn: "No DESIGN.md or prior design variants found. Output will use generic styling. Consider running `/design-consultation` first, or describe your design constraints now."
+
 ---
 
 ## Step 2: Clarify Output Type

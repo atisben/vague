@@ -37,11 +37,12 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 
 ```bash
 ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -5 || echo "NO_DESIGN_DOCS"
+ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*ceo*.md 2>/dev/null | head -1 || echo "NO_CEO_PLAN"
 [ -f CLAUDE.md ] && cat CLAUDE.md || echo "NO_CLAUDE_MD"
 git log --oneline -5 2>/dev/null || true
 ```
 
-Read the most recent design doc and CEO plan (if exists). Ask the user to confirm which plan to review.
+Read the most recent design doc. If a CEO plan exists, read it too — scope decisions and deferred items from the CEO review should inform architecture choices. Ask the user to confirm which plan to review.
 
 ---
 

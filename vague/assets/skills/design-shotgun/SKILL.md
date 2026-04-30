@@ -45,6 +45,8 @@ Check for existing design system:
 
 If DESIGN.md exists, read it and note: "I'll use your existing design system as a constraint."
 
+If DESIGN.md does NOT exist, warn: "No DESIGN.md found. Variants will use generic styling. Consider running `/design-consultation` first to establish a design system, or describe your brand constraints in question 3."
+
 ---
 
 ## Step 2: Generate 3 Variants as HTML

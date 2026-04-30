@@ -43,6 +43,8 @@ PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin
 Gather all available evidence before forming any hypothesis.
 
 ```bash
+# Check if we've seen this before
+vague learnings-search --type pitfall 2>/dev/null || true
 # Recent changes
 git log --oneline -10 2>/dev/null
 git diff HEAD~5..HEAD --stat 2>/dev/null || true
@@ -53,6 +55,8 @@ echo "PYTHON: $(python3 --version 2>/dev/null || echo N/A)"
 # Recent errors in logs (if available)
 tail -50 log/development.log 2>/dev/null || true
 ```
+
+If prior learnings match the error or affected area, surface them: "We've seen something related before: [insight]. This may inform the investigation."
 
 Ask the user:
 1. "What exactly happens? (Paste the full error message / stack trace)"

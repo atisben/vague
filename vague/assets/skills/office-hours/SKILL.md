@@ -179,10 +179,14 @@ Ask one question at a time. Wait for response. Be genuinely curious, not interro
 
 ```bash
 ls "$VAGUE_HOME/projects/$SLUG/designs/" 2>/dev/null | head -10 || true
+ls "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md 2>/dev/null | head -1 || echo "NO_ENG_PLAN"
+ls "$VAGUE_HOME/projects/$SLUG/designs/"*ceo*.md 2>/dev/null | head -1 || echo "NO_CEO_PLAN"
 ```
 
 If prior design docs exist, grep them for keyword overlap with the current idea. Surface any matches:
 > "I found a prior design doc that might be related: [filename]. Want me to read it for context?"
+
+**If engineering or CEO plans already exist:** Warn the user: "There are existing plans for this project: [filenames]. Starting a new office-hours session may produce a design doc that conflicts with them. Should I read them first for context, or are you exploring a fresh direction?"
 
 ---
 
