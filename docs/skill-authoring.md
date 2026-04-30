@@ -1,6 +1,6 @@
 # Skill Authoring Guide
 
-A bastack skill is a Markdown file at `skills/{name}/SKILL.md` that Claude Code reads and executes as a slash command.
+A vague skill is a Markdown file at `{skill-dir}/{name}/SKILL.md` that an AI tool reads and executes as a slash command. Skills interact with the filesystem exclusively through `vague` CLI commands — no raw file I/O, no bash state scripts.
 
 ---
 
@@ -12,7 +12,11 @@ name: my-skill
 version: 1.0.0
 description: |
   One paragraph. What it does, when to use it, proactive trigger phrases.
-  Include "(bastack)" at the end so it's identifiable.
+sdk_commands:
+  - vague init
+  - vague learnings-log
+requires_slug: true
+requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -23,21 +27,24 @@ allowed-tools:
 ## Preamble
 
 ```bash
-export BS_SKILL_NAME="my-skill"
-source "$(dirname "$0")/../_preamble.sh"
+CONTEXT=$(vague init)
+SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
+BRANCH=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['branch'])")
+PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['proactive'])")
+SESSION_ID="$$-$(date +%s)"
 ```
 
 ---
 
 ## Step 1: [First meaningful action]
 
-[Instructions for Claude]
+[Instructions for the agent]
 
 ---
 
 ## Step 2: [Second action]
 
-[Instructions for Claude]
+[Instructions for the agent]
 
 ---
 
@@ -52,9 +59,12 @@ source "$(dirname "$0")/../_preamble.sh"
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `name` | Yes | Must match directory name. Used by `bs-analytics`. |
+| `name` | Yes | Must match directory name. Used by analytics. |
 | `version` | Yes | Semantic version (`1.0.0`). Bump on breaking changes. |
-| `description` | Yes | Shown in Claude Code's skill picker. |
+| `description` | Yes | Shown in the AI tool's skill picker. |
+| `sdk_commands` | Yes | List of `vague` commands this skill calls. |
+| `requires_slug` | Yes | `true` for most skills. `false` for global tools like `/vault`. |
+| `requires_planning` | Yes | `true` activates the optional planning layer (`state.md`, `roadmap.md`). |
 | `allowed-tools` | Yes | List only tools the skill actually uses. |
 | `benefits-from` | No | Array of skill names this one reads outputs from. |
 
@@ -62,19 +72,37 @@ source "$(dirname "$0")/../_preamble.sh"
 
 ## Preamble Convention
 
-Every skill must start with:
+Every skill must start by calling `vague init` and parsing the JSON:
 
 ```bash
-export BS_SKILL_NAME="my-skill"
-source "$(dirname "$0")/../_preamble.sh"
+CONTEXT=$(vague init)
+SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
+BRANCH=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['branch'])")
+PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['proactive'])")
+SESSION_ID="$$-$(date +%s)"
 ```
 
-This gives you:
-- `$SLUG` — sanitized project slug
-- `$BRANCH` — current git branch
-- `$PROACTIVE` — "true" | "false"
-- `$TELEMETRY` — "local" | "off"
-- `$SESSION_ID` — unique session ID
+`vague init` returns a JSON object:
+
+```json
+{
+  "slug": "owner-repo",
+  "branch": "feat/my-feature",
+  "proactive": true,
+  "telemetry": "local",
+  "learnings": [
+    {
+      "skill": "review", "type": "pitfall", "key": "n-plus-one",
+      "insight": "Always eager-load associations on list queries.",
+      "confidence": 8, "source": "observed"
+    }
+  ]
+}
+```
+
+The `learnings` array contains the top 3 entries by confidence if more than 5 exist, otherwise all entries. **The agent reads this before doing any work** — this is how cross-session and cross-agent memory reaches the LLM context.
+
+`vague init` never fails: missing config returns defaults, missing git remote falls back to `basename $PWD`.
 
 ---
 
@@ -88,7 +116,7 @@ At the top of your skill's instructions, declare when it should be auto-invoked:
 
 Check `$PROACTIVE` before auto-invoking:
 ```
-If PROACTIVE is "false", only run when the user explicitly types the slash command.
+If PROACTIVE is "False", only run when the user explicitly types the slash command.
 If you would have auto-invoked, say: "I think /my-skill might help — want me to run it?"
 ```
 
@@ -99,7 +127,7 @@ If you would have auto-invoked, say: "I think /my-skill might help — want me t
 When your skill discovers a non-obvious insight about the codebase:
 
 ```bash
-~/.bastack/bin/bs-learnings-log '{
+vague learnings-log '{
   "skill": "my-skill",
   "type": "pitfall",
   "key": "short-kebab-key",
@@ -112,6 +140,11 @@ When your skill discovers a non-obvious insight about the codebase:
 
 **Only log genuine discoveries.** Skip obvious things. A good test: would this save time in a future session?
 
+**Types:** `pattern` · `pitfall` · `preference` · `architecture` · `tool` · `operational`
+**Confidence:** 7–9 for observed patterns, 4–6 for inferences, 10 for user-stated facts.
+
+Learnings are written to `~/.vague/projects/{slug}/learnings.md` and surfaced automatically by `vague init` in future sessions — including sessions by different agents and different AI tools.
+
 ---
 
 ## Timeline Events
@@ -119,11 +152,18 @@ When your skill discovers a non-obvious insight about the codebase:
 Fire timeline events so `/retro` can track skill usage:
 
 ```bash
-# At skill start (done automatically by _preamble.sh):
-~/.bastack/bin/bs-timeline-log '{"skill":"my-skill","event":"started","branch":"'$BRANCH'","session":"'$SESSION_ID'"}'
+# At skill end (do this explicitly — vague init does NOT auto-log):
+vague timeline-log "{\"skill\":\"my-skill\",\"event\":\"completed\",\"branch\":\"$BRANCH\",\"outcome\":\"success\",\"session\":\"$SESSION_ID\"}"
+```
 
-# At skill end (you must do this):
-~/.bastack/bin/bs-timeline-log '{"skill":"my-skill","event":"completed","branch":"'$BRANCH'","outcome":"success","session":"'$SESSION_ID'"}'
+---
+
+## Config
+
+```bash
+vague config-get proactive      # "true" or "false"
+vague config-set proactive false
+vague config-get telemetry      # "local" or "off"
 ```
 
 ---
@@ -168,9 +208,22 @@ If multiple next steps are appropriate:
 
 ---
 
+## Validating Your Skill
+
+```bash
+vague skill-validate ./my-skill/     # checks required frontmatter fields
+vague skill-audit ./my-skill/        # scans for legacy bs-* bash patterns
+```
+
+A skill passes validation when:
+- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `requires_slug`, `requires_planning`)
+- No legacy `bs-*` or `source _preamble.sh` patterns remain
+
+---
+
 ## Testing a Skill
 
-1. Create a test git repo: `mkdir /tmp/test-bastack && cd /tmp/test-bastack && git init`
-2. Run `install.sh` to set up symlinks
-3. Open Claude Code in the test repo
+1. Create a test git repo: `mkdir /tmp/test-vague && cd /tmp/test-vague && git init`
+2. Run `vague-install` to copy bundled skills to the right directory
+3. Open your AI tool in the test repo
 4. Type the slash command and verify behavior
