@@ -6,6 +6,7 @@ from typing import Annotated, Optional
 
 import typer
 
+from vague.installer import cmd_install, cmd_uninstall
 from vague.sdk.commands.init import cmd_init
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
 from vague.sdk.commands.learnings import cmd_learnings_log, cmd_learnings_search
@@ -32,6 +33,22 @@ sdk_app = typer.Typer(
     help="Python CLI layer for LLM skill-based AI workflows.",
     no_args_is_help=True,
 )
+
+
+@sdk_app.command("install")
+def install(
+    runtime: Annotated[Optional[str], typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
+) -> None:
+    """Install skills into your LLM runtime (e.g. ~/.claude/skills/)."""
+    cmd_install(runtime=runtime)
+
+
+@sdk_app.command("uninstall")
+def uninstall(
+    runtime: Annotated[Optional[str], typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
+) -> None:
+    """Remove vague skills from your LLM runtime."""
+    cmd_uninstall(runtime=runtime)
 
 
 @sdk_app.command("init")

@@ -1,4 +1,4 @@
-# bastack
+# vague
 
 Personal development workflow toolkit. 13 skills for the full software development lifecycle.
 
@@ -28,10 +28,10 @@ Skills are in `~/.claude/skills/` and/or `~/.copilot/skills/` (each skill symlin
 
 ## State
 
-All persistent state lives in `~/.bastack/`. Never hardcode paths — always use `$BASTACK_HOME` or the default `~/.bastack`.
+All persistent state lives in `~/.vague/`. Never hardcode paths — always use `$VAGUE_HOME` or the default `~/.vague`.
 
 ## Testing
 
-<!-- Add your project's test command here, e.g.: -->
-<!-- Command: bun test -->
-<!-- Framework: vitest -->
+```bash
+uv run pytest
+```

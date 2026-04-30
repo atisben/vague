@@ -1,14 +1,15 @@
 # vague
 
-Python CLI layer for LLM skill-based AI workflows. Twelve slash commands covering the full software development lifecycle — from idea to retro.
+Python CLI layer for LLM skill-based AI workflows. Thirteen slash commands covering the full software development lifecycle — from idea to retro.
 
 Skills are markdown files. `vague` is the stable CLI contract between them and the filesystem.
 
 ## Quickstart
 
 ```bash
-pip install vague
-vague-install          # auto-detects Claude Code, GitHub Copilot CLI, Cursor, or Windsurf
+git clone https://github.com/atisben/vague.git && cd vague
+uv tool install .      # installs vague globally via ~/.local/bin
+vague install          # auto-detects Claude Code, Copilot, Cursor, or Windsurf
 ```
 
 Then use any slash command in your AI tool.
@@ -27,6 +28,7 @@ Then use any slash command in your AI tool.
 ### Design
 | Command | When to use |
 |---------|-------------|
+| `/design-consultation` | Create a complete design system — aesthetic, typography, color, layout. |
 | `/design-shotgun` | Visual brainstorm — generate 3 variants, pick one. |
 | `/design-html` | Turn an approved design into production HTML/CSS. |
 | `/design-review` | Visual QA on a live site — find and fix issues. |
