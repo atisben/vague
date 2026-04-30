@@ -1,14 +1,17 @@
-# bastack
+# vague
 
-Personal AI-powered development workflow. Twelve slash commands that cover the full software development lifecycle — from idea to retro.
+Python CLI layer for LLM skill-based AI workflows. Twelve slash commands covering the full software development lifecycle — from idea to retro.
+
+Skills are markdown files. `vague` is the stable CLI contract between them and the filesystem.
 
 ## Quickstart
 
 ```bash
-./install.sh
+pip install vague
+vague-install          # auto-detects Claude Code, GitHub Copilot CLI, Cursor, or Windsurf
 ```
 
-Then in Claude Code or GitHub Copilot CLI, use any slash command.
+Then use any slash command in your AI tool.
 
 ---
 
@@ -24,7 +27,6 @@ Then in Claude Code or GitHub Copilot CLI, use any slash command.
 ### Design
 | Command | When to use |
 |---------|-------------|
-| `/design-consultation` | New project UI — creates `DESIGN.md` from scratch. |
 | `/design-shotgun` | Visual brainstorm — generate 3 variants, pick one. |
 | `/design-html` | Turn an approved design into production HTML/CSS. |
 | `/design-review` | Visual QA on a live site — find and fix issues. |
@@ -41,6 +43,7 @@ Then in Claude Code or GitHub Copilot CLI, use any slash command.
 |---------|-------------|
 | `/learn` | Browse, search, prune, and export project learnings. |
 | `/retro` | Weekly engineering retrospective. |
+| `/vault` | Save and retrieve notes from your Obsidian vault. |
 
 ---
 
@@ -52,13 +55,12 @@ Idea
       ├─ /plan-ceo-review   → scope decisions
       └─ /plan-eng-review   → architecture locked
 
-      ┌─ /design-consultation  → DESIGN.md
-      ├─ /design-shotgun       → pick a layout
-      └─ /design-html          → production HTML
+      ├─ /design-shotgun    → pick a layout
+      └─ /design-html       → production HTML
 
-          └─ /ship         → implement + PR
-              └─ /review   → pre-landing review
-                              └─ merge
+          └─ /ship          → implement + PR
+              └─ /review    → pre-landing review
+                               └─ merge
 
                               /investigate   (when bugs happen)
                               /learn         (anytime)
@@ -69,50 +71,45 @@ Idea
 
 ## State
 
-All data lives in `~/.bastack/`:
+All data lives in `~/.vague/`:
 
 ```
-~/.bastack/
-├── config.yaml
+~/.vague/
+├── config.md
 ├── sessions/
 ├── analytics/
-│   └── skill-usage.jsonl
+│   └── skill-usage.md
 └── projects/
-    └── {slug}/
-        ├── learnings.jsonl
-        ├── timeline.jsonl
+    └── {owner-repo}/
+        ├── learnings.md
+        ├── timeline.md
         ├── retros/
         └── designs/
 ```
 
 ---
 
-## Config
+## CLI Reference
 
 ```bash
-bs-config set proactive true    # auto-suggest skills
-bs-config set proactive false   # only explicit /commands
-bs-config set telemetry local   # log locally
-bs-config set telemetry off     # no logging
-bs-config list                  # show all config
-```
-
----
-
-## Analytics
-
-```bash
-bs-analytics        # last 7 days
-bs-analytics 30d    # last 30 days
-bs-analytics all    # all time
+vague init                              # JSON context for skills (slug, branch, config, learnings)
+vague config-get proactive              # read config value
+vague config-set proactive false        # write config value
+vague learnings-log '<json>'            # append a learning
+vague learnings-search --type pitfall   # filter learnings
+vague analytics-show 7d                 # usage dashboard (7d | 30d | all)
+vague slug                              # print SLUG= and BRANCH=
+vague timeline-log '<json>'             # append session event
+vague commit "msg" --files f1 f2        # atomic git commit
+vague skill-validate <dir>              # validate a skill against the contract
+vague skill-audit <dir> --strict        # scan for legacy bash patterns
 ```
 
 ---
 
 ## Requirements
 
-- macOS or Linux
-- `bun` (for JSON processing in bin scripts)
+- Python 3.11+
 - `git`
 - `gh` CLI (optional, for PR creation in `/ship`)
 - Claude Code and/or GitHub Copilot CLI
@@ -121,6 +118,6 @@ bs-analytics all    # all time
 
 ## Docs
 
-- [Architecture](docs/architecture.md) — state directory, data model, preamble lifecycle
+- [Architecture](docs/architecture.md) — state directory, data model, skill lifecycle
 - [Skill authoring](docs/skill-authoring.md) — how to write a new skill
 - [Telemetry](docs/telemetry.md) — what is logged and where
