@@ -6,8 +6,12 @@
 #   2. Symlinks bin/ to ~/.local/bin/ (or ~/bin/) so they're on PATH
 #   3. Creates the ~/.bastack/ state directory
 #   4. Writes a default config
-#   5. Optionally symlinks skills/ to ~/.claude/skills/bastack/
-#      so Claude Code can discover them as slash commands
+#   5. Optionally symlinks each skill to AI tool skill directories:
+#      - ~/.claude/skills/    (Claude Code)
+#      - ~/.copilot/skills/   (GitHub Copilot CLI)
+#   6. Optionally symlinks CLAUDE.md (global AI instructions) to:
+#      - ~/.claude/CLAUDE.md           (Claude Code)
+#      - ~/.copilot/copilot-instructions.md  (GitHub Copilot CLI)
 
 set -euo pipefail
 
@@ -59,28 +63,93 @@ else
   echo "  ✓ Config already exists — skipping"
 fi
 
-# ── 5. Symlink skills to ~/.claude/skills/bastack/ ───────────────────────────
-CLAUDE_SKILLS_DIR="${HOME}/.claude/skills/bastack"
-read -r -p "Symlink skills to $CLAUDE_SKILLS_DIR? (y/n) " ANSWER
-if [ "$ANSWER" = "y" ]; then
-  mkdir -p "$(dirname "$CLAUDE_SKILLS_DIR")"
-  if [ -L "$CLAUDE_SKILLS_DIR" ]; then
-    rm "$CLAUDE_SKILLS_DIR"
-  fi
-  ln -s "$SKILLS_DIR" "$CLAUDE_SKILLS_DIR"
-  echo "  ✓ Skills symlinked to $CLAUDE_SKILLS_DIR"
+# ── 5. Symlink skills to AI tool skill directories ───────────────────────────
+symlink_skills_to() {
+  local dir="$1"
+  local label="$2"
+  mkdir -p "$dir"
+  for skill_dir in "$SKILLS_DIR"/*/; do
+    name="$(basename "$skill_dir")"
+    link="$dir/$name"
+    if [ -L "$link" ] || [ -e "$link" ]; then
+      rm -rf "$link"
+    fi
+    ln -s "$skill_dir" "$link"
+    echo "  ✓ $name"
+  done
+  echo "  ✓ Skills symlinked to $dir ($label)"
+}
+
+CLAUDE_SKILLS_DIR="${HOME}/.claude/skills"
+COPILOT_SKILLS_DIR="${HOME}/.copilot/skills"
+
+echo ""
+echo "Skills are tool-agnostic and work with Claude Code and GitHub Copilot CLI."
+read -r -p "Install skills for Claude Code ($CLAUDE_SKILLS_DIR)? (y/n) " ANSWER_CLAUDE
+if [ "$ANSWER_CLAUDE" = "y" ]; then
+  symlink_skills_to "$CLAUDE_SKILLS_DIR" "Claude Code"
 else
-  echo "  Skipped — you can symlink manually:"
-  echo "    ln -s $SKILLS_DIR $CLAUDE_SKILLS_DIR"
+  echo "  Skipped Claude Code."
+fi
+
+read -r -p "Install skills for GitHub Copilot CLI ($COPILOT_SKILLS_DIR)? (y/n) " ANSWER_COPILOT
+if [ "$ANSWER_COPILOT" = "y" ]; then
+  symlink_skills_to "$COPILOT_SKILLS_DIR" "GitHub Copilot CLI"
+else
+  echo "  Skipped GitHub Copilot CLI."
+fi
+
+# ── 6. Symlink global AI instructions (CLAUDE.md) ────────────────────────────
+INSTRUCTIONS_SRC="$REPO_DIR/CLAUDE.md"
+
+symlink_instructions_to() {
+  local target="$1"
+  local label="$2"
+  local target_dir
+  target_dir="$(dirname "$target")"
+  mkdir -p "$target_dir"
+
+  if [ -L "$target" ]; then
+    local current_dest
+    current_dest="$(readlink "$target")"
+    if [ "$current_dest" = "$INSTRUCTIONS_SRC" ]; then
+      echo "  ✓ Already symlinked ($label) — skipping"
+      return
+    fi
+    rm -f "$target"
+  elif [ -f "$target" ]; then
+    mv "$target" "${target}.bak"
+    echo "  ⚠ Backed up existing file to ${target}.bak"
+  fi
+
+  ln -s "$INSTRUCTIONS_SRC" "$target"
+  echo "  ✓ CLAUDE.md → $target ($label)"
+}
+
+echo ""
+echo "CLAUDE.md is the unified global AI instructions file (works with both tools)."
+read -r -p "Install global instructions for Claude Code (~/.claude/CLAUDE.md)? (y/n) " ANSWER_CLAUDE_MD
+if [ "$ANSWER_CLAUDE_MD" = "y" ]; then
+  symlink_instructions_to "${HOME}/.claude/CLAUDE.md" "Claude Code"
+else
+  echo "  Skipped Claude Code instructions."
+fi
+
+read -r -p "Install global instructions for GitHub Copilot CLI (~/.copilot/copilot-instructions.md)? (y/n) " ANSWER_COPILOT_MD
+if [ "$ANSWER_COPILOT_MD" = "y" ]; then
+  symlink_instructions_to "${HOME}/.copilot/copilot-instructions.md" "GitHub Copilot CLI"
+else
+  echo "  Skipped GitHub Copilot CLI instructions."
 fi
 
 echo ""
 echo "bastack installed. Commands available:"
 echo "  bs-config, bs-slug, bs-analytics, bs-learnings-search"
 echo ""
-echo "Skills available in Claude Code:"
+echo "Skills available:"
 echo "  /office-hours, /plan-ceo-review, /plan-eng-review"
 echo "  /design-consultation, /design-shotgun, /design-html, /design-review"
-echo "  /ship, /review, /investigate, /learn, /retro"
+echo "  /ship, /review, /investigate, /learn, /retro, /vault"
 echo ""
+echo "Use them in Claude Code or GitHub Copilot CLI with any slash command."
 echo "Run 'bs-analytics' to see usage stats."

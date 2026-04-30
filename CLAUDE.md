@@ -1,6 +1,6 @@
 # bastack
 
-Personal development workflow toolkit. 12 skills for the full software development lifecycle.
+Personal development workflow toolkit. 13 skills for the full software development lifecycle.
 
 ## Skill Routing
 
@@ -20,10 +20,11 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 | "debug this", "fix this bug", "why is this broken", error / stack trace | `/investigate` |
 | "what have we learned", "show learnings", "prune learnings" | `/learn` |
 | "weekly retro", "what did we ship", "engineering retrospective" | `/retro` |
+| "save to vault", "note this down", "save this note", "search the vault", "find in vault", "recall from vault" | `/vault` |
 
 ## Skills Location
 
-Skills are in `~/.claude/skills/bastack/` (symlinked from this repo's `skills/`).
+Skills are in `~/.claude/skills/` and/or `~/.copilot/skills/` (each skill symlinked individually from this repo's `skills/`).
 
 ## State
 

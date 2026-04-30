@@ -8,7 +8,7 @@ Personal AI-powered development workflow. Twelve slash commands that cover the f
 ./install.sh
 ```
 
-Then in Claude Code, use any slash command.
+Then in Claude Code or GitHub Copilot CLI, use any slash command.
 
 ---
 
@@ -115,7 +115,7 @@ bs-analytics all    # all time
 - `bun` (for JSON processing in bin scripts)
 - `git`
 - `gh` CLI (optional, for PR creation in `/ship`)
-- Claude Code
+- Claude Code and/or GitHub Copilot CLI
 
 ---
 
