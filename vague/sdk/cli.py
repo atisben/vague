@@ -62,8 +62,9 @@ def learnings_log(json_input: str) -> None:
 def learnings_search(
     type: Annotated[Optional[str], typer.Option("--type", "-t")] = None,
     min_confidence: Annotated[int, typer.Option("--min-confidence")] = 0,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Search learnings. Outputs JSON array."""
+    """Search learnings. Outputs JSON array (--json accepted for compatibility)."""
     cmd_learnings_search(type_filter=type, min_confidence=min_confidence)
 
 
