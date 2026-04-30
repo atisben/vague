@@ -37,11 +37,14 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```bash
 # Find the most recent design doc
 ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -3 || echo "NO_DESIGN_DOCS"
+ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md 2>/dev/null | head -1 || echo "NO_ENG_PLAN"
 # Read CLAUDE.md for project context
 [ -f CLAUDE.md ] && cat CLAUDE.md || echo "NO_CLAUDE_MD"
 ```
 
 If a design doc exists, read it. Ask the user which plan to review if there are multiple.
+
+If an engineering plan already exists, read it and warn: "An engineering plan already exists: [filename]. Scope changes from this CEO review may invalidate it. I'll flag any conflicts."
 
 ---
 

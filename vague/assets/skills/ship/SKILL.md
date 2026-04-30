@@ -36,6 +36,7 @@ SESSION_ID="$$-$(date +%s)"
 ## Step 1: Detect Context
 
 ```bash
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 # Detect platform
 which gh 2>/dev/null && echo "PLATFORM: github" || echo "PLATFORM: unknown"
 which glab 2>/dev/null && echo "PLATFORM: gitlab" || true
@@ -47,9 +48,13 @@ BASE=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF
 echo "BASE: $BASE"
 # Diff summary
 git diff origin/$BASE --stat 2>/dev/null || echo "NO_DIFF"
+# Check for pending designs/plans
+ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -5 || echo "NO_PENDING_DESIGNS"
 ```
 
 If on the base branch, ask: "You're on `$BASE`. Should I create a feature branch first?"
+
+**If there is no diff but pending designs exist:** Read the most recent design/engineering plan. Tell the user: "No code changes yet, but I found a pending plan: [filename]. Should I implement it first?" If yes, implement the plan, then continue with the ship workflow.
 
 ---
 
