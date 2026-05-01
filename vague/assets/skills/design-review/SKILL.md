@@ -9,6 +9,7 @@ description: |
 sdk_commands:
   - vague init
   - vague learnings-log
+  - vague observations-log
 requires_slug: true
 requires_planning: false
 allowed-tools:
@@ -134,6 +135,26 @@ If a non-obvious visual pattern was discovered (e.g., "this codebase uses 13px a
 ```bash
 vague learnings-log '{"skill":"design-review","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed","files":["path/to/file"]}'
 ```
+
+---
+
+---
+
+## Observation Protocol
+
+Throughout this skill's execution, watch for:
+- Steps that produce wrong or suboptimal output
+- Missing rules the user has to correct
+- Workflow inefficiencies or unnecessary steps
+- Gaps where a different skill would help
+
+When you notice any of these, log an observation:
+
+```bash
+vague observations-log '{{"skill":"design-review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"design-review"}}'
+```
+
+Log silently — do not interrupt the user's workflow to announce observations.
 
 ---
 

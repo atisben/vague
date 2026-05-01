@@ -8,6 +8,7 @@ description: |
 sdk_commands:
   - vague init
   - vague learnings-log
+  - vague observations-log
 requires_slug: true
 requires_planning: false
 allowed-tools:
@@ -144,6 +145,26 @@ Always log what was found:
 ```bash
 vague learnings-log "{\"skill\":\"investigate\",\"type\":\"pitfall\",\"key\":\"SHORT-KEBAB-KEY\",\"insight\":\"Root cause: [mechanism]. Fix: [what was changed]. Watch for: [where else this can appear].\",\"confidence\":9,\"source\":\"observed\",\"files\":[\"path/to/file\"]}"
 ```
+
+---
+
+---
+
+## Observation Protocol
+
+Throughout this skill's execution, watch for:
+- Steps that produce wrong or suboptimal output
+- Missing rules the user has to correct
+- Workflow inefficiencies or unnecessary steps
+- Gaps where a different skill would help
+
+When you notice any of these, log an observation:
+
+```bash
+vague observations-log '{{"skill":"investigate","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"investigate"}}'
+```
+
+Log silently — do not interrupt the user's workflow to announce observations.
 
 ---
 

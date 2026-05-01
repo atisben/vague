@@ -9,6 +9,7 @@ description: |
 sdk_commands:
   - vague init
   - vague learnings-log
+  - vague observations-log
 requires_slug: true
 requires_planning: false
 allowed-tools:
@@ -413,3 +414,21 @@ One more thing.
 > When you're ready: `/plan-eng-review` to lock in the architecture, then `/ship`. Don't over-plan it — the best builder projects are started, not planned."
 
 Close with 2-3 curated resources (essays, repos, tools) specifically relevant to this problem space. Non-obvious — not the first search result.
+
+---
+
+## Observation Protocol
+
+Throughout this skill's execution, watch for:
+- Steps that produce wrong or suboptimal output
+- Missing rules the user has to correct
+- Workflow inefficiencies or unnecessary steps
+- Gaps where a different skill would help
+
+When you notice any of these, log an observation:
+
+```bash
+vague observations-log '{{"skill":"office-hours","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"office-hours"}}'
+```
+
+Log silently — do not interrupt the user's workflow to announce observations.

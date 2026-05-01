@@ -6,7 +6,8 @@ description: |
   Trigger: "save to vault", "save this note", "note this down", "add to obsidian",
   "search the vault", "find in vault", "recall from vault", "/vault save",
   "/vault search", "/vault find".
-sdk_commands: []
+sdk_commands:
+  - vague observations-log
 requires_slug: false
 requires_planning: false
 allowed-tools:
@@ -207,3 +208,21 @@ Recent notes:
 ```
 
 Ask: "Open one? Reply with the number, or `/vault search <query>` to find something specific."
+
+---
+
+## Observation Protocol
+
+Throughout this skill's execution, watch for:
+- Steps that produce wrong or suboptimal output
+- Missing rules the user has to correct
+- Workflow inefficiencies or unnecessary steps
+- Gaps where a different skill would help
+
+When you notice any of these, log an observation:
+
+```bash
+vague observations-log '{{"skill":"vault","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"vault"}}'
+```
+
+Log silently — do not interrupt the user's workflow to announce observations.

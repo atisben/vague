@@ -44,6 +44,29 @@ class VagueInitResult(BaseModel):
     learnings: list[LearningEntry]  # top 3 by confidence if >5 entries, else all
 
 
+class ObservationEntry(BaseModel):
+    id: int
+    skill: str  # target skill name, or "new:working-name" for new skill candidates
+    type: str  # improvement | new-skill | simplification | cross-cutting
+    issue: str
+    suggestion: str
+    principle: str
+    status: str = "open"  # open | actioned | declined
+    source_skill: str
+    session: str = ""
+    ts: datetime
+
+
+class PrincipleEntry(BaseModel):
+    id: int
+    title: str
+    requirement: str
+    applies_to: str = "all"  # all | specific skill names
+    propagation: str = "opportunistic"  # immediate | opportunistic
+    status: str = "active"  # active | retired
+    added: str  # YYYY-MM-DD
+
+
 class SkillManifest(BaseModel):
     name: str
     version: str

@@ -20,6 +20,11 @@ from vague.sdk.commands.skill import (
     cmd_skill_audit,
     cmd_skill_add,
 )
+from vague.sdk.commands.observations import (
+    cmd_observations_log,
+    cmd_observations_list,
+    cmd_observations_update,
+)
 from vague.sdk.commands.plan import (
     cmd_plan_list,
     cmd_plan_status,
@@ -98,6 +103,27 @@ def analytics_show(
 ) -> None:
     """Show skill usage analytics."""
     cmd_analytics_show(window=window, as_json=as_json)
+
+
+@sdk_app.command("observations-log")
+def observations_log(json_input: str) -> None:
+    """Append an observation entry (JSON string)."""
+    cmd_observations_log(json_input)
+
+
+@sdk_app.command("observations-list")
+def observations_list(
+    status: Annotated[Optional[str], typer.Option("--status", "-s")] = None,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List observations. Outputs JSON array."""
+    cmd_observations_list(status_filter=status, as_json=as_json)
+
+
+@sdk_app.command("observations-update")
+def observations_update(obs_id: int, status: str) -> None:
+    """Update an observation's status (open|actioned|declined)."""
+    cmd_observations_update(obs_id, status)
 
 
 @sdk_app.command("slug")

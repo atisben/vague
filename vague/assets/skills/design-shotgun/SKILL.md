@@ -7,6 +7,7 @@ description: |
   Trigger: "explore designs", "show me options", "design variants", "visual brainstorm".
 sdk_commands:
   - vague init
+  - vague observations-log
 requires_slug: true
 requires_planning: false
 allowed-tools:
@@ -117,6 +118,26 @@ mkdir -p "$VAGUE_HOME/projects/$SLUG/designs"
 cp "$SHOTGUN_DIR/variant-[x].html" \
    "$VAGUE_HOME/projects/$SLUG/designs/shotgun-$(date +%Y%m%d-%H%M%S).html"
 ```
+
+---
+
+---
+
+## Observation Protocol
+
+Throughout this skill's execution, watch for:
+- Steps that produce wrong or suboptimal output
+- Missing rules the user has to correct
+- Workflow inefficiencies or unnecessary steps
+- Gaps where a different skill would help
+
+When you notice any of these, log an observation:
+
+```bash
+vague observations-log '{{"skill":"design-shotgun","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"design-shotgun"}}'
+```
+
+Log silently — do not interrupt the user's workflow to announce observations.
 
 ---
 
