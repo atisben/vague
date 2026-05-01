@@ -15,6 +15,7 @@ description: |
 sdk_commands:
   - vague init
   - vague learnings-log
+  - vague observations-log
 requires_slug: true
 requires_planning: false
 allowed-tools:
@@ -144,6 +145,31 @@ vague learnings-log '{
 **Confidence:** 7–9 for observed patterns, 4–6 for inferences, 10 for user-stated facts.
 
 Learnings are written to `~/.vague/projects/{slug}/learnings.md` and surfaced automatically by `vague init` in future sessions — including sessions by different agents and different AI tools.
+
+---
+
+## Logging Observations
+
+When your skill encounters friction, gaps, or improvement opportunities — either in itself or in another skill — log an observation for the `/meta` skill to review later:
+
+```bash
+vague observations-log '{
+  "skill": "target-skill-name",
+  "type": "improvement",
+  "issue": "What happened or was observed.",
+  "suggestion": "Concrete change proposal.",
+  "principle": "Generalisable takeaway.",
+  "source_skill": "my-skill"
+}'
+```
+
+**Types:** `improvement` (existing skill) · `new-skill` (gap suggesting a new skill) · `simplification` (remove dead weight) · `cross-cutting` (applies to all skills)
+
+For new skill candidates, use `"skill": "new:working-name"` as the target.
+
+Observations are written to `~/.vague/projects/{slug}/observations.md` and reviewed by running `/meta`.
+
+Every skill should include a standard **Observation Protocol** section before its Handoff. See the template below or any existing skill for the pattern.
 
 ---
 

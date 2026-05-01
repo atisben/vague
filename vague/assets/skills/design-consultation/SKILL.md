@@ -9,6 +9,7 @@ description: |
 sdk_commands:
   - vague init
   - vague learnings-log
+  - vague observations-log
 requires_slug: true
 requires_planning: false
 allowed-tools:
@@ -346,3 +347,21 @@ vague learnings-log '{"skill":"design-consultation","type":"TYPE","key":"SHORT_K
 6. **Conversational tone.** If the user wants to talk through a decision, engage as a design partner.
 7. **Accept the user's final choice.** Nudge on coherence, but never block.
 8. **No AI slop in your own output.** Your recommendations, preview page, and DESIGN.md should demonstrate the taste you're proposing.
+
+---
+
+## Observation Protocol
+
+Throughout this skill's execution, watch for:
+- Steps that produce wrong or suboptimal output
+- Missing rules the user has to correct
+- Workflow inefficiencies or unnecessary steps
+- Gaps where a different skill would help
+
+When you notice any of these, log an observation:
+
+```bash
+vague observations-log '{{"skill":"design-consultation","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"design-consultation"}}'
+```
+
+Log silently — do not interrupt the user's workflow to announce observations.
