@@ -48,6 +48,11 @@ Then use any slash command in your AI tool.
 | `/vault` | Save and retrieve notes from your Obsidian vault. |
 
 ---
+## System design
+
+![architecture](architecture.png)
+
+---
 
 ## Workflow
 
@@ -131,3 +136,8 @@ In order to reinstall the latest update of vague, use
 ```bash
 uv tool install . --force --reinstall
 ```
+
+## Inspirations
+
+- [gstack](https://github.com/garrytan/gstack)
+-  [karpathy's wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
