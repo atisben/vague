@@ -123,3 +123,11 @@ vague skill-audit <dir> --strict        # scan for legacy bash patterns
 - [Architecture](docs/architecture.md) — state directory, data model, skill lifecycle
 - [Skill authoring](docs/skill-authoring.md) — how to write a new skill
 - [Telemetry](docs/telemetry.md) — what is logged and where
+
+
+## Updates
+
+In order to reinstall the latest update of vague, use 
+```bash
+uv tool install . --force --reinstall
+```

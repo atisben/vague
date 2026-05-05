@@ -49,13 +49,16 @@ BASE=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF
 echo "BASE: $BASE"
 # Diff summary
 git diff origin/$BASE --stat 2>/dev/null || echo "NO_DIFF"
-# Check for pending designs/plans
-ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -5 || echo "NO_PENDING_DESIGNS"
+# Find the most recent engineering/design plan
+PLAN_FILE=$(ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -1)
+echo "PLAN_FILE: ${PLAN_FILE:-NONE}"
 ```
+
+**If `$PLAN_FILE` exists, read it now.** Use it for context throughout: commit messages, PR description, and the review checklist should reference the plan's goals and test strategy.
 
 If on the base branch, ask: "You're on `$BASE`. Should I create a feature branch first?"
 
-**If there is no diff but pending designs exist:** Read the most recent design/engineering plan. Tell the user: "No code changes yet, but I found a pending plan: [filename]. Should I implement it first?" If yes, implement the plan, then continue with the ship workflow.
+**If there is no diff but pending designs exist:** Tell the user: "No code changes yet, but I found a pending plan: [filename]. Should I implement it first?" If yes, implement the plan, then continue with the ship workflow.
 
 ---
 
@@ -195,7 +198,23 @@ gh pr create \
 
 ---
 
-## Step 9: Log Completion
+## Step 9: Update Plan
+
+If `$PLAN_FILE` exists, update it:
+- Mark completed items in `## Next Steps` (check the `/ship` checkbox)
+- Add a `## Shipped` section at the bottom:
+
+```markdown
+## Shipped
+
+**Date:** [ISO date]
+**PR:** [PR URL]
+**Branch:** $BRANCH
+```
+
+---
+
+## Step 10: Log Completion
 
 ```bash
 vague timeline-log "{\"skill\":\"ship\",\"event\":\"completed\",\"branch\":\"$BRANCH\",\"outcome\":\"success\",\"session\":\"$SESSION_ID\"}"
@@ -218,11 +237,18 @@ Throughout this skill's execution, watch for:
 - Missing rules the user has to correct
 - Workflow inefficiencies or unnecessary steps
 - Gaps where a different skill would help
+- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
 
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{{"skill":"ship","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ship"}}'
+vague observations-log '{"skill":"ship","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ship"}'
+```
+
+**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
+
+```bash
+vague observations-log '{"skill":"ship","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ship"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.

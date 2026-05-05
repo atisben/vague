@@ -192,11 +192,18 @@ Throughout this skill's execution, watch for:
 - Missing rules the user has to correct
 - Workflow inefficiencies or unnecessary steps
 - Gaps where a different skill would help
+- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
 
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{{"skill":"review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"review"}}'
+vague observations-log '{"skill":"review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"review"}'
+```
+
+**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
+
+```bash
+vague observations-log '{"skill":"review","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"review"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
