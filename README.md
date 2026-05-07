@@ -139,5 +139,6 @@ uv tool install . --force --reinstall
 
 ## Inspirations
 
-- [gstack](https://github.com/garrytan/gstack)
--  [karpathy's wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+- [gstack](https://github.com/garrytan/gstack): An ensemble of advanced skills using bash command to interract with persistent, project checkpoints
+- [karpathy's wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): A paradigm for saving persisent files to local wiki that serves as a brain for LLM supported tasks
+- [get shit done](https://github.com/gsd-build/get-shit-done): A light-weight meta-prompting, context engineering, and spec-driven development system
