@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from vague.models import PrincipleEntry
+from vague.sdk.core.frontmatter import file_lock
 
 
 def _get_principles_path(slug: str) -> Path:
@@ -45,12 +46,19 @@ def _next_id(entries: list[dict]) -> int:
     return max_id + 1
 
 
-def append_principle(slug: str, entry: PrincipleEntry) -> None:
+def append_principle(slug: str, entry: PrincipleEntry) -> int:
+    """Append a principle, assigning its id under lock. Returns the id used."""
     path = _get_principles_path(slug)
-    entries = _read_entries(path)
     entry_dict = json.loads(entry.model_dump_json())
-    entries.append(entry_dict)
-    _write_entries(path, entries)
+
+    with file_lock(path):
+        entries = _read_entries(path)
+        if not entry_dict.get("id"):
+            entry_dict["id"] = _next_id(entries)
+        entries.append(entry_dict)
+        _write_entries(path, entries)
+
+    return entry_dict["id"]
 
 
 def list_principles(
@@ -75,15 +83,17 @@ def list_principles(
 def update_principle_status(slug: str, principle_id: int, new_status: str) -> bool:
     """Update a principle's status. Returns True if found and updated."""
     path = _get_principles_path(slug)
-    entries = _read_entries(path)
 
-    found = False
-    for e in entries:
-        if e.get("id") == principle_id:
-            e["status"] = new_status
-            found = True
-            break
+    with file_lock(path):
+        entries = _read_entries(path)
 
-    if found:
-        _write_entries(path, entries)
+        found = False
+        for e in entries:
+            if e.get("id") == principle_id:
+                e["status"] = new_status
+                found = True
+                break
+
+        if found:
+            _write_entries(path, entries)
     return found

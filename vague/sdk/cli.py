@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 import typer
 
 from vague.installer import cmd_install, cmd_uninstall
-from vague.sdk.commands.init import cmd_init
+from vague.sdk.commands.init import cmd_init, cmd_context
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
 from vague.sdk.commands.learnings import cmd_learnings_log, cmd_learnings_search
 from vague.sdk.commands.analytics import cmd_analytics_log, cmd_analytics_show
@@ -40,6 +40,26 @@ sdk_app = typer.Typer(
 )
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            typer.echo(version("vague"))
+        except PackageNotFoundError:
+            typer.echo("0.1.0")
+        raise typer.Exit()
+
+
+@sdk_app.callback()
+def _main(
+    version: Annotated[
+        bool,
+        typer.Option("--version", callback=_version_callback, is_eager=True, help="Show version and exit."),
+    ] = False,
+) -> None:
+    """Python CLI layer for LLM skill-based AI workflows."""
+
+
 @sdk_app.command("install")
 def install(
     runtime: Annotated[Optional[str], typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
@@ -54,6 +74,14 @@ def uninstall(
 ) -> None:
     """Remove vague skills from your LLM runtime."""
     cmd_uninstall(runtime=runtime)
+
+
+@sdk_app.command("context")
+def context(
+    shell: Annotated[bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")] = False,
+) -> None:
+    """Print project context for skill preambles. JSON by default, shell vars with --shell."""
+    cmd_context(shell=shell)
 
 
 @sdk_app.command("init")

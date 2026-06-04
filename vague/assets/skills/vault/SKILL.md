@@ -1,6 +1,6 @@
 ---
 name: vault
-version: 1.0.0
+version: 1.1.0
 description: |
   Obsidian vault operations: save notes, search, and retrieve content.
   Trigger: "save to vault", "save this note", "note this down", "add to obsidian",
@@ -53,10 +53,10 @@ Before creating anything, check for an existing note on the same topic.
 VAULT="$HOME/Obsidian"
 QUERY="<inferred title or keyword>"
 # Check filenames
-find "$VAULT" -name "*.md" -iname "*${QUERY}*" 2>/dev/null
+find "$VAULT" -iname "*${QUERY}*.md" 2>/dev/null
 
-# Check content
-grep -ril "$QUERY" "$VAULT" --include="*.md" 2>/dev/null | head -5
+# Check content (-F: treat query as literal text, not a regex)
+grep -rilF "$QUERY" "$VAULT" --include="*.md" 2>/dev/null | head -5
 ```
 
 If a match exists, present it to the user via AskUserQuestion:
@@ -136,28 +136,22 @@ Confirm: "Saved to `$FOLDER/$TITLE.md`."
 
 ## SEARCH MODE
 
-Run two passes — content and tags:
+One pass covers both body text and frontmatter tags (tags are file content too). Read the path list with `while IFS= read -r` so filenames with spaces — every note in this vault has them — survive the loop:
 
 ```bash
 VAULT="$HOME/Obsidian"
 QUERY="<query from arguments>"
 
-# Content search
-grep -ril "$QUERY" "$VAULT" --include="*.md" 2>/dev/null | head -10
-
-# Tag-specific search
-grep -ril "  - $QUERY" "$VAULT" --include="*.md" 2>/dev/null | head -10
+grep -rilF "$QUERY" "$VAULT" --include="*.md" 2>/dev/null \
+  | head -10 \
+  | while IFS= read -r f; do
+      echo "=== $f ==="
+      sed -n '1,16p' "$f"
+      echo
+    done
 ```
 
-For each match, extract title line and tags from frontmatter:
-
-```bash
-for f in $MATCHES; do
-  echo "=== $f ==="
-  head -15 "$f"
-  echo ""
-done
-```
+`-F` matches the query literally (no regex surprises) and `grep -l` lists each file once, so no dedup is needed. Do not use `for f in $(...)` here — it splits on the spaces in note titles.
 
 Present results as:
 
@@ -191,12 +185,15 @@ find "$VAULT" -name "*.md" -iname "*${TITLE}*" 2>/dev/null
 
 ## RECENT MODE (no arguments)
 
-List the 10 most recently modified notes, excluding the Templates folder:
+List the 10 most recently modified notes, excluding templates, trash, and Obsidian internals. The folder is `5. Templates` (with the number prefix), so the exclusion glob must not assume `/Templates/`. `-print0 | xargs -0` keeps filenames with spaces intact:
 
 ```bash
 VAULT="$HOME/Obsidian"
-find "$VAULT" -name "*.md" -not -path "*/Templates/*" -not -path "*/.obsidian/*" 2>/dev/null \
-  | xargs ls -t 2>/dev/null \
+find "$VAULT" -name "*.md" \
+  -not -path "*Templates/*" \
+  -not -path "*/.trash/*" \
+  -not -path "*/.obsidian/*" -print0 2>/dev/null \
+  | xargs -0 ls -t 2>/dev/null \
   | head -10
 ```
 

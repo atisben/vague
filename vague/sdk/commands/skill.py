@@ -122,7 +122,15 @@ def _validate_skill(skill_dir: Path) -> tuple[bool, list[str]]:
     except FrontmatterError as e:
         return False, [f"Frontmatter parse error: {e}"]
 
-    required_fields = ["name", "version", "description"]
+    required_fields = [
+        "name",
+        "version",
+        "description",
+        "sdk_commands",
+        "requires_slug",
+        "requires_planning",
+        "allowed-tools",
+    ]
     for field in required_fields:
         if field not in data:
             errors.append(f"Missing required field: {field}")

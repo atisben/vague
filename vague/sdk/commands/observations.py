@@ -13,7 +13,6 @@ from vague.sdk.core.slug import get_slug
 from vague.sdk.core.observations import (
     append_observation,
     list_observations,
-    next_observation_id,
     update_observation_status,
 )
 
@@ -23,8 +22,9 @@ def cmd_observations_log(json_input: str) -> None:
     try:
         data = json.loads(json_input)
         slug = get_slug()
-        if "id" not in data:
-            data["id"] = next_observation_id(slug)
+        # id is assigned atomically under lock inside append_observation;
+        # supply a placeholder so model validation passes.
+        data.setdefault("id", 0)
         if "ts" not in data:
             data["ts"] = datetime.now(timezone.utc).isoformat()
         entry = ObservationEntry(**data)

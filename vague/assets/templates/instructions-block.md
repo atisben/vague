@@ -1,6 +1,6 @@
 # vague
 
-Personal development workflow toolkit. 13 skills for the full software development lifecycle.
+Personal development workflow toolkit. 14 skills for the full software development lifecycle.
 
 ## Skill Routing
 
@@ -8,6 +8,7 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 
 | Trigger | Skill |
 |---------|-------|
+| "what should I look at", "here's what's on my plate", "where do I start", "triage this" | `/desk` |
 | "I have an idea", "is this worth building", "help me think through this" | `/office-hours` |
 | "think bigger", "expand scope", "strategy review", "is this ambitious enough" | `/plan-ceo-review` |
 | "review the architecture", "engineering review", "lock in the plan" | `/plan-eng-review` |

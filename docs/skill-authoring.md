@@ -28,10 +28,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-CONTEXT=$(vague init)
-SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
-BRANCH=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['branch'])")
-PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['proactive'])")
+eval "$(vague context --shell)"
 SESSION_ID="$$-$(date +%s)"
 ```
 
@@ -73,17 +70,17 @@ SESSION_ID="$$-$(date +%s)"
 
 ## Preamble Convention
 
-Every skill must start by calling `vague init` and parsing the JSON:
+Every skill must start by loading project context. Use `vague context --shell`,
+which emits eval-able shell variables in a single process (no `python3` JSON
+parsing):
 
 ```bash
-CONTEXT=$(vague init)
-SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
-BRANCH=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['branch'])")
-PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['proactive'])")
+eval "$(vague context --shell)"   # sets SLUG, BRANCH, PROACTIVE, TELEMETRY
 SESSION_ID="$$-$(date +%s)"
 ```
 
-`vague init` returns a JSON object:
+When a skill also needs the surfaced `learnings` array, call `vague init` (or
+`vague context` without `--shell`), which returns the full JSON object:
 
 ```json
 {
@@ -103,7 +100,7 @@ SESSION_ID="$$-$(date +%s)"
 
 The `learnings` array contains the top 3 entries by confidence if more than 5 exist, otherwise all entries. **The agent reads this before doing any work** — this is how cross-session and cross-agent memory reaches the LLM context.
 
-`vague init` never fails: missing config returns defaults, missing git remote falls back to `basename $PWD`.
+`vague context` and `vague init` never fail: missing config returns defaults, missing git remote falls back to `basename $PWD`.
 
 ---
 
@@ -163,7 +160,7 @@ vague observations-log '{
 }'
 ```
 
-**Types:** `improvement` (existing skill) · `new-skill` (gap suggesting a new skill) · `simplification` (remove dead weight) · `cross-cutting` (applies to all skills)
+**Types:** `improvement` (existing skill) · `new-skill` (gap suggesting a new skill) · `simplification` (remove dead weight) · `cross-cutting` (applies to all skills) · `correction` (the user had to manually ask for a step the skill should have done — the highest-signal observations)
 
 For new skill candidates, use `"skill": "new:working-name"` as the target.
 

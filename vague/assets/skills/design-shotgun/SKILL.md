@@ -20,10 +20,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-CONTEXT=$(vague init)
-SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
-BRANCH=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['branch'])")
-PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['proactive'])")
+eval "$(vague context --shell)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 SHOTGUN_DIR="$VAGUE_HOME/projects/$SLUG/designs/shotgun-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$SHOTGUN_DIR"

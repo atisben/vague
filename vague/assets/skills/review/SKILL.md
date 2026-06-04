@@ -24,10 +24,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-CONTEXT=$(vague init)
-SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
-BRANCH=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['branch'])")
-PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['proactive'])")
+eval "$(vague context --shell)"
 SESSION_ID="$$-$(date +%s)"
 ```
 

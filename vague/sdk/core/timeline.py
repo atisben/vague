@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from vague.models import TimelineEntry
+from vague.sdk.core.frontmatter import file_lock
 
 
 def _get_timeline_path(slug: str) -> Path:
@@ -39,6 +40,8 @@ def _write_entries(path: Path, entries: list[dict]) -> None:
 def append_timeline(slug: str, entry: TimelineEntry) -> None:
     """Append to timeline.md for slug."""
     path = _get_timeline_path(slug)
-    entries = _read_entries(path)
-    entries.append(json.loads(entry.model_dump_json()))
-    _write_entries(path, entries)
+    entry_dict = json.loads(entry.model_dump_json())
+    with file_lock(path):
+        entries = _read_entries(path)
+        entries.append(entry_dict)
+        _write_entries(path, entries)

@@ -19,6 +19,7 @@ VALID_SKILL_FRONTMATTER = {
     "sdk_commands": ["vague init"],
     "requires_slug": True,
     "requires_planning": False,
+    "allowed-tools": ["Bash"],
 }
 
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from vague.models import ObservationEntry
+from vague.sdk.core.frontmatter import file_lock
 
 
 def _get_observations_path(slug: str) -> Path:
@@ -47,12 +48,19 @@ def _next_id(entries: list[dict]) -> int:
     return max_id + 1
 
 
-def append_observation(slug: str, entry: ObservationEntry) -> None:
+def append_observation(slug: str, entry: ObservationEntry) -> int:
+    """Append an observation, assigning its id under lock. Returns the id used."""
     path = _get_observations_path(slug)
-    entries = _read_entries(path)
     entry_dict = json.loads(entry.model_dump_json())
-    entries.append(entry_dict)
-    _write_entries(path, entries)
+
+    with file_lock(path):
+        entries = _read_entries(path)
+        if not entry_dict.get("id"):
+            entry_dict["id"] = _next_id(entries)
+        entries.append(entry_dict)
+        _write_entries(path, entries)
+
+    return entry_dict["id"]
 
 
 def list_observations(
@@ -77,17 +85,19 @@ def list_observations(
 def update_observation_status(slug: str, obs_id: int, new_status: str) -> bool:
     """Update an observation's status. Returns True if found and updated."""
     path = _get_observations_path(slug)
-    entries = _read_entries(path)
 
-    found = False
-    for e in entries:
-        if e.get("id") == obs_id:
-            e["status"] = new_status
-            found = True
-            break
+    with file_lock(path):
+        entries = _read_entries(path)
 
-    if found:
-        _write_entries(path, entries)
+        found = False
+        for e in entries:
+            if e.get("id") == obs_id:
+                e["status"] = new_status
+                found = True
+                break
+
+        if found:
+            _write_entries(path, entries)
     return found
 
 

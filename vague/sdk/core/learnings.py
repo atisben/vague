@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from vague.models import LearningEntry
+from vague.sdk.core.frontmatter import file_lock
 
 
 def _get_learnings_path(slug: str) -> Path:
@@ -43,16 +44,17 @@ def _write_entries(path: Path, entries: list[dict]) -> None:
 def append_learning(slug: str, entry: LearningEntry) -> None:
     """Append to learnings.md. Prune to 500 by evicting lowest-confidence entries."""
     path = _get_learnings_path(slug)
-    entries = _read_entries(path)
-
     entry_dict = json.loads(entry.model_dump_json())
-    entries.append(entry_dict)
 
-    if len(entries) > 500:
-        entries.sort(key=lambda e: e.get("confidence", 0), reverse=True)
-        entries = entries[:500]
+    with file_lock(path):
+        entries = _read_entries(path)
+        entries.append(entry_dict)
 
-    _write_entries(path, entries)
+        if len(entries) > 500:
+            entries.sort(key=lambda e: e.get("confidence", 0), reverse=True)
+            entries = entries[:500]
+
+        _write_entries(path, entries)
 
 
 def search_learnings(

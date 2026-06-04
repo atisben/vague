@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from vague.models import AnalyticsEntry
+from vague.sdk.core.frontmatter import file_lock
 
 
 def _get_analytics_path() -> Path:
@@ -40,9 +41,11 @@ def _write_entries(path: Path, entries: list[dict]) -> None:
 def append_analytics(entry: AnalyticsEntry) -> None:
     """Append to ~/.vague/analytics/skill-usage.md."""
     path = _get_analytics_path()
-    entries = _read_entries(path)
-    entries.append(json.loads(entry.model_dump_json()))
-    _write_entries(path, entries)
+    entry_dict = json.loads(entry.model_dump_json())
+    with file_lock(path):
+        entries = _read_entries(path)
+        entries.append(entry_dict)
+        _write_entries(path, entries)
 
 
 def get_analytics(window: str = "all") -> list[AnalyticsEntry]:

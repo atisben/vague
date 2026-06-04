@@ -75,6 +75,7 @@ When the user types `/ship` (or any skill), this is what ends up in the LLM's co
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │ 4. ON-DEMAND READS  (skill-specific, injected as tool outputs)   │   │
 │  │                                                                  │   │
+│  │    /desk              → git status, git log, git diff --stat     │   │
 │  │    /office-hours      → prior design docs (if any)              │   │
 │  │    /plan-ceo-review   → most recent design doc                   │   │
 │  │    /plan-eng-review   → design doc + CEO plan doc                │   │
@@ -209,9 +210,12 @@ entries:
 
 ## Skill Chaining
 
-Skills chain through shared file artifacts:
+Skills chain through shared file artifacts. `/desk` is the front door: it writes
+no artifact, it reads git state and routes to the skill below that fits.
 
 ```
+/desk               → triage; routes to any skill below (no artifact written)
+
 /office-hours       → writes design doc to ~/.vague/projects/{slug}/designs/
 /plan-ceo-review    → reads that doc, writes CEO plan doc
 /plan-eng-review    → reads CEO plan + design doc, writes engineering plan

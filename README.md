@@ -1,6 +1,6 @@
 # vague
 
-Python CLI layer for LLM skill-based AI workflows. Thirteen slash commands covering the full software development lifecycle — from idea to retro.
+Python CLI layer for LLM skill-based AI workflows. Sixteen slash commands covering the full software development lifecycle — from triage to retro.
 
 Skills are markdown files. `vague` is the stable CLI contract between them and the filesystem.
 
@@ -17,6 +17,11 @@ Then use any slash command in your AI tool.
 ---
 
 ## Skill Map
+
+### Entry point
+| Command | When to use |
+|---------|-------------|
+| `/desk` | The front door. Triage what's on your plate and route to the right skill. |
 
 ### Planning
 | Command | When to use |
@@ -36,6 +41,7 @@ Then use any slash command in your AI tool.
 ### Execution
 | Command | When to use |
 |---------|-------------|
+| `/develop` | Orchestrate a feature across fresh-context subagents. |
 | `/ship` | Implement, test, commit, push, PR. |
 | `/review` | Pre-landing code review before merging. |
 | `/investigate` | Debug systematically — root cause first. |
@@ -45,6 +51,7 @@ Then use any slash command in your AI tool.
 |---------|-------------|
 | `/learn` | Browse, search, prune, and export project learnings. |
 | `/retro` | Weekly engineering retrospective. |
+| `/meta` | Review observations and improve the skills themselves. |
 | `/vault` | Save and retrieve notes from your Obsidian vault. |
 
 ---
@@ -57,6 +64,8 @@ Then use any slash command in your AI tool.
 ## Workflow
 
 ```
+/desk                       → triage + route to any skill below
+
 Idea
   └─ /office-hours          → design doc
       ├─ /plan-ceo-review   → scope decisions
@@ -100,6 +109,7 @@ All data lives in `~/.vague/`:
 
 ```bash
 vague init                              # JSON context for skills (slug, branch, config, learnings)
+vague context --shell                   # eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= for preambles
 vague config-get proactive              # read config value
 vague config-set proactive false        # write config value
 vague learnings-log '<json>'            # append a learning

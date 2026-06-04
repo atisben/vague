@@ -2,16 +2,44 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterator
 
 import frontmatter
 
 
 class FrontmatterError(Exception):
     pass
+
+
+@contextlib.contextmanager
+def file_lock(path: Path) -> Iterator[None]:
+    """Hold an exclusive advisory lock around a read-modify-write of `path`.
+
+    Lets concurrent processes (e.g. parallel subagents appending learnings)
+    serialize their updates instead of clobbering each other. The lock file is
+    intentionally NOT unlinked on release: removing it would let two processes
+    lock different inodes and defeat the lock entirely.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = Path(str(path) + ".lock")
+    lock_fd = open(lock_path, "w")
+    try:
+        _flock(lock_fd, exclusive=True)
+        yield
+    finally:
+        _flock(lock_fd, exclusive=False)
+        lock_fd.close()
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    """Write `content` to `path` atomically via a per-process temp file."""
+    tmp_path = path.with_suffix(f".{os.getpid()}.tmp")
+    tmp_path.write_text(content, encoding="utf-8")
+    tmp_path.replace(path)
 
 
 def read_md(path: Path) -> dict:
@@ -30,32 +58,13 @@ def write_md(path: Path, data: dict, body: str = "") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     post = frontmatter.Post(body, **data)
     content = frontmatter.dumps(post)
-
-    tmp_path = path.with_suffix(".tmp")
-    lock_fd = None
-    try:
-        lock_fd = open(str(path) + ".lock", "w")
-        _flock(lock_fd, exclusive=True)
-        tmp_path.write_text(content, encoding="utf-8")
-        tmp_path.replace(path)
-    finally:
-        if lock_fd is not None:
-            _flock(lock_fd, exclusive=False)
-            lock_fd.close()
-            try:
-                Path(str(path) + ".lock").unlink(missing_ok=True)
-            except OSError:
-                pass
+    with file_lock(path):
+        _atomic_write(path, content)
 
 
 def update_md(path: Path, updater: Callable[[dict], dict]) -> None:
     """Read-modify-write with lock held throughout."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    lock_fd = None
-    try:
-        lock_fd = open(str(path) + ".lock", "w")
-        _flock(lock_fd, exclusive=True)
-
+    with file_lock(path):
         if path.exists():
             try:
                 post = frontmatter.load(str(path))
@@ -70,18 +79,7 @@ def update_md(path: Path, updater: Callable[[dict], dict]) -> None:
         updated = updater(existing)
         new_post = frontmatter.Post(body, **updated)
         content = frontmatter.dumps(new_post)
-
-        tmp_path = path.with_suffix(".tmp")
-        tmp_path.write_text(content, encoding="utf-8")
-        tmp_path.replace(path)
-    finally:
-        if lock_fd is not None:
-            _flock(lock_fd, exclusive=False)
-            lock_fd.close()
-            try:
-                Path(str(path) + ".lock").unlink(missing_ok=True)
-            except OSError:
-                pass
+        _atomic_write(path, content)
 
 
 def _flock(fd, exclusive: bool) -> None:

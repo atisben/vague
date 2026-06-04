@@ -23,10 +23,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-CONTEXT=$(vague init)
-SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
-BRANCH=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['branch'])")
-PROACTIVE=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['proactive'])")
+eval "$(vague context --shell)"
 ```
 
 **Proactive invocation:** When the user reports errors, stack traces, unexpected behavior, or "it was working yesterday" — invoke this skill rather than debugging ad-hoc.
