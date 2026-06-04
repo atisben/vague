@@ -27,7 +27,7 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 
 ## Skills Location
 
-Skills are in `~/.claude/skills/` and/or `~/.copilot/skills/` (each skill copied from this package's bundled `assets/skills/` by `vague install`). Re-run `vague install` (or `uv tool install . --force --reinstall`) to propagate edits.
+Skills are in `~/.claude/skills/` and/or `~/.copilot/skills/` (each skill symlinked to this package's bundled `assets/skills/` by `vague install`). Edits to the bundled assets propagate live; re-run `vague install` only to add new runtimes or relink after reinstalling the package.
 
 ## State
 

@@ -43,6 +43,14 @@ def _get_assets_dir() -> Path:
     return Path(__file__).parent / "assets"
 
 
+def _remove_existing(path: Path) -> None:
+    """Remove a file, directory, or symlink at path (handles broken symlinks)."""
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
 def _get_instructions_block() -> str:
     """Read the instructions block template."""
     template = _get_assets_dir() / "templates" / "instructions-block.md"
@@ -164,12 +172,11 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
         if not skill_dir.is_dir():
             continue
         dest = skills_target / skill_dir.name
-        if dest.exists():
-            shutil.rmtree(dest)
-        shutil.copytree(skill_dir, dest)
+        _remove_existing(dest)
+        dest.symlink_to(skill_dir.resolve(), target_is_directory=True)
         count += 1
 
-    typer.echo(f"  {runtime}: {count} skill(s) → {skills_target}", err=True)
+    typer.echo(f"  {runtime}: {count} skill(s) symlinked → {skills_target}", err=True)
 
     agents_src = assets / "agents"
     if agents_src.exists() and any(f for f in agents_src.iterdir() if f.name != ".gitkeep"):
@@ -178,8 +185,10 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
         for agent_file in agents_src.iterdir():
             if agent_file.name == ".gitkeep":
                 continue
-            shutil.copy2(agent_file, agents_target / agent_file.name)
-        typer.echo(f"  {runtime}: agents → {agents_target}", err=True)
+            dest = agents_target / agent_file.name
+            _remove_existing(dest)
+            dest.symlink_to(agent_file.resolve())
+        typer.echo(f"  {runtime}: agents symlinked → {agents_target}", err=True)
 
     _update_instruction_file(runtime, skills_target)
     return count
@@ -277,7 +286,7 @@ def cmd_uninstall(
         skills_target = Path(skills_target_str).expanduser()
         installed = sorted(
             name for name in vague_skills
-            if (skills_target / name).is_dir()
+            if (skills_target / name).is_dir() or (skills_target / name).is_symlink()
         )
         if installed:
             to_remove[rt] = installed
@@ -304,7 +313,7 @@ def cmd_uninstall(
         _, skills_target_str, _ = RUNTIME_DIRS[rt]
         skills_target = Path(skills_target_str).expanduser()
         for name in names:
-            shutil.rmtree(skills_target / name)
+            _remove_existing(skills_target / name)
             removed += 1
         _remove_instruction_block(rt)
         typer.echo(f"  {rt}: removed {len(names)} skill(s)", err=True)

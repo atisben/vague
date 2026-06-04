@@ -161,6 +161,25 @@ class TestCmdInstall:
         assert skills_dir.exists()
         assert any(skills_dir.iterdir())
 
+    def test_install_creates_symlinks(self, fake_runtimes, vague_home):
+        tmp_path, patched = fake_runtimes
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+        assert result.exit_code == 0
+        skills_dir = Path(patched["claude"][1])
+        linked = list(skills_dir.iterdir())
+        assert linked
+        for entry in linked:
+            assert entry.is_symlink()
+            assert entry.resolve().is_dir()
+
+    def test_uninstall_removes_symlinks(self, fake_runtimes, vague_home):
+        tmp_path, patched = fake_runtimes
+        runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+        result = runner.invoke(sdk_app, ["uninstall", "--runtime", "claude"], input="y\n")
+        assert result.exit_code == 0
+        skills_dir = Path(patched["claude"][1])
+        assert not any(skills_dir.iterdir())
+
     def test_install_unknown_runtime(self, fake_runtimes, vague_home):
         result = runner.invoke(sdk_app, ["install", "--runtime", "foobar"])
         assert result.exit_code != 0
