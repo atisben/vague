@@ -1,9 +1,9 @@
 """Tests for core/frontmatter.py"""
 
-import pytest
-from pathlib import Path
 
-from vague.sdk.core.frontmatter import read_md, write_md, update_md, FrontmatterError
+import pytest
+
+from vague.sdk.core.frontmatter import FrontmatterError, read_md, update_md, write_md
 
 
 def test_read_md_nonexistent(tmp_path):
@@ -31,7 +31,7 @@ def test_write_md_roundtrip(tmp_path):
     data = {"proactive": True, "telemetry": "local"}
     write_md(path, data)
     result = read_md(path)
-    assert result["proactive"] == True
+    assert result["proactive"] is True
     assert result["telemetry"] == "local"
 
 
@@ -58,7 +58,7 @@ def test_update_md_creates_file(tmp_path):
     path = tmp_path / "new.md"
     update_md(path, lambda d: {"created": True})
     result = read_md(path)
-    assert result["created"] == True
+    assert result["created"] is True
 
 
 def test_frontmatter_error_on_corrupt(tmp_path):

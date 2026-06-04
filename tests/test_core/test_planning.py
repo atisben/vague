@@ -1,8 +1,7 @@
 """Tests for core/planning.py"""
 
-import pytest
-from vague.sdk.core.planning import get_state, set_state, list_plans, get_plan_status, complete_plan
 from vague.sdk.core.frontmatter import write_md
+from vague.sdk.core.planning import complete_plan, get_plan_status, get_state, list_plans, set_state
 
 
 def test_set_and_get_state(vague_home):

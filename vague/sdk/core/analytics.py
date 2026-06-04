@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from vague.models import AnalyticsEntry
 from vague.sdk.core.frontmatter import file_lock
+from vague.sdk.core.logging import get_logger
 
 
 def _get_analytics_path() -> Path:
@@ -24,7 +25,8 @@ def _read_entries(path: Path) -> list[dict]:
         post = frontmatter.load(str(path))
         entries = post.metadata.get("entries", [])
         return entries if isinstance(entries, list) else []
-    except Exception:
+    except Exception as e:
+        get_logger().warning("failed to read entries from %s: %s", path, e)
         return []
 
 
@@ -54,9 +56,9 @@ def get_analytics(window: str = "all") -> list[AnalyticsEntry]:
     entries = _read_entries(path)
 
     if window == "7d":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        cutoff = datetime.now(UTC) - timedelta(days=7)
     elif window == "30d":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        cutoff = datetime.now(UTC) - timedelta(days=30)
     else:
         cutoff = None
 
@@ -66,6 +68,6 @@ def get_analytics(window: str = "all") -> list[AnalyticsEntry]:
             entry = AnalyticsEntry(**e)
             if cutoff is None or entry.ts >= cutoff:
                 result.append(entry)
-        except Exception:
-            pass
+        except Exception as e:
+            get_logger().debug("get_analytics: skipping malformed entry: %s", e)
     return result

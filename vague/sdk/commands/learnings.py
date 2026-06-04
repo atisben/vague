@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import typer
 
 from vague.models import LearningEntry
-from vague.sdk.core.slug import get_slug
 from vague.sdk.core.learnings import append_learning, search_learnings
+from vague.sdk.core.slug import get_slug
 
 
 def cmd_learnings_log(json_input: str) -> None:
@@ -18,14 +18,14 @@ def cmd_learnings_log(json_input: str) -> None:
     try:
         data = json.loads(json_input)
         if "ts" not in data:
-            data["ts"] = datetime.now(timezone.utc).isoformat()
+            data["ts"] = datetime.now(UTC).isoformat()
         entry = LearningEntry(**data)
         slug = get_slug()
         append_learning(slug, entry)
         typer.echo("OK")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def cmd_learnings_search(
@@ -40,4 +40,4 @@ def cmd_learnings_search(
         typer.echo(json.dumps(result, default=str))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

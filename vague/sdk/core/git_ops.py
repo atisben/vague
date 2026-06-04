@@ -9,19 +9,22 @@ NOTHING_TO_COMMIT = "nothing-to-commit"
 
 def atomic_commit(message: str, files: list[str], cwd: Path | None = None) -> str:
     """Stage files, commit with GitPython. Returns commit SHA or 'nothing-to-commit'."""
-    try:
-        import git as gitpython
-        repo = gitpython.Repo(str(cwd) if cwd else ".", search_parent_directories=True)
+    import git as gitpython
+    repo = gitpython.Repo(str(cwd) if cwd else ".", search_parent_directories=True)
 
-        for f in files:
-            repo.index.add([f])
+    for f in files:
+        repo.index.add([f])
 
-        if not repo.index.diff("HEAD") and not repo.index.diff(None):
-            return NOTHING_TO_COMMIT
+    if repo.head.is_valid():
+        # Normal case: compare staged tree against the last commit.
+        nothing_to_commit = not repo.index.diff("HEAD") and not repo.index.diff(None)
+    else:
+        # Unborn branch (fresh repo, no commits): HEAD has nothing to diff
+        # against, so "anything to commit" just means "anything staged".
+        nothing_to_commit = not repo.index.entries
 
-        commit = repo.index.commit(message)
-        return commit.hexsha
-    except Exception as e:
-        if "nothing to commit" in str(e).lower():
-            return NOTHING_TO_COMMIT
-        raise
+    if nothing_to_commit:
+        return NOTHING_TO_COMMIT
+
+    commit = repo.index.commit(message)
+    return commit.hexsha

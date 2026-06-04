@@ -1,7 +1,7 @@
 """Pydantic models for vague."""
 
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -26,7 +26,7 @@ class TimelineEntry(BaseModel):
     event: str  # started | completed
     branch: str
     session: str
-    outcome: Optional[str] = None
+    outcome: str | None = None
     ts: datetime
 
 

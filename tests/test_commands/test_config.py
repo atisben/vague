@@ -1,6 +1,5 @@
 """Tests for config commands."""
 
-import pytest
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app

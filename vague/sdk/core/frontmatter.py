@@ -5,8 +5,8 @@ from __future__ import annotations
 import contextlib
 import os
 import sys
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Callable, Iterator
 
 import frontmatter
 

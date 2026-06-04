@@ -1,8 +1,15 @@
 # vague
 
-Python CLI layer for LLM skill-based AI workflows. Sixteen slash commands covering the full software development lifecycle — from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 16 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
-Skills are markdown files. `vague` is the stable CLI contract between them and the filesystem.
+Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
+
+## Overview
+
+- **16 slash commands** spanning planning, design, execution, and reflection (see the Skill Map below).
+- **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
+- **Installs into your runtime** of choice: Claude Code, Copilot, Cursor, or Windsurf.
+- **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite (85 tests).
 
 ## Quickstart
 
@@ -121,6 +128,40 @@ vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract
 vague skill-audit <dir> --strict        # scan for legacy bash patterns
 ```
+
+---
+
+## Observability
+
+`vague` can log every command it runs (name, duration, exit code) plus any
+internal errors that would otherwise be swallowed. Logging is **off by default**
+and **100% local**: nothing is sent anywhere (see [Telemetry](docs/telemetry.md)).
+
+Turn it on with the `VAGUE_LOG` environment variable:
+
+```bash
+export VAGUE_LOG=debug   # debug | info | warning | error (unset = off)
+```
+
+Logs are written to a rotating file at `~/.vague/logs/vague.log` (1 MB x 3
+backups). A file is the right sink here: each skill step spawns a separate
+short-lived `vague` process, and an LLM runtime captures their stderr into its
+own context. The file persists across those calls so you can watch one stream.
+
+Run the agent in one terminal and tail the log in another:
+
+```bash
+tail -f ~/.vague/logs/vague.log
+```
+
+```text
+2026-06-04 14:45:19 pid=19944 INFO vague start command=slug
+2026-06-04 14:45:19 pid=19944 INFO vague end command=slug exit=0 duration_ms=26.6
+```
+
+Set `export VAGUE_LOG=debug` in your shell profile so every `vague` process the
+agent spawns inherits it. When running `vague` by hand, add
+`VAGUE_LOG_STDERR=1` to also echo logs to your terminal.
 
 ---
 

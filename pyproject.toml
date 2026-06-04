@@ -17,10 +17,11 @@ dependencies = [
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "ruff>=0.6",
 ]
 
 [project.scripts]
-vague = "vague.sdk.cli:sdk_app"
+vague = "vague.sdk.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -31,3 +32,10 @@ packages = ["vague"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

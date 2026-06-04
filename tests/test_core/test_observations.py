@@ -1,14 +1,13 @@
 """Tests for core/observations.py"""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from vague.models import ObservationEntry
 from vague.sdk.core.observations import (
     append_observation,
     list_observations,
-    update_observation_status,
     next_observation_id,
+    update_observation_status,
 )
 
 
@@ -23,7 +22,7 @@ def _make_entry(**kwargs):
         "status": "open",
         "source_skill": "ship",
         "session": "test-session",
-        "ts": datetime(2026, 5, 1, tzinfo=timezone.utc),
+        "ts": datetime(2026, 5, 1, tzinfo=UTC),
     }
     defaults.update(kwargs)
     return ObservationEntry(**defaults)

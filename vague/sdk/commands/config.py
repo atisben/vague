@@ -36,4 +36,4 @@ def cmd_config_set(key: str, value: str) -> None:
         set_config_key(key, parsed)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

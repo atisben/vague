@@ -2,7 +2,7 @@
 
 import os
 from concurrent.futures import ProcessPoolExecutor
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from vague.models import LearningEntry, ObservationEntry
 from vague.sdk.core.learnings import append_learning, search_learnings
@@ -21,7 +21,7 @@ def _append_learning(args):
             insight="x",
             confidence=5,
             source="observed",
-            ts=datetime.now(timezone.utc),
+            ts=datetime.now(UTC),
         ),
     )
 
@@ -39,7 +39,7 @@ def _append_observation(args):
             suggestion="s",
             principle="p",
             source_skill="t",
-            ts=datetime.now(timezone.utc),
+            ts=datetime.now(UTC),
         ),
     )
 

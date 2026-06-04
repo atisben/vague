@@ -1,37 +1,40 @@
-"""vague CLI — main Typer app."""
+"""vague CLI - main Typer app."""
 
 from __future__ import annotations
 
-from typing import Annotated, Optional
+import sys
+import time
+from typing import Annotated
 
 import typer
 
 from vague.installer import cmd_install, cmd_uninstall
-from vague.sdk.commands.init import cmd_init, cmd_context
-from vague.sdk.commands.config import cmd_config_get, cmd_config_set
-from vague.sdk.commands.learnings import cmd_learnings_log, cmd_learnings_search
 from vague.sdk.commands.analytics import cmd_analytics_log, cmd_analytics_show
-from vague.sdk.commands.slug import cmd_slug
-from vague.sdk.commands.timeline import cmd_timeline_log
 from vague.sdk.commands.commit import cmd_commit
-from vague.sdk.commands.skill import (
-    cmd_skill_list,
-    cmd_skill_validate,
-    cmd_skill_audit,
-    cmd_skill_add,
-)
+from vague.sdk.commands.config import cmd_config_get, cmd_config_set
+from vague.sdk.commands.init import cmd_context, cmd_init
+from vague.sdk.commands.learnings import cmd_learnings_log, cmd_learnings_search
 from vague.sdk.commands.observations import (
-    cmd_observations_log,
     cmd_observations_list,
+    cmd_observations_log,
     cmd_observations_update,
 )
 from vague.sdk.commands.plan import (
+    cmd_plan_complete,
     cmd_plan_list,
     cmd_plan_status,
-    cmd_plan_complete,
     cmd_state_get,
     cmd_state_set,
 )
+from vague.sdk.commands.skill import (
+    cmd_skill_add,
+    cmd_skill_audit,
+    cmd_skill_list,
+    cmd_skill_validate,
+)
+from vague.sdk.commands.slug import cmd_slug
+from vague.sdk.commands.timeline import cmd_timeline_log
+from vague.sdk.core.logging import get_logger
 
 sdk_app = typer.Typer(
     name="vague",
@@ -42,7 +45,7 @@ sdk_app = typer.Typer(
 
 def _version_callback(value: bool) -> None:
     if value:
-        from importlib.metadata import version, PackageNotFoundError
+        from importlib.metadata import PackageNotFoundError, version
         try:
             typer.echo(version("vague"))
         except PackageNotFoundError:
@@ -62,7 +65,7 @@ def _main(
 
 @sdk_app.command("install")
 def install(
-    runtime: Annotated[Optional[str], typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
+    runtime: Annotated[str | None, typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
 ) -> None:
     """Install skills into your LLM runtime (e.g. ~/.claude/skills/)."""
     cmd_install(runtime=runtime)
@@ -70,7 +73,7 @@ def install(
 
 @sdk_app.command("uninstall")
 def uninstall(
-    runtime: Annotated[Optional[str], typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
+    runtime: Annotated[str | None, typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
 ) -> None:
     """Remove vague skills from your LLM runtime."""
     cmd_uninstall(runtime=runtime)
@@ -78,7 +81,7 @@ def uninstall(
 
 @sdk_app.command("context")
 def context(
-    shell: Annotated[bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")] = False,
+    shell: Annotated[bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")] = False,  # noqa: E501
 ) -> None:
     """Print project context for skill preambles. JSON by default, shell vars with --shell."""
     cmd_context(shell=shell)
@@ -110,7 +113,7 @@ def learnings_log(json_input: str) -> None:
 
 @sdk_app.command("learnings-search")
 def learnings_search(
-    type: Annotated[Optional[str], typer.Option("--type", "-t")] = None,
+    type: Annotated[str | None, typer.Option("--type", "-t")] = None,
     min_confidence: Annotated[int, typer.Option("--min-confidence")] = 0,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
@@ -141,7 +144,7 @@ def observations_log(json_input: str) -> None:
 
 @sdk_app.command("observations-list")
 def observations_list(
-    status: Annotated[Optional[str], typer.Option("--status", "-s")] = None,
+    status: Annotated[str | None, typer.Option("--status", "-s")] = None,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """List observations. Outputs JSON array."""
@@ -169,7 +172,7 @@ def timeline_log(json_input: str) -> None:
 @sdk_app.command("commit")
 def commit(
     message: str,
-    files: Annotated[list[str], typer.Option("--files", "-f")] = [],
+    files: Annotated[list[str], typer.Option("--files", "-f")] = [],  # noqa: B006  Typer reads this default to build the option; not mutated.
 ) -> None:
     """Stage and commit files. Outputs SHA or 'nothing-to-commit'."""
     cmd_commit(message, files)
@@ -232,3 +235,29 @@ def skill_audit(
 def skill_add(skill_dir: str) -> None:
     """Copy external skill to vague assets."""
     cmd_skill_add(skill_dir)
+
+
+def main() -> None:
+    """Entrypoint wrapper that logs each invocation (command, duration, outcome).
+
+    Logging is off unless VAGUE_LOG is set. See vague/sdk/core/logging.py.
+    """
+    logger = get_logger()
+    argv = sys.argv[1:]
+    command = next((a for a in argv if not a.startswith("-")), "<none>")
+    start = time.perf_counter()
+    logger.info("start command=%s", command)
+    try:
+        sdk_app()
+    except SystemExit as exc:
+        code = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
+        elapsed = (time.perf_counter() - start) * 1000
+        logger.info("end command=%s exit=%d duration_ms=%.1f", command, code, elapsed)
+        raise
+    except BaseException:
+        elapsed = (time.perf_counter() - start) * 1000
+        logger.exception("error command=%s duration_ms=%.1f", command, elapsed)
+        raise
+    else:
+        elapsed = (time.perf_counter() - start) * 1000
+        logger.info("end command=%s exit=0 duration_ms=%.1f", command, elapsed)

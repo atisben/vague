@@ -1,7 +1,7 @@
 """Tests for learnings commands."""
 
 import json
-import pytest
+
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app

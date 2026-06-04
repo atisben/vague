@@ -1,6 +1,5 @@
 """Tests for core/principles.py"""
 
-import pytest
 
 from vague.models import PrincipleEntry
 from vague.sdk.core.principles import (

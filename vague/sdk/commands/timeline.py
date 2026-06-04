@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import typer
 
@@ -18,7 +18,7 @@ def cmd_timeline_log(json_input: str) -> None:
     try:
         data = json.loads(json_input)
         if "ts" not in data:
-            data["ts"] = datetime.now(timezone.utc).isoformat()
+            data["ts"] = datetime.now(UTC).isoformat()
         if "session" not in data:
             data["session"] = "unknown"
         if "branch" not in data:
@@ -29,4 +29,4 @@ def cmd_timeline_log(json_input: str) -> None:
         typer.echo("OK")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

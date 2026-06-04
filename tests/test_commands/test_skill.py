@@ -1,10 +1,7 @@
 """Tests for skill commands."""
 
 import json
-import os
-import shutil
-import pytest
-from pathlib import Path
+
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app

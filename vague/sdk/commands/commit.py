@@ -6,7 +6,7 @@ import sys
 
 import typer
 
-from vague.sdk.core.git_ops import atomic_commit, NOTHING_TO_COMMIT
+from vague.sdk.core.git_ops import atomic_commit
 
 
 def cmd_commit(message: str, files: list[str]) -> None:
@@ -16,4 +16,4 @@ def cmd_commit(message: str, files: list[str]) -> None:
         typer.echo(sha)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

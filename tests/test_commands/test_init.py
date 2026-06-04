@@ -2,7 +2,8 @@
 
 import json
 import os
-import pytest
+from datetime import UTC
+
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app
@@ -47,7 +48,8 @@ def test_init_does_not_fail_without_git():
 
 
 def test_init_returns_top_3_learnings_when_many(vague_home):
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     from vague.models import LearningEntry
     from vague.sdk.core.learnings import append_learning
     from vague.sdk.core.slug import get_slug
@@ -61,7 +63,7 @@ def test_init_returns_top_3_learnings_when_many(vague_home):
             insight=f"insight {i}",
             confidence=i + 1,
             source="observed",
-            ts=datetime(2024, 1, i + 1, tzinfo=timezone.utc),
+            ts=datetime(2024, 1, i + 1, tzinfo=UTC),
         )
         append_learning(slug, entry)
 

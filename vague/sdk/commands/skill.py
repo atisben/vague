@@ -7,12 +7,11 @@ import re
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 
 from vague.models import SkillManifest
-from vague.sdk.core.frontmatter import read_md, FrontmatterError
+from vague.sdk.core.frontmatter import FrontmatterError, read_md
 
 # Patterns that indicate old bash tooling usage
 BS_PATTERNS = [

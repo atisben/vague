@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import os
 import shutil
-import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 
-
-RUNTIME_DIRS: dict[str, tuple[Optional[str], str, Optional[str]]] = {
+RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
     # (base_dir, skills_dir, instruction_file)
     "claude": ("~/.claude/", "~/.claude/skills/", "~/.claude/CLAUDE.md"),
     "copilot": ("~/.copilot/", "~/.copilot/skills/", "~/.copilot/instructions.md"),
@@ -97,7 +93,12 @@ def _update_instruction_file(runtime: str, skills_path: Path) -> None:
                 return
 
         # No markers found — append
-        separator = "\n\n" if content and not content.endswith("\n\n") else ("\n" if content and not content.endswith("\n") else "")
+        if content and not content.endswith("\n\n"):
+            separator = "\n\n"
+        elif content and not content.endswith("\n"):
+            separator = "\n"
+        else:
+            separator = ""
         content = content + separator + wrapped_block + "\n"
         try:
             instruction_file.write_text(content)
@@ -185,7 +186,7 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
 
 
 def cmd_install(
-    runtime: Optional[str] = None,
+    runtime: str | None = None,
 ) -> None:
     """Install vague skills into LLM runtime directories."""
     assets = _get_assets_dir()
@@ -249,7 +250,7 @@ def _get_vague_skill_names() -> set[str]:
 
 
 def cmd_uninstall(
-    runtime: Optional[str] = None,
+    runtime: str | None = None,
 ) -> None:
     """Remove vague skills from LLM runtime directories."""
     if runtime is not None:

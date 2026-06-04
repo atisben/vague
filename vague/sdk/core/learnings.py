@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from vague.models import LearningEntry
 from vague.sdk.core.frontmatter import file_lock
+from vague.sdk.core.logging import get_logger
 
 
 def _get_learnings_path(slug: str) -> Path:
@@ -26,7 +27,8 @@ def _read_entries(path: Path) -> list[dict]:
         post = frontmatter.load(str(path))
         entries = post.metadata.get("entries", [])
         return entries if isinstance(entries, list) else []
-    except Exception:
+    except Exception as e:
+        get_logger().warning("failed to read entries from %s: %s", path, e)
         return []
 
 
@@ -77,7 +79,8 @@ def search_learnings(
             try:
                 if _parse_ts(e.get("ts")) > _parse_ts(existing.get("ts")):
                     seen[k] = e
-            except Exception:
+            except Exception as e:
+                get_logger().debug("search_learnings: ts compare failed, keeping latest seen: %s", e)
                 seen[k] = e
 
     results = list(seen.values())
@@ -91,8 +94,8 @@ def search_learnings(
     for e in results:
         try:
             out.append(LearningEntry(**e))
-        except Exception:
-            pass
+        except Exception as e:
+            get_logger().debug("search_learnings: skipping malformed entry: %s", e)
     return out
 
 
@@ -110,4 +113,4 @@ def _parse_ts(ts: Any) -> datetime:
         return ts
     if isinstance(ts, str):
         return datetime.fromisoformat(ts.replace("Z", "+00:00"))
-    return datetime.min.replace(tzinfo=timezone.utc)
+    return datetime.min.replace(tzinfo=UTC)

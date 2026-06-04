@@ -8,6 +8,7 @@ from pathlib import Path
 
 from vague.models import PrincipleEntry
 from vague.sdk.core.frontmatter import file_lock
+from vague.sdk.core.logging import get_logger
 
 
 def _get_principles_path(slug: str) -> Path:
@@ -24,7 +25,8 @@ def _read_entries(path: Path) -> list[dict]:
         post = frontmatter.load(str(path))
         entries = post.metadata.get("principles", [])
         return entries if isinstance(entries, list) else []
-    except Exception:
+    except Exception as e:
+        get_logger().warning("failed to read entries from %s: %s", path, e)
         return []
 
 
@@ -75,8 +77,8 @@ def list_principles(
     for e in entries:
         try:
             out.append(PrincipleEntry(**e))
-        except Exception:
-            pass
+        except Exception as e:
+            get_logger().debug("list_principles: skipping malformed entry: %s", e)
     return out
 
 

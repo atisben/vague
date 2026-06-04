@@ -8,9 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from vague.models import ConfigModel
-from vague.sdk.core.frontmatter import read_md, update_md, FrontmatterError
-
-VAGUE_HOME: Path = Path(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
+from vague.sdk.core.frontmatter import FrontmatterError, read_md, update_md
 
 
 def _get_home() -> Path:

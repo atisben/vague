@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import typer
 from rich.console import Console
@@ -12,7 +12,6 @@ from rich.table import Table
 
 from vague.models import AnalyticsEntry
 from vague.sdk.core.analytics import append_analytics, get_analytics
-
 
 console = Console()
 
@@ -22,13 +21,13 @@ def cmd_analytics_log(json_input: str) -> None:
     try:
         data = json.loads(json_input)
         if "ts" not in data:
-            data["ts"] = datetime.now(timezone.utc).isoformat()
+            data["ts"] = datetime.now(UTC).isoformat()
         entry = AnalyticsEntry(**data)
         append_analytics(entry)
         typer.echo("OK")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def cmd_analytics_show(window: str = "7d", as_json: bool = False) -> None:
@@ -59,4 +58,4 @@ def cmd_analytics_show(window: str = "7d", as_json: bool = False) -> None:
         console.print(table)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

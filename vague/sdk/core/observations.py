@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 from vague.models import ObservationEntry
 from vague.sdk.core.frontmatter import file_lock
+from vague.sdk.core.logging import get_logger
 
 
 def _get_observations_path(slug: str) -> Path:
@@ -26,7 +25,8 @@ def _read_entries(path: Path) -> list[dict]:
         post = frontmatter.load(str(path))
         entries = post.metadata.get("entries", [])
         return entries if isinstance(entries, list) else []
-    except Exception:
+    except Exception as e:
+        get_logger().warning("failed to read entries from %s: %s", path, e)
         return []
 
 
@@ -77,8 +77,8 @@ def list_observations(
     for e in entries:
         try:
             out.append(ObservationEntry(**e))
-        except Exception:
-            pass
+        except Exception as e:
+            get_logger().debug("list_observations: skipping malformed entry: %s", e)
     return out
 
 

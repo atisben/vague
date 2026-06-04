@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import json
 import shlex
 import sys
 
 import typer
 
-from vague.models import VagueInitResult, ConfigModel
+from vague.models import ConfigModel, VagueInitResult
 from vague.sdk.core.config import get_config
-from vague.sdk.core.slug import get_slug, get_branch
 from vague.sdk.core.learnings import get_top_learnings
+from vague.sdk.core.slug import get_branch, get_slug
 
 
 def cmd_init() -> None:

@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import typer
 
 from vague.models import ObservationEntry
-from vague.sdk.core.slug import get_slug
 from vague.sdk.core.observations import (
     append_observation,
     list_observations,
     update_observation_status,
 )
+from vague.sdk.core.slug import get_slug
 
 
 def cmd_observations_log(json_input: str) -> None:
@@ -26,13 +26,13 @@ def cmd_observations_log(json_input: str) -> None:
         # supply a placeholder so model validation passes.
         data.setdefault("id", 0)
         if "ts" not in data:
-            data["ts"] = datetime.now(timezone.utc).isoformat()
+            data["ts"] = datetime.now(UTC).isoformat()
         entry = ObservationEntry(**data)
         append_observation(slug, entry)
         typer.echo("OK")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def cmd_observations_list(
@@ -47,7 +47,7 @@ def cmd_observations_list(
         typer.echo(json.dumps(result, default=str))
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def cmd_observations_update(obs_id: int, status: str) -> None:
@@ -67,4 +67,4 @@ def cmd_observations_update(obs_id: int, status: str) -> None:
         raise
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

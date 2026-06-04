@@ -8,6 +8,7 @@ from pathlib import Path
 
 from vague.models import TimelineEntry
 from vague.sdk.core.frontmatter import file_lock
+from vague.sdk.core.logging import get_logger
 
 
 def _get_timeline_path(slug: str) -> Path:
@@ -23,7 +24,8 @@ def _read_entries(path: Path) -> list[dict]:
         post = frontmatter.load(str(path))
         entries = post.metadata.get("entries", [])
         return entries if isinstance(entries, list) else []
-    except Exception:
+    except Exception as e:
+        get_logger().warning("failed to read entries from %s: %s", path, e)
         return []
 
 

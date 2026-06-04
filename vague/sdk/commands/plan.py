@@ -7,14 +7,14 @@ import sys
 
 import typer
 
-from vague.sdk.core.slug import get_slug
 from vague.sdk.core.planning import (
-    get_state,
-    set_state,
-    list_plans,
-    get_plan_status,
     complete_plan,
+    get_plan_status,
+    get_state,
+    list_plans,
+    set_state,
 )
+from vague.sdk.core.slug import get_slug
 
 
 def cmd_plan_list(phase: str) -> None:
@@ -39,7 +39,7 @@ def cmd_plan_complete(plan_id: str) -> None:
         typer.echo("OK")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def cmd_state_get(key: str) -> None:
@@ -56,4 +56,4 @@ def cmd_state_set(key: str, value: str) -> None:
         set_state(slug, key, value)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-from vague.sdk.core.slug import get_slug, get_branch
+from vague.sdk.core.slug import get_branch, get_slug
 
 
 def cmd_slug() -> None:

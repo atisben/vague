@@ -5,6 +5,8 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from vague.sdk.core.logging import get_logger
+
 
 def get_slug(cwd: Path | None = None) -> str:
     """Derive owner-repo slug from git remote. Fallback: basename of cwd."""
@@ -19,14 +21,15 @@ def get_slug(cwd: Path | None = None) -> str:
             slug = _parse_remote_to_slug(url)
             if slug:
                 return slug
-    except Exception:
-        pass
+    except Exception as e:
+        get_logger().debug("get_slug: git remote lookup failed, falling back to cwd: %s", e)
 
     # Fallback to basename of cwd
     try:
         base = Path(work_dir).name if work_dir else Path.cwd().name
         return base or "unknown"
-    except Exception:
+    except Exception as e:
+        get_logger().debug("get_slug: cwd basename failed, using 'unknown': %s", e)
         return "unknown"
 
 
@@ -42,8 +45,8 @@ def get_branch(cwd: Path | None = None) -> str:
             branch = result.stdout.strip()
             if branch:
                 return branch
-    except Exception:
-        pass
+    except Exception as e:
+        get_logger().debug("get_branch: git branch lookup failed, using 'unknown': %s", e)
     return "unknown"
 
 

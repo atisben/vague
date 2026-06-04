@@ -1,21 +1,18 @@
 """Tests for multi-runtime installer."""
 
-import os
-import shutil
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
 from vague.installer import (
-    MARKER_START,
-    MARKER_END,
-    LEGACY_MARKER_START,
     LEGACY_MARKER_END,
+    LEGACY_MARKER_START,
+    MARKER_END,
+    MARKER_START,
     _detect_runtimes,
-    _update_instruction_file,
     _remove_instruction_block,
-    RUNTIME_DIRS,
+    _update_instruction_file,
 )
 from vague.sdk.cli import sdk_app
 
