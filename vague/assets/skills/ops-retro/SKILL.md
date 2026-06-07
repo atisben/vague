@@ -1,5 +1,5 @@
 ---
-name: retro
+name: ops-retro
 version: 1.0.0
 description: |
   Engineering retrospective. Analyzes commit history, work patterns, and code quality
@@ -33,7 +33,7 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 
 ## Step 1: Define the Time Window
 
-Default: last 7 days. The user can pass an argument: `/retro 14d`, `/retro 30d`.
+Default: last 7 days. The user can pass an argument: `/ops-retro 14d`, `/ops-retro 30d`.
 
 ```bash
 # Compute time window (macOS date)
@@ -191,13 +191,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"retro","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"retro"}'
+vague observations-log '{"skill":"ops-retro","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-retro"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"retro","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"retro"}'
+vague observations-log '{"skill":"ops-retro","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-retro"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.

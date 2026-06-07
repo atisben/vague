@@ -4,7 +4,7 @@ version: 1.0.0
 description: |
   Visual QA: finds spacing issues, hierarchy problems, inconsistencies, and
   AI slop patterns in a live site or component. Fixes them atomically with
-  before/after verification. For plan-mode design review, use /plan-eng-review.
+  before/after verification. For plan-mode design review, use /plan-eng.
   Trigger: "audit the design", "visual QA", "check if it looks good", "design polish".
 sdk_commands:
   - vague init
@@ -165,4 +165,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 ## Handoff
 
 > "Design audit complete. [N P1 + N P2 issues fixed, N P3 notes logged]."
-> "Next: `/ship` to commit and push these fixes."
+> "Next: `/dev-ship` to commit and push these fixes."

@@ -1,5 +1,5 @@
 ---
-name: investigate
+name: dev-investigate
 version: 1.0.0
 description: |
   Systematic debugging. Four phases: investigate, analyze, hypothesize, implement.
@@ -159,13 +159,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"investigate","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"investigate"}'
+vague observations-log '{"skill":"dev-investigate","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-investigate"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"investigate","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"investigate"}'
+vague observations-log '{"skill":"dev-investigate","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-investigate"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
@@ -174,4 +174,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Root cause confirmed and fixed. Regression test added. Run `/review` before landing, or `/ship` if the fix is small and self-contained."
+> "Root cause confirmed and fixed. Regression test added. Run `/dev-review` before landing, or `/dev-ship` if the fix is small and self-contained."

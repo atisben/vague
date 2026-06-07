@@ -14,13 +14,13 @@ from vague.sdk.core.observations import (
 def _make_entry(**kwargs):
     defaults = {
         "id": 1,
-        "skill": "ship",
+        "skill": "dev-ship",
         "type": "improvement",
         "issue": "Test issue",
         "suggestion": "Test suggestion",
         "principle": "Test principle",
         "status": "open",
-        "source_skill": "ship",
+        "source_skill": "dev-ship",
         "session": "test-session",
         "ts": datetime(2026, 5, 1, tzinfo=UTC),
     }
@@ -85,9 +85,9 @@ def test_next_id_handles_gaps(vague_home):
 
 
 def test_multiple_skills(vague_home):
-    append_observation("test-slug", _make_entry(id=1, skill="ship"))
-    append_observation("test-slug", _make_entry(id=2, skill="review"))
-    append_observation("test-slug", _make_entry(id=3, skill="ship"))
+    append_observation("test-slug", _make_entry(id=1, skill="dev-ship"))
+    append_observation("test-slug", _make_entry(id=2, skill="dev-review"))
+    append_observation("test-slug", _make_entry(id=3, skill="dev-ship"))
 
     results = list_observations("test-slug")
     assert len(results) == 3

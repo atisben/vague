@@ -61,7 +61,7 @@ SESSION_ID="$$-$(date +%s)"
 | `version` | Yes | Semantic version (`1.0.0`). Bump on breaking changes. |
 | `description` | Yes | Shown in the AI tool's skill picker. |
 | `sdk_commands` | Yes | List of `vague` commands this skill calls. |
-| `requires_slug` | Yes | `true` for most skills. `false` for global tools like `/vault`. |
+| `requires_slug` | Yes | `true` for most skills. `false` for global tools like `/ops-vault`. |
 | `requires_planning` | Yes | `true` activates the optional planning layer (`state.md`, `roadmap.md`). |
 | `allowed-tools` | Yes | List only tools the skill actually uses. |
 | `benefits-from` | No | Array of skill names this one reads outputs from. |
@@ -147,7 +147,7 @@ Learnings are written to `~/.vague/projects/{slug}/learnings.md` and surfaced au
 
 ## Logging Observations
 
-When your skill encounters friction, gaps, or improvement opportunities — either in itself or in another skill — log an observation for the `/meta` skill to review later:
+When your skill encounters friction, gaps, or improvement opportunities — either in itself or in another skill — log an observation for the `/ops-meta` skill to review later:
 
 ```bash
 vague observations-log '{
@@ -164,7 +164,7 @@ vague observations-log '{
 
 For new skill candidates, use `"skill": "new:working-name"` as the target.
 
-Observations are written to `~/.vague/projects/{slug}/observations.md` and reviewed by running `/meta`.
+Observations are written to `~/.vague/projects/{slug}/observations.md` and reviewed by running `/ops-meta`.
 
 Every skill should include a standard **Observation Protocol** section before its Handoff. See the template below or any existing skill for the pattern.
 
@@ -172,7 +172,7 @@ Every skill should include a standard **Observation Protocol** section before it
 
 ## Timeline Events
 
-Fire timeline events so `/retro` can track skill usage:
+Fire timeline events so `/ops-retro` can track skill usage:
 
 ```bash
 # At skill end (do this explicitly — vague init does NOT auto-log):

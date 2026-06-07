@@ -1,5 +1,5 @@
 ---
-name: vault
+name: ops-vault
 version: 1.1.0
 description: |
   Obsidian vault operations: save notes, search, and retrieve content.
@@ -220,13 +220,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"vault","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"vault"}'
+vague observations-log '{"skill":"ops-vault","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-vault"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"vault","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"vault"}'
+vague observations-log '{"skill":"ops-vault","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-vault"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.

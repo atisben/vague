@@ -1,5 +1,5 @@
 ---
-name: meta
+name: ops-meta
 version: 1.0.0
 description: |
   Meta-skill for improving all other skills. Reviews observations logged during
@@ -47,7 +47,7 @@ eval "$(vague context --shell)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 
-**Proactive invocation:** Suggest when the user discusses skill quality, mentions friction with a skill, or says something like "that skill could be better". If PROACTIVE is "False", say: "I think /meta might help — want me to run it?"
+**Proactive invocation:** Suggest when the user discusses skill quality, mentions friction with a skill, or says something like "that skill could be better". If PROACTIVE is "False", say: "I think /ops-meta might help — want me to run it?"
 
 ---
 
@@ -204,7 +204,7 @@ Fix any issues found.
 Present a summary:
 
 ```
-## /meta Review Complete
+## /ops-meta Review Complete
 
 ### Skills Updated
 - **ship**: Added test verification step before commit (#12), fixed changelog date format (#15)
@@ -222,13 +222,13 @@ Present a summary:
 
 Log a learning if any non-obvious insight emerged:
 ```bash
-vague learnings-log '{"skill":"meta","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague learnings-log '{"skill":"ops-meta","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
 ```
 
 > "Skills updated. Next steps:
 > - Run `vague install` to deploy changes to your LLM runtime
 > - Review changes via `git diff` before committing
-> - Run `/ship` to commit and create a PR"
+> - Run `/dev-ship` to commit and create a PR"
 
 ---
 
@@ -244,13 +244,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"meta","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"meta"}'
+vague observations-log '{"skill":"ops-meta","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-meta"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"meta","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"meta"}'
+vague observations-log '{"skill":"ops-meta","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-meta"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.

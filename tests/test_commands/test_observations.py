@@ -11,12 +11,12 @@ runner = CliRunner()
 
 def _obs_json(**kwargs):
     defaults = {
-        "skill": "ship",
+        "skill": "dev-ship",
         "type": "improvement",
         "issue": "Test issue",
         "suggestion": "Test suggestion",
         "principle": "Test principle",
-        "source_skill": "ship",
+        "source_skill": "dev-ship",
     }
     defaults.update(kwargs)
     return json.dumps(defaults)
@@ -31,13 +31,13 @@ def test_observations_log_and_list(vague_home):
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert len(data) == 1
-    assert data[0]["skill"] == "ship"
+    assert data[0]["skill"] == "dev-ship"
     assert data[0]["id"] == 1
 
 
 def test_observations_auto_increments_id(vague_home):
-    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="ship")])
-    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="review")])
+    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="dev-ship")])
+    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="dev-review")])
 
     result = runner.invoke(sdk_app, ["observations-list"])
     data = json.loads(result.output)
@@ -47,8 +47,8 @@ def test_observations_auto_increments_id(vague_home):
 
 
 def test_observations_list_status_filter(vague_home):
-    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="ship")])
-    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="review")])
+    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="dev-ship")])
+    runner.invoke(sdk_app, ["observations-log", _obs_json(skill="dev-review")])
 
     # Mark first as actioned
     result = runner.invoke(sdk_app, ["observations-update", "1", "actioned"])
@@ -57,7 +57,7 @@ def test_observations_list_status_filter(vague_home):
     result = runner.invoke(sdk_app, ["observations-list", "--status", "open"])
     data = json.loads(result.output)
     assert len(data) == 1
-    assert data[0]["skill"] == "review"
+    assert data[0]["skill"] == "dev-review"
 
 
 def test_observations_update_not_found(vague_home):

@@ -28,14 +28,14 @@ Then use any slash command in your AI tool.
 ### Entry point
 | Command | When to use |
 |---------|-------------|
-| `/desk` | The front door. Triage what's on your plate and route to the right skill. |
+| `/ops-triage` | The front door. Triage what's on your plate and route to the right skill. |
 
 ### Planning
 | Command | When to use |
 |---------|-------------|
-| `/office-hours` | You have an idea. Validates it, challenges it, writes a design doc. |
-| `/plan-ceo-review` | Pressure-test scope. Expand, hold, or reduce. |
-| `/plan-eng-review` | Lock in architecture, data model, test strategy. |
+| `/plan-ideation` | You have an idea. Validates it, challenges it, writes a design doc. |
+| `/plan-ceo` | Pressure-test scope. Expand, hold, or reduce. |
+| `/plan-eng` | Lock in architecture, data model, test strategy. |
 
 ### Design
 | Command | When to use |
@@ -48,18 +48,18 @@ Then use any slash command in your AI tool.
 ### Execution
 | Command | When to use |
 |---------|-------------|
-| `/develop` | Orchestrate a feature across fresh-context subagents. |
-| `/ship` | Implement, test, commit, push, PR. |
-| `/review` | Pre-landing code review before merging. |
-| `/investigate` | Debug systematically — root cause first. |
+| `/dev-develop` | Orchestrate a feature across fresh-context subagents. |
+| `/dev-ship` | Implement, test, commit, push, PR. |
+| `/dev-review` | Pre-landing code review before merging. |
+| `/dev-investigate` | Debug systematically — root cause first. |
 
 ### Reflection
 | Command | When to use |
 |---------|-------------|
-| `/learn` | Browse, search, prune, and export project learnings. |
-| `/retro` | Weekly engineering retrospective. |
-| `/meta` | Review observations and improve the skills themselves. |
-| `/vault` | Save and retrieve notes from your Obsidian vault. |
+| `/ops-learn` | Browse, search, prune, and export project learnings. |
+| `/ops-retro` | Weekly engineering retrospective. |
+| `/ops-meta` | Review observations and improve the skills themselves. |
+| `/ops-vault` | Save and retrieve notes from your Obsidian vault. |
 
 ---
 ## System design
@@ -71,23 +71,23 @@ Then use any slash command in your AI tool.
 ## Workflow
 
 ```
-/desk                       → triage + route to any skill below
+/ops-triage                 → triage + route to any skill below
 
 Idea
-  └─ /office-hours          → design doc
-      ├─ /plan-ceo-review   → scope decisions
-      └─ /plan-eng-review   → architecture locked
+  └─ /plan-ideation         → design doc
+      ├─ /plan-ceo          → scope decisions
+      └─ /plan-eng          → architecture locked
 
       ├─ /design-shotgun    → pick a layout
       └─ /design-html       → production HTML
 
-          └─ /ship          → implement + PR
-              └─ /review    → pre-landing review
+          └─ /dev-ship      → implement + PR
+              └─ /dev-review → pre-landing review
                                └─ merge
 
-                              /investigate   (when bugs happen)
-                              /learn         (anytime)
-                              /retro         (end of week)
+                              /dev-investigate   (when bugs happen)
+                              /ops-learn         (anytime)
+                              /ops-retro         (end of week)
 ```
 
 ---
@@ -169,7 +169,7 @@ agent spawns inherits it. When running `vague` by hand, add
 
 - Python 3.11+
 - `git`
-- `gh` CLI (optional, for PR creation in `/ship`)
+- `gh` CLI (optional, for PR creation in `/dev-ship`)
 - Claude Code and/or GitHub Copilot CLI
 
 ---

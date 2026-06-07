@@ -63,7 +63,7 @@ ls "$VAGUE_HOME/projects/$SLUG/designs/"*office-hours* 2>/dev/null | head -5 || 
 
 If office-hours output exists, read it — the product context is pre-filled.
 
-If the codebase is empty and purpose is unclear, say: *"I don't have a clear picture of what you're building yet. Want to explore first with `/office-hours`? Once we know the product direction, we can set up the design system."*
+If the codebase is empty and purpose is unclear, say: *"I don't have a clear picture of what you're building yet. Want to explore first with `/plan-ideation`? Once we know the product direction, we can set up the design system."*
 
 ---
 

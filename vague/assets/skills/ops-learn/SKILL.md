@@ -1,5 +1,5 @@
 ---
-name: learn
+name: ops-learn
 version: 1.0.0
 description: |
   Manage project learnings: review, search, prune, export.
@@ -33,12 +33,12 @@ eval "$(vague context --shell)"
 ## Detect Command
 
 Parse the user's input:
-- `/learn` (no args) → **show recent**
-- `/learn search <query>` → **search**
-- `/learn prune` → **prune**
-- `/learn export` → **export**
-- `/learn stats` → **stats**
-- `/learn add` → **manual add**
+- `/ops-learn` (no args) → **show recent**
+- `/ops-learn search <query>` → **search**
+- `/ops-learn prune` → **prune**
+- `/ops-learn export` → **export**
+- `/ops-learn stats` → **stats**
+- `/ops-learn add` → **manual add**
 
 ---
 
@@ -48,7 +48,7 @@ Parse the user's input:
 vague learnings-search 2>/dev/null || echo "No learnings yet."
 ```
 
-If no learnings: "No learnings recorded yet. As you use /review, /ship, /investigate, and /retro, vague will automatically capture patterns, pitfalls, and insights it discovers."
+If no learnings: "No learnings recorded yet. As you use /dev-review, /dev-ship, /dev-investigate, and /ops-retro, vague will automatically capture patterns, pitfalls, and insights it discovers."
 
 ---
 
@@ -151,7 +151,7 @@ Gather via AskUserQuestion:
 
 Then log:
 ```bash
-vague learnings-log '{"skill":"learn","type":"TYPE","key":"KEY","insight":"INSIGHT","confidence":N,"source":"user-stated","files":["FILE"]}'
+vague learnings-log '{"skill":"ops-learn","type":"TYPE","key":"KEY","insight":"INSIGHT","confidence":N,"source":"user-stated","files":["FILE"]}'
 ```
 
 ---
@@ -168,13 +168,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"learn","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"learn"}'
+vague observations-log '{"skill":"ops-learn","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-learn"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"learn","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"learn"}'
+vague observations-log '{"skill":"ops-learn","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-learn"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.

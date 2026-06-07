@@ -17,7 +17,7 @@ AI tool session (Claude Code / GitHub Copilot CLI / Cursor / Windsurf)
 
 ## What Gets Injected Into the LLM
 
-When the user types `/ship` (or any skill), this is what ends up in the LLM's context window, in order:
+When the user types `/dev-ship` (or any skill), this is what ends up in the LLM's context window, in order:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -75,15 +75,15 @@ When the user types `/ship` (or any skill), this is what ends up in the LLM's co
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │ 4. ON-DEMAND READS  (skill-specific, injected as tool outputs)   │   │
 │  │                                                                  │   │
-│  │    /desk              → git status, git log, git diff --stat     │   │
-│  │    /office-hours      → prior design docs (if any)              │   │
-│  │    /plan-ceo-review   → most recent design doc                   │   │
-│  │    /plan-eng-review   → design doc + CEO plan doc                │   │
+│  │    /ops-triage        → git status, git log, git diff --stat     │   │
+│  │    /plan-ideation     → prior design docs (if any)              │   │
+│  │    /plan-ceo          → most recent design doc                   │   │
+│  │    /plan-eng          → design doc + CEO plan doc                │   │
 │  │    /design-*          → DESIGN.md (if present)                  │   │
-│  │    /ship              → git diff, git log, test output           │   │
-│  │    /review            → full git diff                            │   │
-│  │    /investigate       → stack trace, git log, error logs         │   │
-│  │    /retro             → git log --stat, prior retro doc          │   │
+│  │    /dev-ship          → git diff, git log, test output           │   │
+│  │    /dev-review        → full git diff                            │   │
+│  │    /dev-investigate   → stack trace, git log, error logs         │   │
+│  │    /ops-retro         → git log --stat, prior retro doc          │   │
 │  │                                                                  │   │
 │  │    ~ 1–50 KB depending on diff/log size                          │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
@@ -116,7 +116,7 @@ When the user types `/ship` (or any skill), this is what ends up in the LLM's co
 ### What Is NOT Injected
 
 - Full `learnings.md` (only top 3 by confidence, surfaced by `vague init`)
-- Full `timeline.md` (write-only from skills — read by `/retro` only)
+- Full `timeline.md` (write-only from skills — read by `/ops-retro` only)
 - `skill-usage.md` analytics (only read by `vague analytics-show`, not by LLM)
 - Other projects' data (scoped strictly to the current slug)
 
@@ -181,7 +181,7 @@ All files use YAML frontmatter. Example `learnings.md`:
 ```markdown
 ---
 entries:
-  - skill: review
+  - skill: dev-review
     type: pitfall
     key: n-plus-one-user-scope
     insight: Always use includes(:user) on list queries — loading users separately causes N+1s.
@@ -190,7 +190,7 @@ entries:
     files:
       - app/controllers/posts_controller.rb
     ts: "2025-04-08T09:00:00Z"
-  - skill: ship
+  - skill: dev-ship
     type: pattern
     key: migration-always-reversible
     insight: Every migration must have a down() method. Irreversible migrations blocked deploys twice.
@@ -210,23 +210,23 @@ entries:
 
 ## Skill Chaining
 
-Skills chain through shared file artifacts. `/desk` is the front door: it writes
+Skills chain through shared file artifacts. `/ops-triage` is the front door: it writes
 no artifact, it reads git state and routes to the skill below that fits.
 
 ```
-/desk               → triage; routes to any skill below (no artifact written)
+/ops-triage         → triage; routes to any skill below (no artifact written)
 
-/office-hours       → writes design doc to ~/.vague/projects/{slug}/designs/
-/plan-ceo-review    → reads that doc, writes CEO plan doc
-/plan-eng-review    → reads CEO plan + design doc, writes engineering plan
+/plan-ideation      → writes design doc to ~/.vague/projects/{slug}/designs/
+/plan-ceo           → reads that doc, writes CEO plan doc
+/plan-eng           → reads CEO plan + design doc, writes engineering plan
 
 /design-shotgun     → writes HTML variants to ~/.vague/projects/{slug}/designs/
 /design-html        → reads shotgun HTML, writes production HTML to project root
 /design-review      → audits live source files against DESIGN.md
 
-/ship               → implements, commits, opens PR
-/review             → reads git diff, applies fixes pre-merge
-/retro              → reads timeline.md + git log, writes retro-YYYY-MM-DD.md
+/dev-ship           → implements, commits, opens PR
+/dev-review         → reads git diff, applies fixes pre-merge
+/ops-retro          → reads timeline.md + git log, writes retro-YYYY-MM-DD.md
 ```
 
 Each skill that writes a doc announces the output path and suggests the next skill.
@@ -244,17 +244,17 @@ Day 1 — Claude Code session
 
   User: "I have an idea for a payments feature"
 
-  ┌─ /office-hours ──────────────────────────────────────────────────────┐
+  ┌─ /plan-ideation ─────────────────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api", branch: "main", learnings: []                  │
   │                                                                      │
   │  Agent: challenges the idea, validates demand, scope                 │
   │  Output: ~/.vague/projects/acme-api/designs/payments-20260430.md    │
   └──────────────────────────────────────────────────────────────────────┘
-                              │ "Design saved. Run /plan-eng-review next."
+                              │ "Design saved. Run /plan-eng next."
                               ▼
 
-  ┌─ /plan-eng-review ───────────────────────────────────────────────────┐
+  ┌─ /plan-eng ──────────────────────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api", branch: "main", learnings: []                  │
   │                                                                      │
@@ -265,10 +265,10 @@ Day 1 — Claude Code session
   │    "insight":"Use Stripe webhooks for async confirmation, not polling"│
   │    "confidence":9,"source":"user-stated"}'                           │
   └──────────────────────────────────────────────────────────────────────┘
-                              │ "Plan locked. Run /ship to implement."
+                              │ "Plan locked. Run /dev-ship to implement."
                               ▼
 
-  ┌─ /ship ──────────────────────────────────────────────────────────────┐
+  ┌─ /dev-ship ──────────────────────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api", branch: "feat/payments"                        │
   │  → learnings: [{ key: "payments-stripe", confidence: 9, ... }]  ◄── surfaced
@@ -277,12 +277,12 @@ Day 1 — Claude Code session
   │  Implements Stripe webhooks (not polling) — learning guided this.    │
   │                                                                      │
   │  vague commit "feat: add Stripe webhook payment confirmation"        │
-  │  vague timeline-log '{"skill":"ship","event":"completed",...}'       │
+  │  vague timeline-log '{"skill":"dev-ship","event":"completed",...}'   │
   └──────────────────────────────────────────────────────────────────────┘
-                              │ "PR opened. Run /review before merging."
+                              │ "PR opened. Run /dev-review before merging."
                               ▼
 
-  ┌─ /review ────────────────────────────────────────────────────────────┐
+  ┌─ /dev-review ────────────────────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → learnings: [{ key: "payments-stripe", confidence: 9 }]           │
   │                                                                      │
@@ -294,7 +294,7 @@ Day 1 — Claude Code session
   └──────────────────────────────────────────────────────────────────────┘
 
   Learnings written: 2
-  Timeline events:   3 (ship started, ship completed, review completed)
+  Timeline events:   3 (dev-ship started, dev-ship completed, dev-review completed)
 ```
 
 ---
@@ -306,14 +306,14 @@ Day 1 — Claude Code session
 ```
 Day 1 — Claude Code session — investigating a production bug
 
-  ┌─ /investigate ───────────────────────────────────────────────────────┐
+  ┌─ /dev-investigate ───────────────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api", branch: "fix/slow-checkout", learnings: []     │
   │                                                                      │
   │  Agent traces the slow checkout to an N+1 on Order.line_items       │
   │                                                                      │
   │  vague learnings-log '{                                              │
-  │    "skill": "investigate",                                           │
+  │    "skill": "dev-investigate",                                           │
   │    "type": "pitfall",                                                │
   │    "key": "order-lineitems-n-plus-one",                              │
   │    "insight": "Order.line_items is never eager-loaded. Every         │
@@ -333,7 +333,7 @@ Day 1 — Claude Code session — investigating a production bug
 
 ─────────────────────────────────────────────────────── Day 3 — new session
 
-  ┌─ /ship — GitHub Copilot CLI session ─────────────────────────────────┐
+  ┌─ /dev-ship — GitHub Copilot CLI session ─────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api", branch: "fix/slow-checkout"                    │
   │  → learnings: [                                                      │
@@ -362,13 +362,13 @@ Day 1 — Claude Code session — investigating a production bug
 
 ─────────────────────────────────────────────────── Day 7 — weekly retro
 
-  ┌─ /retro — Claude Code session ───────────────────────────────────────┐
+  ┌─ /ops-retro — Claude Code session ───────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api"                                                  │
   │  → learnings: 2 entries (both surfaced — only 2 total)              │
   │                                                                      │
   │  Agent reads:                                                        │
-  │    - timeline.md  → 4 events across 2 sessions (investigate+ship)   │
+  │    - timeline.md  → 4 events across 2 sessions (dev-investigate+dev-ship) │
   │    - git log      → 3 commits on fix/slow-checkout this week        │
   │    - prior retros → none yet                                         │
   │                                                                      │

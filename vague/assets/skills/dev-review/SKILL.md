@@ -1,5 +1,5 @@
 ---
-name: review
+name: dev-review
 version: 1.0.0
 description: |
   Pre-landing code review. Analyzes the diff for SQL safety, LLM trust boundary
@@ -175,7 +175,7 @@ vague timeline-log "{\"skill\":\"review\",\"event\":\"completed\",\"branch\":\"$
 
 Log any non-obvious pattern discovered:
 ```bash
-vague learnings-log '{"skill":"review","type":"pitfall","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed","files":["path/to/file"]}'
+vague learnings-log '{"skill":"dev-review","type":"pitfall","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed","files":["path/to/file"]}'
 ```
 
 ---
@@ -194,13 +194,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"review"}'
+vague observations-log '{"skill":"dev-review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-review"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"review","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"review"}'
+vague observations-log '{"skill":"dev-review","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-review"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
@@ -209,4 +209,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Review complete. [N issues auto-fixed, N resolved, N remaining]. When ready: `/ship` to create the PR."
+> "Review complete. [N issues auto-fixed, N resolved, N remaining]. When ready: `/dev-ship` to create the PR."

@@ -1,5 +1,5 @@
 ---
-name: plan-ceo-review
+name: plan-ceo
 version: 1.0.0
 description: |
   CEO/founder-mode plan review. Rethink the problem, find the 10-star product,
@@ -192,7 +192,7 @@ Structure:
 [Any unresolved issues — visible to downstream skills]
 
 ## Next Steps
-- [ ] Run /plan-eng-review to lock in architecture
+- [ ] Run /plan-eng to lock in architecture
 ```
 
 Show to user, support revision loops, then save.
@@ -213,13 +213,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"plan-ceo-review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-ceo-review"}'
+vague observations-log '{"skill":"plan-ceo","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-ceo"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"plan-ceo-review","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-ceo-review"}'
+vague observations-log '{"skill":"plan-ceo","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-ceo"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
@@ -228,4 +228,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "CEO plan saved. Next: `/plan-eng-review` to lock in architecture and test strategy before writing code."
+> "CEO plan saved. Next: `/plan-eng` to lock in architecture and test strategy before writing code."

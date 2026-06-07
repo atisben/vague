@@ -1,5 +1,5 @@
 ---
-name: plan-eng-review
+name: plan-eng
 version: 1.0.0
 description: |
   Eng manager-mode plan review. Lock in architecture, data flow, edge cases,
@@ -170,7 +170,7 @@ Structure:
 
 ## Next Steps
 - [ ] /design-review (if UI changes)
-- [ ] /ship to implement
+- [ ] /dev-ship to implement
 ```
 
 Show to user, support revision loops, then save.
@@ -191,13 +191,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"plan-eng-review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-eng-review"}'
+vague observations-log '{"skill":"plan-eng","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-eng"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"plan-eng-review","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-eng-review"}'
+vague observations-log '{"skill":"plan-eng","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-eng"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
@@ -206,9 +206,9 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Engineering plan saved. You're ready to build. Run `/ship` to implement, or `/design-review` first if there are visual components."
+> "Engineering plan saved. You're ready to build. Run `/dev-ship` to implement, or `/design-review` first if there are visual components."
 
 Log a learning if any non-obvious architectural insight was discovered:
 ```bash
-vague learnings-log '{"skill":"plan-eng-review","type":"architecture","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague learnings-log '{"skill":"plan-eng","type":"architecture","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
 ```

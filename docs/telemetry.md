@@ -12,7 +12,7 @@ Written to `~/.vague/analytics/skill-usage.md` when `telemetry` is not `"off"`.
 ```yaml
 ---
 entries:
-  - skill: ship
+  - skill: dev-ship
     ts: "2025-04-08T09:25:00Z"
     repo: owner-myrepo
 ---
@@ -26,12 +26,12 @@ Written to `~/.vague/projects/{slug}/timeline.md` by skills via `vague timeline-
 ```yaml
 ---
 entries:
-  - skill: ship
+  - skill: dev-ship
     event: started
     branch: feat/auth
     session: "12345-1712566800"
     ts: "2025-04-08T09:00:00Z"
-  - skill: ship
+  - skill: dev-ship
     event: completed
     branch: feat/auth
     session: "12345-1712566800"
@@ -40,7 +40,7 @@ entries:
 ---
 ```
 
-Timeline data is used locally by `/retro` to track session history and skill usage patterns. It never leaves your machine.
+Timeline data is used locally by `/ops-retro` to track session history and skill usage patterns. It never leaves your machine.
 
 ### learnings.md
 Written to `~/.vague/projects/{slug}/learnings.md` when a skill calls `vague learnings-log`.

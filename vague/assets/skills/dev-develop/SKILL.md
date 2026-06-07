@@ -1,5 +1,5 @@
 ---
-name: develop
+name: dev-develop
 version: 1.0.0
 description: |
   Orchestrated development. Breaks a task into phases and delegates each to a
@@ -228,7 +228,7 @@ vague timeline-log "{\"skill\":\"develop\",\"event\":\"completed\",\"branch\":\"
 
 Log any learnings:
 ```bash
-vague learnings-log '{"skill":"develop","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague learnings-log '{"skill":"dev-develop","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
 ```
 
 ---
@@ -267,13 +267,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"develop","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"develop"}'
+vague observations-log '{"skill":"dev-develop","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-develop"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation.
 
 ```bash
-vague observations-log '{"skill":"develop","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"develop"}'
+vague observations-log '{"skill":"dev-develop","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-develop"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
@@ -282,4 +282,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Feature implemented and verified. Next: `/review` for pre-landing code review, or `/ship` to create a PR."
+> "Feature implemented and verified. Next: `/dev-review` for pre-landing code review, or `/dev-ship` to create a PR."

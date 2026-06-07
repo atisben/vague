@@ -1,5 +1,5 @@
 ---
-name: ship
+name: dev-ship
 version: 1.0.0
 description: |
   Ship workflow: implement, run tests, review diff, bump VERSION, update CHANGELOG,
@@ -198,7 +198,7 @@ gh pr create \
 ## Step 9: Update Plan
 
 If `$PLAN_FILE` exists, update it:
-- Mark completed items in `## Next Steps` (check the `/ship` checkbox)
+- Mark completed items in `## Next Steps` (check the `/dev-ship` checkbox)
 - Add a `## Shipped` section at the bottom:
 
 ```markdown
@@ -220,7 +220,7 @@ vague timeline-log "{\"skill\":\"ship\",\"event\":\"completed\",\"branch\":\"$BR
 Log any learnings discovered during implementation:
 ```bash
 # If a non-obvious pattern or pitfall was encountered:
-vague learnings-log '{"skill":"ship","type":"pitfall","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague learnings-log '{"skill":"dev-ship","type":"pitfall","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
 ```
 
 ---
@@ -239,13 +239,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"ship","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ship"}'
+vague observations-log '{"skill":"dev-ship","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-ship"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"ship","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ship"}'
+vague observations-log '{"skill":"dev-ship","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-ship"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
@@ -254,4 +254,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "PR created: [URL]. Next: `/review` for a pre-landing code review, or ask a teammate to review."
+> "PR created: [URL]. Next: `/dev-review` for a pre-landing code review, or ask a teammate to review."

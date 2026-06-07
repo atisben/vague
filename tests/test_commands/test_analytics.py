@@ -11,7 +11,7 @@ runner = CliRunner()
 
 def test_analytics_log_and_show(vague_home):
     entry = json.dumps({
-        "skill": "ship",
+        "skill": "dev-ship",
         "ts": "2024-01-01T00:00:00+00:00",
         "repo": "owner-repo",
     })
@@ -22,7 +22,7 @@ def test_analytics_log_and_show(vague_home):
 
 def test_analytics_show_json(vague_home):
     entry = json.dumps({
-        "skill": "review",
+        "skill": "dev-review",
         "ts": "2024-01-01T00:00:00+00:00",
         "repo": "owner-repo",
     })
