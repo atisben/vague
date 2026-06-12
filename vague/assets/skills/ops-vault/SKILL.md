@@ -22,6 +22,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
+eval "$(vague context --shell --skill ops-vault)"
 VAULT="$HOME/Obsidian"
 TODAY=$(date +%Y-%m-%d)
 echo "VAULT: $VAULT"

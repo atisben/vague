@@ -23,7 +23,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill ops-learn)"
 ```
 
 **Proactive invocation:** Suggest when the user asks about past patterns or wonders "didn't we fix this before?"

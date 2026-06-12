@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 from pathlib import Path
 
@@ -51,12 +52,75 @@ def _remove_existing(path: Path) -> None:
         shutil.rmtree(path)
 
 
+def _parse_skill_trigger(skill_dir: Path) -> str | None:
+    """Extract the Trigger: line from a skill's SKILL.md description."""
+    skill_md = skill_dir / "SKILL.md"
+    if not skill_md.exists():
+        return None
+    content = skill_md.read_text()
+
+    # Extract the full description block (YAML frontmatter between ---)
+    match = re.search(r"^---\n(.*?)\n---", content, re.DOTALL)
+    if not match:
+        return None
+    frontmatter = match.group(1)
+
+    # Find the Trigger: line(s) within the description field
+    # Triggers can span multiple lines in the YAML description
+    # Match from "Trigger:" to the end of the line (or continuation lines indented with spaces)
+    trigger_match = re.search(r"Trigger:\s*(.+?)(?:\.\n|\.\Z)", frontmatter, re.DOTALL)
+    if not trigger_match:
+        return None
+
+    trigger_text = trigger_match.group(1).strip()
+    # Clean up multiline triggers (remove newline + leading spaces)
+    trigger_text = re.sub(r"\n\s+", " ", trigger_text)
+    return trigger_text
+
+
 def _get_instructions_block() -> str:
-    """Read the instructions block template."""
+    """Build the instructions block dynamically from skill metadata."""
     template = _get_assets_dir() / "templates" / "instructions-block.md"
     if not template.exists():
         return ""
-    return template.read_text()
+
+    skills_src = _get_assets_dir() / "skills"
+    if not skills_src.exists():
+        return template.read_text()
+
+    skill_dirs = sorted(d for d in skills_src.iterdir() if d.is_dir())
+    skill_count = len(skill_dirs)
+
+    # Build routing table rows
+    rows: list[str] = []
+    for skill_dir in skill_dirs:
+        trigger = _parse_skill_trigger(skill_dir)
+        if trigger:
+            rows.append(f"| {trigger} | `/{skill_dir.name}` |")
+
+    # Build the full block
+    lines = [
+        "# vague",
+        "",
+        f"Personal development workflow toolkit. {skill_count} skills for the full software development lifecycle.",
+        "",
+        "## Skill Routing",
+        "",
+        "When the user's request matches a skill below, invoke it using the Skill tool as your FIRST action. Do NOT answer directly first.",  # noqa: E501
+        "",
+        "| Trigger | Skill |",
+        "|---------|-------|",
+        *rows,
+        "",
+        "## Skills Location",
+        "",
+        "Skills are in `~/.claude/skills/` and/or `~/.copilot/skills/` (each skill symlinked to this package's bundled `assets/skills/` by `vague install`). Edits to the bundled assets propagate live; re-run `vague install` only to add new runtimes or relink after reinstalling the package.",  # noqa: E501
+        "",
+        "## State",
+        "",
+        "All persistent state lives in `~/.vague/`. Never hardcode paths — always use `$VAGUE_HOME` or the default `~/.vague`.",  # noqa: E501
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def _update_instruction_file(runtime: str, skills_path: Path) -> None:
@@ -194,10 +258,23 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
     return count
 
 
+BANNER = r"""
+'||'  '|'                                  
+ '|.  .'   ....     ... . ... ...    ....  
+  ||  |   '' .||   || ||   ||  ||  .|...|| 
+   |||    .|' ||    |''    ||  ||  ||      
+    |     '|..'|'  '||||.  '|..'|.  '|...' 
+                  .|....'                  
+                                           
+"""
+
+
 def cmd_install(
     runtime: str | None = None,
 ) -> None:
     """Install vague skills into LLM runtime directories."""
+    typer.echo(BANNER)
+
     assets = _get_assets_dir()
     skills_src = assets / "skills"
 

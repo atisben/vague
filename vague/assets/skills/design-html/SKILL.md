@@ -22,7 +22,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill design-html)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 

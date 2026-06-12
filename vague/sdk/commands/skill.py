@@ -80,6 +80,12 @@ def cmd_skill_audit(skill_dir: str, strict: bool = False) -> None:
         if matches:
             findings.append(f"Found legacy pattern '{pattern}': {matches[:3]}")
 
+    if re.search(r"vague context --shell(?!\s+--skill\b)", content):
+        findings.append(
+            "Preamble missing --skill: use `vague context --shell --skill <name>` "
+            "so usage is captured mechanically"
+        )
+
     if findings:
         for f in findings:
             print(f"Audit: {f}", file=sys.stderr)

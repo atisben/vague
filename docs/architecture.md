@@ -126,12 +126,12 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 
 ```
 ~/.vague/
-├── config.md                           ← frontmatter: proactive, telemetry
-├── sessions/                           ← PID files for session tracking
+├── config.md                           ← frontmatter: proactive, telemetry (created on first config-set)
 ├── analytics/
-│   └── skill-usage.md                  ← frontmatter list of usage entries
+│   └── skill-usage.md                  ← usage entries, written mechanically by `vague context --skill` (max 1000)
 └── projects/
     └── {owner-repo}/                   ← one dir per git repo
+        ├── project.md                  ← repo path + last_seen, upserted by `vague context --skill`
         ├── learnings.md                ← frontmatter list of LearningEntry (max 500)
         ├── timeline.md                 ← frontmatter list of TimelineEntry
         ├── retros/
@@ -158,8 +158,11 @@ CONTEXT=$(vague init)   # full JSON context including slug and branch
 Every skill follows this pattern:
 
 ```
-1. CONTEXT=$(vague init)
-   └── reads config, slug, top-3 learnings → JSON into agent context
+1. eval "$(vague context --shell --skill {name})"
+   └── emits SLUG/BRANCH/PROACTIVE/TELEMETRY for the preamble
+   └── side effect (best-effort, never fails the output):
+       ├── appends a usage event to analytics/skill-usage.md
+       └── upserts projects/{slug}/project.md (repo path, last_seen)
 
 2. [skill does its work — reads files, writes code, asks questions]
 
@@ -170,7 +173,20 @@ Every skill follows this pattern:
    └── appended to ~/.vague/projects/{slug}/timeline.md
 ```
 
-`vague init` is the **keystone**: it never fails. If config is missing, it returns defaults. If there's no git remote, it falls back to directory name. Skills always get a valid JSON context.
+Step 1 is **mechanical telemetry**: skill starts are captured by the preamble
+every skill must run anyway, not by an optional logging step the agent may
+skip. Completion events (step 4) remain discretionary.
+
+`vague context`/`vague init` is the **keystone**: it never fails. If config is
+missing, it returns defaults. If there's no git remote, it falls back to
+directory name. If telemetry capture fails (read-only disk, lock contention),
+the error is swallowed and the context output still prints. Skills always get
+a valid context.
+
+`vague status` reads across all of `~/.vague/projects/` — recorded repo paths,
+last activity, design docs newer than the last ship event ("in-flight plans"),
+learnings counts — and renders the cross-project dashboard that `/ops-triage`
+runs as Step 0.
 
 ---
 

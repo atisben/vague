@@ -40,14 +40,31 @@ def _write_entries(path: Path, entries: list[dict]) -> None:
     tmp_path.replace(path)
 
 
+MAX_ENTRIES = 1000
+
+
 def append_analytics(entry: AnalyticsEntry) -> None:
-    """Append to ~/.vague/analytics/skill-usage.md."""
+    """Append to ~/.vague/analytics/skill-usage.md. Capped: oldest evicted past MAX_ENTRIES."""
     path = _get_analytics_path()
     entry_dict = json.loads(entry.model_dump_json())
     with file_lock(path):
         entries = _read_entries(path)
         entries.append(entry_dict)
+        if len(entries) > MAX_ENTRIES:
+            entries = entries[-MAX_ENTRIES:]
         _write_entries(path, entries)
+
+
+def record_skill_start(skill: str, slug: str, branch: str) -> None:
+    """Mechanical usage capture: one entry per skill preamble invocation."""
+    entry = AnalyticsEntry(
+        skill=skill,
+        ts=datetime.now(UTC),
+        repo=slug,
+        branch=branch,
+        event="start",
+    )
+    append_analytics(entry)
 
 
 def get_analytics(window: str = "all") -> list[AnalyticsEntry]:
