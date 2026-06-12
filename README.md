@@ -142,6 +142,48 @@ vague skill-audit <dir> --strict        # scan for legacy bash patterns
 
 ---
 
+## Telemetry
+
+Skill usage is captured **mechanically**: the preamble every skill runs —
+`eval "$(vague context --shell --skill <name>)"` — logs a usage event as a
+side effect. No agent cooperation needed, no logging step a model can skip.
+
+Each invocation records:
+
+- a **usage event** (`skill`, `repo` slug, `branch`, `ts`) appended to
+  `~/.vague/analytics/skill-usage.md` (capped at 1,000 entries, oldest evicted)
+- the project's **repo path + last seen** in `~/.vague/projects/{slug}/project.md`
+  — this is what lets `vague status` run git checks across all your projects
+
+Capture is best-effort and can never break a skill: if the write fails
+(read-only disk, lock contention), the error is swallowed and the context
+output still prints.
+
+### Reading it back
+
+```bash
+vague status              # cross-project dashboard: branches, in-flight plans, last activity
+vague analytics-show 7d   # skill usage counts (7d | 30d | all)
+```
+
+`/ops-triage` runs `vague status` automatically as its first step, and
+`/ops-retro` folds the same data into the weekly retrospective.
+
+### Turning it off
+
+Everything is **100% local** — nothing ever leaves your machine (see
+[Telemetry](docs/telemetry.md) for the full inventory of what is and isn't
+logged). To disable usage events:
+
+```bash
+vague config-set telemetry off
+```
+
+`project.md`, timeline, and learnings are structural state (they power
+`vague status`, `/ops-retro`, and learning recall) and are still written.
+
+---
+
 ## Observability
 
 `vague` can log every command it runs (name, duration, exit code) plus any

@@ -50,16 +50,20 @@ def cmd_init() -> None:
 
 
 
-def _record_usage(skill: str, slug: str, branch: str) -> None:
+def _record_usage(skill: str, slug: str, branch: str, telemetry: str) -> None:
     """Mechanical telemetry: usage event + project path, best-effort.
 
     Must never propagate — a skill preamble that fails to log must still get
     its context output (the keystone property of context/init).
+
+    `telemetry: off` disables the usage event; project.md is structural
+    (it powers `vague status`, like timeline.md) and is always written.
     """
-    try:
-        record_skill_start(skill=skill, slug=slug, branch=branch)
-    except Exception as e:
-        get_logger().warning("usage capture failed for %s: %s", skill, e)
+    if telemetry != "off":
+        try:
+            record_skill_start(skill=skill, slug=slug, branch=branch)
+        except Exception as e:
+            get_logger().warning("usage capture failed for %s: %s", skill, e)
     try:
         upsert_project_meta(slug=slug, path=get_repo_root())
     except Exception as e:
@@ -78,7 +82,7 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
     if not shell:
         if skill is not None:
             try:
-                _record_usage(skill, get_slug(), get_branch())
+                _record_usage(skill, get_slug(), get_branch(), get_config().telemetry)
             except Exception as e:
                 get_logger().warning("usage capture failed: %s", e)
         cmd_init()
@@ -94,7 +98,7 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
         config = ConfigModel()
 
     if skill is not None:
-        _record_usage(skill, slug, branch)
+        _record_usage(skill, slug, branch, str(config.telemetry))
 
     lines = [
         f"SLUG={shlex.quote(slug)}",

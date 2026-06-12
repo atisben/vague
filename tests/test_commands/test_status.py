@@ -49,6 +49,18 @@ def test_context_skill_records_repo_root_from_subdir(vague_home, git_repo, monke
     assert "src" not in meta.replace(str(git_repo), "")
 
 
+def test_context_skill_respects_telemetry_off(vague_home, git_repo, monkeypatch):
+    monkeypatch.chdir(git_repo)
+    runner.invoke(sdk_app, ["config-set", "telemetry", "off"])
+    result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "dev-ship"])
+    assert result.exit_code == 0
+    assert "SLUG=" in result.output
+
+    # usage event suppressed; project.md is structural and still written
+    assert not (vague_home / "analytics" / "skill-usage.md").exists()
+    assert (vague_home / "projects" / "repo" / "project.md").exists()
+
+
 def test_context_without_skill_writes_nothing(vague_home, git_repo, monkeypatch):
     monkeypatch.chdir(git_repo)
     result = runner.invoke(sdk_app, ["context", "--shell"])
