@@ -31,7 +31,10 @@ def _project_row(slug: str) -> dict:
     project_dir = get_vague_home() / "projects" / slug
     meta = read_project_meta(slug)
     path = meta.get("path")
+    # YAML may resolve an unquoted timestamp to datetime; rows expect strings
     last_seen = meta.get("last_seen")
+    if last_seen is not None:
+        last_seen = str(last_seen)
 
     row: dict = {
         "slug": slug,

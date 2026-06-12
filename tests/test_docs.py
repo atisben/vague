@@ -20,6 +20,6 @@ def test_readme_lists_every_skill():
 def test_readme_skill_count_matches():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     count = len(_skill_names())
-    assert f"{count} " in readme.split("\n")[2], (
+    assert f"{count} markdown-based LLM skills" in readme, (
         f"README intro should state the real skill count ({count})"
     )

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import shlex
 import sys
-from pathlib import Path
 
 import typer
 
@@ -14,7 +13,7 @@ from vague.sdk.core.config import get_config
 from vague.sdk.core.learnings import get_top_learnings
 from vague.sdk.core.logging import get_logger
 from vague.sdk.core.projects import upsert_project_meta
-from vague.sdk.core.slug import get_branch, get_slug
+from vague.sdk.core.slug import get_branch, get_repo_root, get_slug
 
 
 def cmd_init() -> None:
@@ -62,7 +61,7 @@ def _record_usage(skill: str, slug: str, branch: str) -> None:
     except Exception as e:
         get_logger().warning("usage capture failed for %s: %s", skill, e)
     try:
-        upsert_project_meta(slug=slug, path=Path.cwd())
+        upsert_project_meta(slug=slug, path=get_repo_root())
     except Exception as e:
         get_logger().warning("project meta upsert failed for %s: %s", slug, e)
 

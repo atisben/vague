@@ -100,7 +100,7 @@ def test_bundled_skills_preambles_capture_usage():
     from vague.sdk.commands.skill import _get_assets_skills_dir
 
     for skill_dir in sorted(_get_assets_skills_dir().iterdir()):
-        if not skill_dir.is_dir():
+        if not skill_dir.is_dir() or not (skill_dir / "SKILL.md").exists():
             continue
         content = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
         assert "vague context --shell)" not in content, (

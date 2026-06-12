@@ -1,17 +1,12 @@
 """Tests for vague status and the context --skill telemetry side effect."""
 
 import json
-import os
 
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app
 
 runner = CliRunner()
-
-
-def _chdir(path):
-    os.chdir(str(path))
 
 
 def test_status_empty_home(vague_home):
@@ -41,6 +36,17 @@ def test_context_skill_records_usage_and_path(vague_home, git_repo, monkeypatch)
     content = meta.read_text()
     assert str(git_repo) in content
     assert "last_seen" in content
+
+
+def test_context_skill_records_repo_root_from_subdir(vague_home, git_repo, monkeypatch):
+    subdir = git_repo / "src" / "nested"
+    subdir.mkdir(parents=True)
+    monkeypatch.chdir(subdir)
+    result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "dev-ship"])
+    assert result.exit_code == 0
+
+    meta = (vague_home / "projects" / "repo" / "project.md").read_text()
+    assert "src" not in meta.replace(str(git_repo), "")
 
 
 def test_context_without_skill_writes_nothing(vague_home, git_repo, monkeypatch):

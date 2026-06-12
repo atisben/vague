@@ -24,13 +24,29 @@ def get_slug(cwd: Path | None = None) -> str:
     except Exception as e:
         get_logger().debug("get_slug: git remote lookup failed, falling back to cwd: %s", e)
 
-    # Fallback to basename of cwd
+    # Fallback: basename of the repo root (not cwd — a subdir would split the
+    # project's state across slugs), then basename of cwd outside any repo.
     try:
-        base = Path(work_dir).name if work_dir else Path.cwd().name
+        base = get_repo_root(Path(work_dir) if work_dir else None).name
         return base or "unknown"
     except Exception as e:
-        get_logger().debug("get_slug: cwd basename failed, using 'unknown': %s", e)
+        get_logger().debug("get_slug: repo root basename failed, using 'unknown': %s", e)
         return "unknown"
+
+
+def get_repo_root(cwd: Path | None = None) -> Path:
+    """Repo toplevel for the current dir. Fallback: cwd itself."""
+    work_dir = str(cwd) if cwd else None
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, cwd=work_dir, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return Path(result.stdout.strip())
+    except Exception as e:
+        get_logger().debug("get_repo_root: git rev-parse failed, falling back to cwd: %s", e)
+    return cwd if cwd else Path.cwd()
 
 
 def get_branch(cwd: Path | None = None) -> str:
