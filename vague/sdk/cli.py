@@ -33,6 +33,7 @@ from vague.sdk.commands.skill import (
     cmd_skill_validate,
 )
 from vague.sdk.commands.slug import cmd_slug
+from vague.sdk.commands.status import cmd_status
 from vague.sdk.commands.timeline import cmd_timeline_log
 from vague.sdk.core.logging import get_logger
 
@@ -82,9 +83,18 @@ def uninstall(
 @sdk_app.command("context")
 def context(
     shell: Annotated[bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")] = False,  # noqa: E501
+    skill: Annotated[str | None, typer.Option("--skill", help="Log a usage event for this skill (mechanical telemetry).")] = None,  # noqa: E501
 ) -> None:
     """Print project context for skill preambles. JSON by default, shell vars with --shell."""
-    cmd_context(shell=shell)
+    cmd_context(shell=shell, skill=skill)
+
+
+@sdk_app.command("status")
+def status(
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Cross-project dashboard: branches, in-flight plans, last activity."""
+    cmd_status(as_json=as_json)
 
 
 @sdk_app.command("init")

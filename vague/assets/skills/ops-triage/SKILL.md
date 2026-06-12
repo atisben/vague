@@ -9,7 +9,8 @@ description: |
   Trigger: "what should I look at", "here's what's on my plate", "where do I start",
   "/ops-triage", "triage this", "help me figure out what I need".
 sdk_commands:
-  - vague init
+  - vague context
+  - vague status
   - vague observations-log
 requires_slug: true
 requires_planning: false
@@ -23,7 +24,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill ops-triage)"
 ```
 
 If `PROACTIVE` is `"False"`, only run when explicitly invoked. Otherwise auto-invoke when the user describes their plate without naming a specific skill ("here's what I'm dealing with today", "where should I start").
@@ -45,6 +46,18 @@ Everything beyond that gets handed off. Resist doing the review, the plan, or th
 ## Voice
 
 Lead with the point. Direct, concrete, no preamble. Sound like a sharp chief of staff who already glanced at the repo: you know what's in flight before the manager finishes the sentence. Take a position on what to look at first. No corporate hedging, no "there are many ways to approach this."
+
+---
+
+## Step 0: Scan all desks
+
+Cross-project dashboard — what's in flight everywhere, not just here:
+
+```bash
+vague status
+```
+
+Surface anything notable in one line each: a project with unshipped plans, a dirty tree elsewhere, a project untouched for weeks. If the manager's ask is clearly about the current repo, don't dwell — note it and move on.
 
 ---
 

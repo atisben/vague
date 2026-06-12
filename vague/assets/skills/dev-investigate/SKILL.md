@@ -23,7 +23,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill dev-investigate)"
 ```
 
 **Proactive invocation:** When the user reports errors, stack traces, unexpected behavior, or "it was working yesterday" — invoke this skill rather than debugging ad-hoc.

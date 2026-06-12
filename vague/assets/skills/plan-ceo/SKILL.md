@@ -24,7 +24,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill plan-ceo)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 

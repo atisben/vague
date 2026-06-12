@@ -1,21 +1,22 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 16 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 21 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
 ## Overview
 
-- **16 slash commands** spanning planning, design, execution, and reflection (see the Skill Map below).
+- **21 slash commands** spanning planning, design, execution, reflection, and interview prep (see the Skill Map below).
 - **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
+- **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/ops-retro` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Copilot, Cursor, or Windsurf.
-- **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite (85 tests).
+- **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite.
 
 ## Quickstart
 
 ```bash
 git clone https://github.com/atisben/vague.git && cd vague
-uv tool install .      # installs vague globally via ~/.local/bin
+uv tool install . --force --reinstall
 vague install          # auto-detects Claude Code, Copilot, Cursor, or Windsurf
 ```
 
@@ -61,6 +62,15 @@ Then use any slash command in your AI tool.
 | `/ops-meta` | Review observations and improve the skills themselves. |
 | `/ops-vault` | Save and retrieve notes from your Obsidian vault. |
 
+### Interview prep
+| Command | When to use |
+|---------|-------------|
+| `/iv-kickoff` | Start interview coaching — profile, resume analysis, cadence. |
+| `/iv-research` | Research a company, decode a JD, score the fit. |
+| `/iv-stories` | Build and drill your STAR storybank. |
+| `/iv-practice` | Drills and mock interviews with scoring. |
+| `/iv-progress` | Trends, calibration, readiness verdict. |
+
 ---
 ## System design
 
@@ -99,11 +109,11 @@ All data lives in `~/.vague/`:
 ```
 ~/.vague/
 ├── config.md
-├── sessions/
 ├── analytics/
-│   └── skill-usage.md
+│   └── skill-usage.md      ← written mechanically by `vague context --skill`
 └── projects/
     └── {owner-repo}/
+        ├── project.md      ← repo path + last_seen (powers `vague status`)
         ├── learnings.md
         ├── timeline.md
         ├── retros/
@@ -116,7 +126,8 @@ All data lives in `~/.vague/`:
 
 ```bash
 vague init                              # JSON context for skills (slug, branch, config, learnings)
-vague context --shell                   # eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= for preambles
+vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + logs the usage event
+vague status                            # cross-project dashboard: branches, in-flight plans
 vague config-get proactive              # read config value
 vague config-set proactive false        # write config value
 vague learnings-log '<json>'            # append a learning
@@ -128,6 +139,48 @@ vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract
 vague skill-audit <dir> --strict        # scan for legacy bash patterns
 ```
+
+---
+
+## Telemetry
+
+Skill usage is captured **mechanically**: the preamble every skill runs —
+`eval "$(vague context --shell --skill <name>)"` — logs a usage event as a
+side effect. No agent cooperation needed, no logging step a model can skip.
+
+Each invocation records:
+
+- a **usage event** (`skill`, `repo` slug, `branch`, `ts`) appended to
+  `~/.vague/analytics/skill-usage.md` (capped at 1,000 entries, oldest evicted)
+- the project's **repo path + last seen** in `~/.vague/projects/{slug}/project.md`
+  — this is what lets `vague status` run git checks across all your projects
+
+Capture is best-effort and can never break a skill: if the write fails
+(read-only disk, lock contention), the error is swallowed and the context
+output still prints.
+
+### Reading it back
+
+```bash
+vague status              # cross-project dashboard: branches, in-flight plans, last activity
+vague analytics-show 7d   # skill usage counts (7d | 30d | all)
+```
+
+`/ops-triage` runs `vague status` automatically as its first step, and
+`/ops-retro` folds the same data into the weekly retrospective.
+
+### Turning it off
+
+Everything is **100% local** — nothing ever leaves your machine (see
+[Telemetry](docs/telemetry.md) for the full inventory of what is and isn't
+logged). To disable usage events:
+
+```bash
+vague config-set telemetry off
+```
+
+`project.md`, timeline, and learnings are structural state (they power
+`vague status`, `/ops-retro`, and learning recall) and are still written.
 
 ---
 

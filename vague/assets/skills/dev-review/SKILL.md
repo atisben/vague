@@ -24,7 +24,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill dev-review)"
 SESSION_ID="$$-$(date +%s)"
 ```
 

@@ -43,7 +43,7 @@ benefits-from:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill ops-meta)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 

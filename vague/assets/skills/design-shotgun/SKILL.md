@@ -20,7 +20,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
+eval "$(vague context --shell --skill design-shotgun)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 SHOTGUN_DIR="$VAGUE_HOME/projects/$SLUG/designs/shotgun-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$SHOTGUN_DIR"
