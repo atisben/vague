@@ -34,6 +34,8 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ## Step 0: Load Context
 
 ```bash
+eval "$(vague context --shell --skill plan-eng)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -5 || echo "NO_DESIGN_DOCS"
 ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*ceo*.md 2>/dev/null | head -1 || echo "NO_CEO_PLAN"
 [ -f CLAUDE.md ] && cat CLAUDE.md || echo "NO_CLAUDE_MD"
@@ -47,6 +49,20 @@ Read the most recent design doc. If a CEO plan exists, read it too — scope dec
 ## Critical Rule: One Question at a Time
 
 **STOP** after each issue. AskUserQuestion once per issue. Never batch. Always state your recommendation and why. If the fix is obvious and non-controversial, apply it and say what you did — don't waste a question.
+
+---
+
+## Core Principle: Test-Driven Design
+
+This skill is **TDD-first**. The engineering plan is not complete until the test layer is fully specified **before** any implementation function is designed in detail.
+
+The required order of thinking is:
+
+1. **Architecture & data model** — what exists and how it connects.
+2. **Test layer** — what observable behaviors prove the system works, written as failing tests *before* implementation begins.
+3. **Implementation** — the functions/modules that make those tests pass.
+
+When writing the final plan, the implementation roadmap **must** be expressed as: "write failing test → implement minimum code → make test green → refactor". Reject any plan section that lists implementation work without a corresponding test that gates it.
 
 ---
 
@@ -83,24 +99,47 @@ Evaluate and diagram:
 
 ---
 
-## Section 3: Test Strategy
+## Section 3: Test Layer (TDD Gate)
 
-For every new behavior in the plan:
+**This section runs before any implementation planning. No function design proceeds until the test layer below is locked in.**
 
-- What tests must exist before this ships?
-- What test cases cover the nil path, empty path, and error path from Section 1?
-- What integration tests are needed?
-- What manual QA steps are required?
+For every new behavior in the plan, specify:
 
-Write a `## Key Interactions to Verify` section listing each critical user flow.
+- **Test pyramid breakdown** — which behaviors are unit-tested, which need integration tests, which need e2e/manual QA. Justify each placement.
+- **Failing tests first** — for each new public function or module, name the specific test file (e.g. `tests/test_<module>.py::test_<behavior>`) that must exist and fail *before* implementation starts.
+- **Path coverage** — explicit test cases for the nil path, empty path, and error path from Section 1's data flow diagrams.
+- **Fixtures and factories** — what test data, mocks, or fixtures are required? Where do they live?
+- **Integration tests** — what cross-component flows need to be exercised end-to-end?
+- **Regression guards** — any existing behavior that could silently break? Pin it with a test before touching the code.
+- **Manual QA steps** — anything that can't be automated, with explicit reproduction steps.
+- **Test runner** — confirm the project uses `uv run pytest` (or equivalent) and that new tests will be picked up by `pre-commit` / CI.
 
-Write a `## Edge Cases` section listing each edge case that must be tested.
+Produce two named subsections in the final plan:
+
+- `## Key Interactions to Verify` — each critical user flow as a one-liner.
+- `## Edge Cases` — each edge case that must be tested.
+
+**Exit criterion:** every implementation task in Section 4 must reference at least one test from this section that gates it. If it doesn't, the plan is incomplete — go back and add the test.
 
 **STOP after each issue.**
 
 ---
 
-## Section 4: Performance Review
+## Section 4: Implementation Plan
+
+Only enter this section once Section 3 is locked. For each module or function:
+
+- Name the failing test(s) from Section 3 it makes pass.
+- Sketch the minimum implementation (signature, key branches, dependencies).
+- Note any refactor that should follow once the test is green.
+
+Reject any item here that does not map back to a test in Section 3.
+
+**STOP after each issue.**
+
+---
+
+## Section 5: Performance Review
 
 - N+1 query risks — name the specific query
 - Caching opportunities — where, what TTL, invalidation strategy
@@ -111,7 +150,7 @@ Write a `## Edge Cases` section listing each edge case that must be tested.
 
 ---
 
-## Section 5: Security Review
+## Section 6: Security Review
 
 - Input validation — what's validated, what's not?
 - Authorization — can a user access another user's data?
@@ -146,7 +185,16 @@ Structure:
 ## Data Model Changes
 [Tables, columns, migrations]
 
-## Test Strategy
+## Test Layer (write these first — they must fail before implementation begins)
+### Test Pyramid
+- [unit / integration / e2e split with justification]
+
+### Failing Tests to Author First
+- `tests/test_<module>.py::test_<behavior>` — covers [behavior]
+
+### Fixtures & Factories
+- [fixture] in [location]
+
 ### Key Interactions to Verify
 - [interaction] on [component]
 
@@ -155,6 +203,16 @@ Structure:
 
 ### Critical Paths
 - [end-to-end flow that must work]
+
+### Test Runner & CI
+- Run locally with `uv run pytest`
+- Gated by `pre-commit run --all-files` before commit
+
+## Implementation Plan (TDD: red → green → refactor)
+Each item must reference the failing test from the Test Layer it makes pass.
+- [ ] Write failing test: `tests/.../test_x.py::test_y`
+- [ ] Implement minimum code in `src/.../x.py` to make it green
+- [ ] Refactor; ensure `uv run pytest` and `pre-commit` stay green
 
 ## Performance Notes
 [N+1 risks, caching, slow paths]

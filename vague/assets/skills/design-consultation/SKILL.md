@@ -58,6 +58,8 @@ ls src/ app/ pages/ components/ 2>/dev/null | head -30
 Look for office-hours design docs:
 
 ```bash
+eval "$(vague context --shell --skill design-consultation)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ls "$VAGUE_HOME/projects/$SLUG/designs/"*office-hours* 2>/dev/null | head -5 || echo "NO_OFFICE_HOURS_DOCS"
 ```
 

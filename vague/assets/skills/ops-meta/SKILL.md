@@ -54,6 +54,8 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ## Step 0: Load Context
 
 ```bash
+eval "$(vague context --shell --skill ops-meta)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 # Load open observations
 vague observations-list --status open
 
@@ -167,6 +169,8 @@ For observations with `skill: "new:working-name"`:
 
 Read the principles file:
 ```bash
+eval "$(vague context --shell --skill ops-meta)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 cat "$VAGUE_HOME/projects/$SLUG/principles.md" 2>/dev/null
 ```
 

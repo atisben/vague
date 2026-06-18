@@ -32,6 +32,8 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 
 Check for available design sources:
 ```bash
+eval "$(vague context --shell --skill design-html)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 [ -f DESIGN.md ] && echo "DESIGN_MD: yes" || echo "DESIGN_MD: no"
 ls "$VAGUE_HOME/projects/$SLUG/designs/"*.html 2>/dev/null | head -5 || echo "NO_SHOTGUN_FILES"
 ls "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -5 || echo "NO_DESIGN_DOCS"
@@ -134,6 +136,9 @@ Apply requested changes, open the updated file, repeat until approved.
 
 Once approved:
 ```bash
+eval "$(vague context --shell --skill design-html)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
+# $OUTPUT_FILE was set in Step 5 — substitute the actual filename
 mkdir -p "$VAGUE_HOME/projects/$SLUG/designs"
 cp "$OUTPUT_FILE" "$VAGUE_HOME/projects/$SLUG/designs/"
 ```

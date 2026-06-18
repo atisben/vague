@@ -62,6 +62,8 @@ We are here to make something people want. Building is not the performance of bu
 ## Phase 1: Context Gathering
 
 ```bash
+eval "$(vague context --shell --skill plan-ideation)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ls "$VAGUE_HOME/projects/$SLUG/designs/" 2>/dev/null || echo "NO_PRIOR_DESIGNS"
 [ -f CLAUDE.md ] && head -50 CLAUDE.md || echo "NO_CLAUDE_MD"
 git log --oneline -10 2>/dev/null || echo "NO_GIT"
@@ -176,6 +178,8 @@ Ask one question at a time. Wait for response. Be genuinely curious, not interro
 ## Phase 2.5: Related Design Discovery
 
 ```bash
+eval "$(vague context --shell --skill plan-ideation)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ls "$VAGUE_HOME/projects/$SLUG/designs/" 2>/dev/null | head -10 || true
 ls "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md 2>/dev/null | head -1 || echo "NO_ENG_PLAN"
 ls "$VAGUE_HOME/projects/$SLUG/designs/"*ceo*.md 2>/dev/null | head -1 || echo "NO_CEO_PLAN"

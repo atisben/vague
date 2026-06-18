@@ -96,6 +96,8 @@ git log --since="$SINCE" --oneline 2>/dev/null | grep -iE '^[a-f0-9]+ test' | wc
 ## Step 5: Load Prior Retro (for trend comparison)
 
 ```bash
+eval "$(vague context --shell --skill ops-retro)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ls -t "$VAGUE_HOME/projects/$SLUG/retros/"*.md 2>/dev/null | head -1 || echo "NO_PRIOR_RETRO"
 ```
 
@@ -165,6 +167,8 @@ Then:
 ## Step 8: Save the Retro
 
 ```bash
+eval "$(vague context --shell --skill ops-retro)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 mkdir -p "$VAGUE_HOME/projects/$SLUG/retros"
 RETRO_FILE="$VAGUE_HOME/projects/$SLUG/retros/retro-$(date +%Y-%m-%d).md"
 # Write the retro content to $RETRO_FILE

@@ -34,6 +34,7 @@ SESSION_ID="$$-$(date +%s)"
 ## Step 1: Detect Context
 
 ```bash
+eval "$(vague context --shell --skill dev-ship)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 # Detect platform
 which gh 2>/dev/null && echo "PLATFORM: github" || echo "PLATFORM: unknown"

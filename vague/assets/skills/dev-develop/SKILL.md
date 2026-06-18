@@ -59,17 +59,18 @@ Your job:
 
 Read only what you need to plan — do NOT deep-dive into code:
 
+Each bash call is a fresh process — re-run the preamble `eval` in any
+block that needs `$SLUG` / `$VAGUE_HOME`, and don't suppress stderr
+during discovery.
+
 ```bash
+eval "$(vague context --shell --skill dev-develop)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-# Current branch
-BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
-echo "BRANCH: $BRANCH"
-# Repo structure (top-level only)
+echo "SLUG=$SLUG  BRANCH=$BRANCH  VAGUE_HOME=$VAGUE_HOME"
 ls -1
-# Check for existing plans
-PLAN_FILE=$(ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -1)
+DESIGNS_DIR="$VAGUE_HOME/projects/$SLUG/designs"
+PLAN_FILE=$(ls -t "$DESIGNS_DIR"/*eng*.md "$DESIGNS_DIR"/*.md 2>&1 | grep -v 'No such' | head -1)
 echo "PLAN_FILE: ${PLAN_FILE:-NONE}"
-# Check for CLAUDE.md project conventions
 [ -f CLAUDE.md ] && head -40 CLAUDE.md || true
 ```
 

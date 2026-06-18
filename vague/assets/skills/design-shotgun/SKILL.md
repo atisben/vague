@@ -111,6 +111,9 @@ Maximum 3 iteration rounds. After round 3, move to handoff.
 Once the user approves a direction:
 
 ```bash
+eval "$(vague context --shell --skill design-shotgun)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
+# $SHOTGUN_DIR was set in the preamble — substitute the actual path you created
 mkdir -p "$VAGUE_HOME/projects/$SLUG/designs"
 cp "$SHOTGUN_DIR/variant-[x].html" \
    "$VAGUE_HOME/projects/$SLUG/designs/shotgun-$(date +%Y%m%d-%H%M%S).html"

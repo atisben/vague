@@ -33,6 +33,8 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ## Step 0: Load Context
 
 ```bash
+eval "$(vague context --shell --skill plan-ceo)"
+VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 # Find the most recent design doc
 ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -3 || echo "NO_DESIGN_DOCS"
 ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md 2>/dev/null | head -1 || echo "NO_ENG_PLAN"
