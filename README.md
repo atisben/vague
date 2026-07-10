@@ -1,12 +1,12 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 21 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 25 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
 ## Overview
 
-- **21 slash commands** spanning planning, design, execution, reflection, and interview prep (see the Skill Map below).
+- **25 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
 - **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/ops-retro` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Copilot, Cursor, or Windsurf.
@@ -61,6 +61,14 @@ Then use any slash command in your AI tool.
 | `/ops-retro` | Weekly engineering retrospective. |
 | `/ops-meta` | Review observations and improve the skills themselves. |
 | `/ops-vault` | Save and retrieve notes from your Obsidian vault. |
+
+### Management
+| Command | When to use |
+|---------|-------------|
+| `/mgmt-setup` | Set up your team, import a career ladder, add team members. |
+| `/mgmt-log` | Log a 1:1, capture feedback or a win for a report. |
+| `/mgmt-review` | Run a performance review for a report. |
+| `/mgmt-progress` | Team progress, promo readiness, review status. |
 
 ### Interview prep
 | Command | When to use |

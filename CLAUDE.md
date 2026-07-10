@@ -1,6 +1,6 @@
 # vague
 
-Personal development workflow toolkit. 21 skills for the full software development lifecycle.
+Personal development workflow toolkit. 25 skills for the full software development lifecycle.
 
 ## Skill Routing
 
@@ -24,6 +24,10 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 | "develop this", "build this feature", "implement this", "orchestrate" | `/dev-develop` |
 | "improve skills", "meta review", "skill improvement", "review observations" | `/ops-meta` |
 | "save to vault", "note this down", "save this note", "search the vault", "find in vault", "recall from vault" | `/ops-vault` |
+| "set up my team", "import career ladder", "add a team member", "/mgmt-setup" | `/mgmt-setup` |
+| "log a 1:1", "note feedback for <name>", "capture a win", "/mgmt-log" | `/mgmt-log` |
+| "run a performance review", "review <name>", "management review", "/mgmt-review" | `/mgmt-review` |
+| "team progress", "who's ready for promo", "review status", "/mgmt-progress" | `/mgmt-progress` |
 | "interview prep", "job hunting", "start interview coaching" | `/iv-kickoff` |
 | "research {company}", "decode this JD", "is this role a fit" | `/iv-research` |
 | "build stories", "storybank", "story gaps", "retrieval drill" | `/iv-stories` |

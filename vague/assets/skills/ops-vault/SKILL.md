@@ -73,6 +73,14 @@ If A: read the existing file, append or merge new content, write back. Done.
 
 ### Step 2 — Infer folder
 
+**Caller-specified folder (overrides inference):** if the invoker passed an explicit
+target folder — e.g. another skill invoking `/ops-vault save … folder "8. Team/"` — use
+that folder verbatim under `$VAULT` (create it if missing) and skip the inference table
+below. Do the same for any caller-supplied tags in Step 3. This lets specialized skills
+(e.g. `/mgmt-review`) file notes into a dedicated folder instead of the general buckets.
+
+Otherwise, infer:
+
 | Content type | Folder |
 |---|---|
 | Code walkthrough, engineering review, architecture, technical deep-dive | `$VAULT/7. Code/` |
