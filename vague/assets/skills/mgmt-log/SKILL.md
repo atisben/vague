@@ -1,12 +1,13 @@
 ---
 name: mgmt-log
-version: 1.0.0
+version: 1.1.0
 description: |
-  Minimal between-cycle capture: append a dated 1:1 note, win, or concern to a
-  team member's running log. Feeds mgmt-review with evidence so reviews aren't
-  memory-based. State lives at $VAGUE_HOME/team/ (global, not per-project).
+  Minimal between-cycle capture: append a dated 1:1 note, win, concern, strength,
+  growth note, or blind spot to a team member's running log. Feeds the growth-focused
+  mgmt-review with evidence so reviews aren't memory-based.
+  State lives at $VAGUE_HOME/team/ (global, not per-project).
   Trigger: "log a 1:1", "note feedback for <name>", "capture a win",
-  "jot down a concern about <name>", "/mgmt-log".
+  "jot down a concern about <name>", "note a blind spot", "/mgmt-log".
 sdk_commands:
   - vague context
   - vague observations-log
@@ -72,14 +73,25 @@ Everything after the member name in `$ARGUMENTS` is the note text.
 
 - **Note text present** → use it as-is. Do not ask for more.
 - **Note text empty** → ask **once** via AskUserQuestion for the note text, and offer the
-  type in the same prompt (`1:1` / `win` / `concern` / `feedback`). Default type: `note`.
+  type in the same prompt (`1:1` / `win` / `concern` / `strength` / `growth` / `blindspot`).
+  Default type: `note`.
 
-Infer the **type** from the wording when obvious (e.g. "win:", "shipped", "great" → `win`;
-"concern", "worried", "hesitant" → `concern`; "1:1" → `1:1`; "feedback" → `feedback`).
+Infer the **type** from the wording when obvious:
+- "win:", "shipped", "great" → `win`
+- "concern", "worried", "hesitant" → `concern`
+- "1:1" → `1:1`; "feedback" → `feedback`
+- "strength", "really strong at", "double down" → `strength`
+- "growth", "needs to work on", "development" → `growth`
+- "blind spot", "doesn't see", "unaware", "others feel" → `blindspot`
+
 Fall back to `note`. Never block on type — it is a convenience, not a requirement.
+The `strength`, `growth`, and `blindspot` types are what `/mgmt-review` leans on most:
+they map straight onto the review's Strengths, Development plan, and Hidden-zone sections,
+so capturing them as they happen is the highest-value logging you can do.
 
 If the user tagged competency areas (e.g. "ownership", "leadership", "communication"),
-capture them as `dimensions`. **Never force this** — omit the line if none were given.
+capture them as `dimensions` — useful context for ladder placement. **Never force this**
+— omit the line if none were given.
 
 ---
 
@@ -93,7 +105,7 @@ heading is always `## <today> — <type>`. Use `$(date +%Y-%m-%d)` — never har
 ```bash
 SLUG="<resolved slug>"
 NAME="<display name>"
-TYPE="<1:1|win|concern|feedback|note>"
+TYPE="<1:1|win|concern|feedback|strength|growth|blindspot|note>"
 LOGDIR="$TEAM_HOME/members/$SLUG"
 LOG="$LOGDIR/log.md"
 mkdir -p "$LOGDIR"
@@ -123,7 +135,8 @@ Example resulting entry:
 ```markdown
 ## 2026-07-10 — 1:1
 - win: shipped the ingestion rework, unblocked two teams
-- concern: hesitant to lead design discussions
+- blindspot: arrives at scoping already holding the solution — narrows the team's ideation
+- growth: create space for the team to find the answer before offering his own
 - dimensions: [ownership, leadership]
 ```
 

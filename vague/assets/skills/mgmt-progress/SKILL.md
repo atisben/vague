@@ -1,10 +1,11 @@
 ---
 name: mgmt-progress
-version: 1.0.0
+version: 1.1.0
 description: |
-  Read-only team dashboard: rating trends across review cycles, promotion
-  readiness, and staleness (who has no recent log or review). Never mutates
-  member state. State lives at $VAGUE_HOME/team/ (global, not per-project).
+  Read-only team dashboard: growth trajectory and each member's current growth
+  focus across review cycles, promotion readiness, and staleness (who has no recent
+  log or review). Never mutates member state. State lives at $VAGUE_HOME/team/
+  (global, not per-project).
   Trigger: "team progress", "who's ready for promo", "review status",
   "how is my team doing", "/mgmt-progress".
 sdk_commands:
@@ -32,10 +33,16 @@ TEAM_HOME="$VAGUE_HOME/team"
 
 ## What this skill is
 
-The analytics dashboard for an engineering manager's team. It reads every piece of
+The growth dashboard for an engineering manager's team. It reads every piece of
 team state the other mgmt-skills have built — the roster, the ladder, per-member
 profiles, logs, and review snapshots — and synthesizes a single progress report.
-No guessing, no vibes. Trends, readiness, staleness, and concrete next actions.
+No guessing, no vibes. Growth trajectory, each person's current growth focus,
+readiness, staleness, and concrete next actions.
+
+The frame matches the pack: this is about **how people are growing**, not a leaderboard
+of ratings. The `overall` trajectory is a coarse signal; the richer signal is each
+member's current **growth focus** and whether their named growth edges are moving. The
+ladder is context for readiness, not the scoreboard.
 
 This skill is **strictly read-only**. It never writes to any member file, profile,
 log, or review. It only reports.
@@ -106,8 +113,12 @@ find "$TEAM_HOME/members" -mindepth 1 -maxdepth 1 -type d 2>/dev/null \
 For each member compute:
 
 - **Overall trajectory** — the sequence of review-snapshot `overall` values
-  (`below` | `meets` | `exceeds`) across cycles, e.g. `meets → exceeds`. If there
-  is only one review, show that single value. If there are none, mark `—`.
+  (`below` | `meets` | `exceeds`) across cycles, e.g. `meets → exceeds`. A coarse
+  signal, not the headline. If there is only one review, show that single value. If
+  there are none, mark `—`.
+- **Current growth focus** — the `growth_focus` field from the **newest** review
+  snapshot (the top growth edge that cycle). This is the headline per member. If the
+  field is absent (older snapshot) or no reviews exist, mark `—`.
 - **Current readiness** — the `next_level_readiness` (`not-yet` | `approaching` |
   `ready`) from the **newest** review snapshot. If no reviews, take
   `ladder_target` from `profile.md` and mark readiness `—` (no data).
@@ -177,6 +188,17 @@ Use `⚠` to mark values that cross a staleness threshold, and `↓` next to a d
 `overall`. Members with no reviews show `—` for overall/readiness and `never` for
 last review.
 
+### Growth focus
+
+The headline section. For each active member with a review, list their current
+`growth_focus` (the top growth edge from their newest snapshot) — this is what they
+should be actively working on. One line each:
+
+- **<Name>** — <growth_focus from newest review>.
+
+Members with no review yet: "no review yet — run `/mgmt-review` to set a growth focus."
+This section answers the manager's real question: *is everyone growing, and on what?*
+
 ### Promotion watch
 
 List members whose readiness is `approaching` or `ready`. For each:
@@ -224,6 +246,10 @@ The full report follows this structure:
 |-----------|-------|--------|----------------|-------------|----------|----------------|
 | Alex Kim  | L4    | L5     | exceeds        | ready       | 4d       | H1-2026 (12d)  |
 | Sam Ortiz | L3    | L4     | meets          | approaching | 41d ⚠    | never ⚠        |
+
+### Growth Focus
+- **Alex Kim** — create space for the team to ideate before offering his own solution.
+- **Sam Ortiz** — no review yet — run `/mgmt-review` to set a growth focus.
 
 ### Promotion Watch
 - **Alex Kim** L4 → L5 — ready. Exceeds two cycles running. Promo candidate for next calibration.

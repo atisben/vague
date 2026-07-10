@@ -1,6 +1,6 @@
 ---
 name: mgmt-setup
-version: 1.0.0
+version: 1.1.0
 description: |
   Bootstrap and maintain a manager's team state: import a company career ladder,
   define review cycles, and add/edit team members. Foundation for the mgmt-* pack.
@@ -36,8 +36,14 @@ TEAM_HOME="$VAGUE_HOME/team"
 The onboarding session for people management. It creates and maintains the shared
 state that the whole `mgmt-*` pack reads from: the company career ladder, your
 review cycles, and one folder per direct report. Everything downstream —
-`/mgmt-log` (capturing 1:1s and observations) and `/mgmt-review` (running review
-cycles) — depends on the state created here.
+`/mgmt-log` (capturing 1:1s and observations) and `/mgmt-review` (running
+growth-focused development reviews) — depends on the state created here.
+
+The pack is **growth-oriented**: reviews are about how people grow — what they
+achieved, what didn't land and why, their strengths, and the blind spots only a
+manager can surface — with the ladder as **calibration context** (where someone
+sits, the gap to the next level), not as a scoring spine. The state below reflects
+that: each member carries their strengths and growth areas, not just a level.
 
 You are a seasoned engineering manager helping a peer set up. Direct, structured,
 warm. Ask only what you need, infer the rest, and never lose the manager's data.
@@ -55,9 +61,9 @@ All state is global (per-manager, not per-project) and lives under `$TEAM_HOME`:
 ```
 $VAGUE_HOME/team/           (global state root; must NEVER be inside a git repo)
   config.md                 roster + review conventions
-  ladder.md                 imported company competency ladder (canonical rubric)
+  ladder.md                 imported company competency ladder (calibration context)
   members/<slug>/
-    profile.md              role, level, ladder target, goals
+    profile.md              role, level, ladder target, goals, strengths, growth areas
     log.md                  append-only dated stream (maintained by mgmt-log)
     reviews/<CYCLE>.md      immutable review snapshots, CYCLE like "H1-2026" (maintained by mgmt-review)
 ```
@@ -81,6 +87,11 @@ Free-form notes about the team as a whole.
 ```
 
 ### `ladder.md` (imported verbatim then lightly structured)
+
+The ladder is **calibration context** for reviews — used to place someone on the
+company track and describe the gap to the next level. It is not the scoring spine of
+a review; `/mgmt-review` is a growth document that references the ladder, not a
+rubric-grading exercise.
 
 ```markdown
 ---
@@ -112,7 +123,14 @@ last_review:            # empty until first review
 ## Career narrative
 ## Aspirations / goals
 ## Standing context (working style, constraints)
+## Strengths (double down)
+## Growth areas / blind spots
 ```
+
+The `Strengths` and `Growth areas / blind spots` sections are the developmental spine
+downstream: `/mgmt-review` reads them so each cycle builds on the last, and refreshes
+them (append-merge) after every review. Seed them at onboarding with whatever the
+manager already knows; leave a placeholder if nothing yet.
 
 ---
 
@@ -216,8 +234,9 @@ If `config.md` does not yet exist, ask for the manager's name. This is written t
 
 ## LADDER MODE — import or replace the career ladder
 
-Import the company's competency ladder into `ladder.md`. This becomes the
-canonical rubric every review is scored against.
+Import the company's competency ladder into `ladder.md`. Reviews use it as
+**calibration context** — to place a member on the track and describe the gap to the
+next level — not as a rubric to grade against.
 
 ### Step L1 — Collect the source
 
@@ -301,6 +320,8 @@ Gather, asking only for what you don't already have:
   `$(date +%Y-%m-%d)`)
 - **Career goals / aspirations** and any standing context (working style,
   constraints)
+- **Known strengths** and **growth areas / blind spots** (whatever the manager
+  already knows — seeds the developmental spine; fine to leave empty)
 
 ### Step M2 — Derive the slug
 
@@ -325,8 +346,10 @@ touch "$TEAM_HOME/members/$SLUG/log.md"
 
 Use the Write tool to create `$TEAM_HOME/members/$SLUG/profile.md` following the
 schema above, filling frontmatter from Step M1 and leaving `last_review:` empty.
-Populate the body sections (career narrative, aspirations, standing context) from
-what the manager told you.
+Populate the body sections (career narrative, aspirations, standing context,
+strengths, growth areas / blind spots) from what the manager told you. Leave a
+placeholder in the strengths/growth sections if nothing is known yet — the first
+`/mgmt-review` will fill them.
 
 ### Step M4 — Update the roster in `config.md`
 
@@ -357,8 +380,8 @@ manager, created date, review convention (cycles + defaults), and the roster.
 After setup, tell the manager what to do next:
 
 > "Team state is set up at `$TEAM_HOME`. From here:
-> - `/mgmt-log` — capture 1:1 notes and observations for a report.
-> - `/mgmt-review` — run a review cycle against the ladder.
+> - `/mgmt-log` — capture 1:1 notes, wins, concerns, and blind spots for a report.
+> - `/mgmt-review` — run a growth-focused development review (ladder as context).
 > Add more people any time with `/mgmt-setup member`."
 
 ---
