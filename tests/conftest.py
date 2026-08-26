@@ -16,14 +16,20 @@ def vague_home(tmp_path):
 
 
 @pytest.fixture(autouse=True)
-def isolate_claude_env(monkeypatch):
+def isolate_claude_env(tmp_path, monkeypatch):
     """Keep the developer's own Claude profile config out of the test run.
 
-    Without this, a real CLAUDE_CONFIG_DIR on the machine leaks into
-    claude_dirs() and tests would resolve against the developer's home.
+    Clearing the env vars is not enough: claude_dirs() also reads
+    $VAGUE_HOME/config.env, so an unset VAGUE_HOME would fall back to the real
+    ~/.vague and pick up whatever profiles the developer has configured.
+    Pointing VAGUE_HOME at an empty tmp dir closes both routes.
     """
     for var in ("VAGUE_CLAUDE_DIRS", "CLAUDE_CONFIG_DIR"):
         monkeypatch.delenv(var, raising=False)
+
+    isolated_home = tmp_path / "isolated-vague-home"
+    isolated_home.mkdir(exist_ok=True)
+    monkeypatch.setenv("VAGUE_HOME", str(isolated_home))
 
 
 @pytest.fixture

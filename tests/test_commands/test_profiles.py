@@ -97,26 +97,26 @@ class TestInstructionsBlockAssembly:
         claude_d = home / "claude.d"
         claude_d.mkdir()
         (claude_d / "base.md").write_text("# Shared\n")
-        (claude_d / "work.md").write_text("# Work Only\n\nAlma monolith.\n")
+        (claude_d / "work.md").write_text("# Work Only\n\nInternal service notes.\n")
         (claude_d / "personal.md").write_text("# Personal Only\n\nObsidian vault.\n")
 
         block = _get_instructions_block(profile="work")
 
         assert "# Work Only" in block
-        assert "Alma monolith." in block
+        assert "Internal service notes." in block
 
     def test_excludes_other_profiles_overlay(self, two_profiles):
         """The whole point of profiles: work content must not reach personal."""
         _, _, home = two_profiles
         claude_d = home / "claude.d"
         claude_d.mkdir()
-        (claude_d / "work.md").write_text("# Work Only\n\nAlma monolith.\n")
+        (claude_d / "work.md").write_text("# Work Only\n\nInternal service notes.\n")
         (claude_d / "personal.md").write_text("# Personal Only\n\nObsidian vault.\n")
 
         personal_block = _get_instructions_block(profile="personal")
 
         assert "# Personal Only" in personal_block
-        assert "Alma monolith." not in personal_block
+        assert "Internal service notes." not in personal_block
         assert "# Work Only" not in personal_block
 
     def test_base_precedes_overlay(self, two_profiles):
@@ -233,7 +233,7 @@ class TestSyncPreservesUserContent:
         work, personal, home = two_profiles
         claude_d = home / "claude.d"
         claude_d.mkdir()
-        (claude_d / "work.md").write_text("# Alma internal\n")
+        (claude_d / "work.md").write_text("# Work internal\n")
         (claude_d / "personal.md").write_text("# Obsidian vault\n")
         (work / "CLAUDE.md").write_text("")
         (personal / "CLAUDE.md").write_text("")
@@ -243,7 +243,7 @@ class TestSyncPreservesUserContent:
         assert result.exit_code == 0
         work_content = (work / "CLAUDE.md").read_text()
         personal_content = (personal / "CLAUDE.md").read_text()
-        assert "# Alma internal" in work_content
-        assert "# Alma internal" not in personal_content
+        assert "# Work internal" in work_content
+        assert "# Work internal" not in personal_content
         assert "# Obsidian vault" in personal_content
         assert "# Obsidian vault" not in work_content
