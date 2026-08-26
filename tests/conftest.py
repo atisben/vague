@@ -15,10 +15,34 @@ def vague_home(tmp_path):
     del os.environ["VAGUE_HOME"]
 
 
+@pytest.fixture(autouse=True)
+def isolate_claude_env(monkeypatch):
+    """Keep the developer's own Claude profile config out of the test run.
+
+    Without this, a real CLAUDE_CONFIG_DIR on the machine leaks into
+    claude_dirs() and tests would resolve against the developer's home.
+    """
+    for var in ("VAGUE_CLAUDE_DIRS", "CLAUDE_CONFIG_DIR"):
+        monkeypatch.delenv(var, raising=False)
+
+
+@pytest.fixture
+def vague_home_dir(tmp_path):
+    """Create a temporary VAGUE_HOME directory without touching the environment.
+
+    Tests that need the env var set should do so with monkeypatch, so the
+    lookup order under test stays explicit.
+    """
+    home = tmp_path / ".vague"
+    home.mkdir()
+    return home
+
+
 @pytest.fixture
 def git_repo(tmp_path):
     """Create a minimal git repo for testing."""
     import subprocess
+
     repo_dir = tmp_path / "repo"
     repo_dir.mkdir()
     subprocess.run(["git", "init"], cwd=str(repo_dir), capture_output=True)

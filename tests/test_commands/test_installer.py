@@ -47,15 +47,21 @@ class TestDetectRuntimes:
         assert "missing" not in runtimes
 
     def test_returns_empty_when_none(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("vague.installer.RUNTIME_DIRS", {
-            "gone": (str(tmp_path / "nope"), str(tmp_path / "nope" / "skills"), None),
-        })
+        monkeypatch.setattr(
+            "vague.installer.RUNTIME_DIRS",
+            {
+                "gone": (str(tmp_path / "nope"), str(tmp_path / "nope" / "skills"), None),
+            },
+        )
         assert _detect_runtimes() == []
 
     def test_skips_none_base_dir(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("vague.installer.RUNTIME_DIRS", {
-            "generic": (None, str(tmp_path / "skills"), None),
-        })
+        monkeypatch.setattr(
+            "vague.installer.RUNTIME_DIRS",
+            {
+                "generic": (None, str(tmp_path / "skills"), None),
+            },
+        )
         assert _detect_runtimes() == []
 
 
@@ -66,7 +72,10 @@ class TestUpdateInstructionFile:
         instruction_file.write_text("# My Config\n\nSome content.\n")
 
         # Provide a simple template
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "## Vague Skills\nRouting table here.")
+        monkeypatch.setattr(
+            "vague.installer._get_instructions_block",
+            lambda profile=None: "## Vague Skills\nRouting table here.",
+        )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -79,11 +88,9 @@ class TestUpdateInstructionFile:
     def test_replaces_existing_markers(self, fake_runtimes, monkeypatch):
         tmp_path, patched = fake_runtimes
         instruction_file = Path(patched["claude"][2])
-        instruction_file.write_text(
-            f"# Config\n\n{MARKER_START}\nold content\n{MARKER_END}\n\n# Footer\n"
-        )
+        instruction_file.write_text(f"# Config\n\n{MARKER_START}\nold content\n{MARKER_END}\n\n# Footer\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "new content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "new content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -96,11 +103,9 @@ class TestUpdateInstructionFile:
     def test_replaces_legacy_bastack_markers(self, fake_runtimes, monkeypatch):
         tmp_path, patched = fake_runtimes
         instruction_file = Path(patched["claude"][2])
-        instruction_file.write_text(
-            f"# Config\n\n{LEGACY_MARKER_START}\nlegacy stuff\n{LEGACY_MARKER_END}\n"
-        )
+        instruction_file.write_text(f"# Config\n\n{LEGACY_MARKER_START}\nlegacy stuff\n{LEGACY_MARKER_END}\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "migrated content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "migrated content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -112,13 +117,13 @@ class TestUpdateInstructionFile:
 
     def test_skips_when_file_missing(self, fake_runtimes, monkeypatch):
         """Non-fatal when instruction file doesn't exist."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "content")
         # Don't create the instruction file — should not raise
         _update_instruction_file("claude", Path("/tmp/fake"))
 
     def test_skips_when_no_instruction_file_configured(self, fake_runtimes, monkeypatch):
         """Runtimes with instruction_file=None are skipped."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "content")
         _update_instruction_file("missing", Path("/tmp/fake"))
 
 
@@ -126,9 +131,7 @@ class TestRemoveInstructionBlock:
     def test_removes_vague_block(self, fake_runtimes, monkeypatch):
         tmp_path, patched = fake_runtimes
         instruction_file = Path(patched["claude"][2])
-        instruction_file.write_text(
-            f"# Config\n\n{MARKER_START}\nvague stuff\n{MARKER_END}\n\n# Footer\n"
-        )
+        instruction_file.write_text(f"# Config\n\n{MARKER_START}\nvague stuff\n{MARKER_END}\n\n# Footer\n")
 
         _remove_instruction_block("claude")
 
@@ -141,9 +144,7 @@ class TestRemoveInstructionBlock:
     def test_removes_legacy_block(self, fake_runtimes, monkeypatch):
         tmp_path, patched = fake_runtimes
         instruction_file = Path(patched["claude"][2])
-        instruction_file.write_text(
-            f"# Config\n\n{LEGACY_MARKER_START}\nlegacy\n{LEGACY_MARKER_END}\n"
-        )
+        instruction_file.write_text(f"# Config\n\n{LEGACY_MARKER_START}\nlegacy\n{LEGACY_MARKER_END}\n")
 
         _remove_instruction_block("claude")
 
@@ -186,9 +187,12 @@ class TestCmdInstall:
         assert "unknown runtime" in result.output
 
     def test_install_no_runtimes_detected(self, tmp_path, monkeypatch, vague_home):
-        monkeypatch.setattr("vague.installer.RUNTIME_DIRS", {
-            "gone": (str(tmp_path / "nope"), str(tmp_path / "nope" / "skills"), None),
-        })
+        monkeypatch.setattr(
+            "vague.installer.RUNTIME_DIRS",
+            {
+                "gone": (str(tmp_path / "nope"), str(tmp_path / "nope" / "skills"), None),
+            },
+        )
         result = runner.invoke(sdk_app, ["install"])
         assert result.exit_code != 0
         assert "no runtimes detected" in result.output.lower()

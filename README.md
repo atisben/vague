@@ -130,6 +130,63 @@ All data lives in `~/.vague/`:
 
 ---
 
+## Claude profiles
+
+If you run more than one Claude Code profile — a work account and a personal
+one, say — declare them once and `vague install` keeps every profile in sync.
+
+```bash
+# ~/.vague/config.env
+VAGUE_CLAUDE_DIRS=~/.claude-work:~/.claude-personal
+```
+
+`VAGUE_CLAUDE_DIRS` as a real environment variable overrides the file. With
+neither set, vague falls back to `CLAUDE_CONFIG_DIR`, then to `~/.claude`.
+
+Each directory becomes its own runtime key, so you can target one or all:
+
+```bash
+vague install                            # every detected runtime
+vague install --runtime claude           # every configured Claude profile
+vague install --runtime claude:work      # just that one
+```
+
+### Shared and per-profile instructions
+
+The CLAUDE.md written into each profile is assembled from fragments you own:
+
+```
+~/.vague/claude.d/
+├── base.md         ← shared by every profile
+├── work.md         ← only ~/.claude-work
+└── personal.md     ← only ~/.claude-personal
+```
+
+The profile name comes from the directory: `~/.claude-work` → `work`,
+`~/.claude` → `default`. Rendered output is `base.md`, then the matching
+overlay, then the generated skill routing table.
+
+Seed the fragments from a CLAUDE.md you already have:
+
+```bash
+vague claude-init                        # uses the first profile's CLAUDE.md
+vague claude-init --source ~/.claude-personal/CLAUDE.md
+```
+
+Everything vague writes is wrapped in `<!-- vague:start -->` /
+`<!-- vague:end -->`. Only that region is ever rewritten — anything you type
+outside the markers is left alone, and `vague uninstall` removes the region
+without touching the rest of the file.
+
+> **Careful where a profile lives.** Claude Code reads `CLAUDE_CONFIG_DIR`,
+> but it *also* scans every parent directory of your project for
+> `CLAUDE.md` and `.claude/CLAUDE.md`. A profile at `~/.claude` therefore
+> loads into every session run from anywhere under `~`, whichever profile
+> you actually selected. Naming both profiles explicitly — `~/.claude-work`
+> and `~/.claude-personal` — keeps them isolated.
+
+---
+
 ## CLI Reference
 
 ```bash
@@ -146,6 +203,8 @@ vague timeline-log '<json>'             # append session event
 vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract
 vague skill-audit <dir> --strict        # scan for legacy bash patterns
+vague install --runtime claude:work     # install/sync one Claude profile
+vague claude-init                       # seed ~/.vague/claude.d/ from an existing CLAUDE.md
 ```
 
 ---

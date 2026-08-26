@@ -8,6 +8,9 @@ from pathlib import Path
 
 import typer
 
+from vague.config import CLAUDE_DIRS_KEY as CLAUDE_DIRS_HINT
+from vague.config import claude_d_dir, claude_dirs, profile_name_for
+
 RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
     # (base_dir, skills_dir, instruction_file)
     "claude": ("~/.claude/", "~/.claude/skills/", "~/.claude/CLAUDE.md"),
@@ -22,11 +25,61 @@ MARKER_END = "<!-- vague:end -->"
 LEGACY_MARKER_START = "<!-- bastack:start -->"
 LEGACY_MARKER_END = "<!-- bastack:end -->"
 
+CLAUDE_RUNTIME = "claude"
+BASE_FRAGMENT = "base.md"
+DEFAULT_PROFILE = "default"
+
+
+def _effective_runtime_dirs() -> dict[str, tuple[str | None, str, str | None]]:
+    """Return RUNTIME_DIRS with the claude entry expanded into one key per profile.
+
+    A user running several Claude profiles (work and personal, say) declares
+    them in VAGUE_CLAUDE_DIRS. Each becomes its own runtime key —
+    ``claude:work``, ``claude:personal`` — so every profile gets its own
+    skills directory and its own rendered CLAUDE.md. When nothing is
+    configured the static default is returned unchanged.
+    """
+    dirs = dict(RUNTIME_DIRS)
+    profiles = claude_dirs()
+    if not profiles:
+        return dirs
+
+    dirs.pop(CLAUDE_RUNTIME, None)
+    for profile_dir in profiles:
+        key = f"{CLAUDE_RUNTIME}:{profile_name_for(profile_dir)}"
+        dirs[key] = (
+            str(profile_dir),
+            str(profile_dir / "skills"),
+            str(profile_dir / "CLAUDE.md"),
+        )
+    return dirs
+
+
+def _resolve_requested_runtimes(runtime: str) -> list[str]:
+    """Expand a user-supplied --runtime into concrete runtime keys.
+
+    ``claude`` selects every configured profile; ``claude:work`` selects one.
+    An unknown name yields an empty list so the caller can report it.
+    """
+    dirs = _effective_runtime_dirs()
+    if runtime in dirs:
+        return [runtime]
+    prefix = f"{runtime}:"
+    return [key for key in dirs if key.startswith(prefix)]
+
+
+def _profile_for_runtime(runtime: str) -> str | None:
+    """Return the claude.d profile name for a runtime key, or None for non-Claude ones."""
+    base, _, profile = runtime.partition(":")
+    if base != CLAUDE_RUNTIME:
+        return None
+    return profile or DEFAULT_PROFILE
+
 
 def _detect_runtimes() -> list[str]:
     """Return all runtimes whose base_dir exists on this machine."""
     found = []
-    for key, (base_dir, _, _) in RUNTIME_DIRS.items():
+    for key, (base_dir, _, _) in _effective_runtime_dirs().items():
         if base_dir is None:
             continue
         if Path(base_dir).expanduser().exists():
@@ -78,8 +131,41 @@ def _parse_skill_trigger(skill_dir: Path) -> str | None:
     return trigger_text
 
 
-def _get_instructions_block() -> str:
-    """Build the instructions block dynamically from skill metadata."""
+def _read_fragment(path: Path) -> str:
+    """Read a claude.d fragment, returning '' if absent, unreadable, or blank."""
+    if not path.is_file():
+        return ""
+    try:
+        return path.read_text().strip()
+    except OSError:
+        return ""
+
+
+def _get_instructions_block(profile: str | None = None) -> str:
+    """Assemble the managed block: shared base, profile overlay, then skill routing.
+
+    ``profile`` selects which overlay in ``claude.d/`` is included. Passing
+    None (non-Claude runtimes) yields the skill table alone, so personal
+    content never leaks into runtimes that did not ask for it.
+    """
+    skill_section = _build_skill_section()
+    if not skill_section:
+        return ""
+
+    sections: list[str] = []
+    if profile:
+        source = claude_d_dir()
+        for fragment in (source / BASE_FRAGMENT, source / f"{profile}.md"):
+            text = _read_fragment(fragment)
+            if text:
+                sections.append(text)
+    sections.append(skill_section.strip())
+
+    return "\n\n".join(sections) + "\n"
+
+
+def _build_skill_section() -> str:
+    """Build the vague skill routing section from skill metadata."""
     template = _get_assets_dir() / "templates" / "instructions-block.md"
     if not template.exists():
         return ""
@@ -114,7 +200,7 @@ def _get_instructions_block() -> str:
         "",
         "## Skills Location",
         "",
-        "Skills are in `~/.claude/skills/` and/or `~/.copilot/skills/` (each skill symlinked to this package's bundled `assets/skills/` by `vague install`). Edits to the bundled assets propagate live; re-run `vague install` only to add new runtimes or relink after reinstalling the package.",  # noqa: E501
+        "Skills are symlinked into each configured runtime's `skills/` directory by `vague install`, pointing at this package's bundled `assets/skills/`. Edits to the bundled assets propagate live; re-run `vague install` only to add new runtimes or relink after reinstalling the package.",  # noqa: E501
         "",
         "## State",
         "",
@@ -125,7 +211,7 @@ def _get_instructions_block() -> str:
 
 def _update_instruction_file(runtime: str, skills_path: Path) -> None:
     """Insert or replace the vague instructions block in the runtime's instruction file."""
-    _, _, instruction_file_str = RUNTIME_DIRS[runtime]
+    _, _, instruction_file_str = _effective_runtime_dirs()[runtime]
     if instruction_file_str is None:
         return
 
@@ -133,7 +219,7 @@ def _update_instruction_file(runtime: str, skills_path: Path) -> None:
     if not instruction_file.parent.exists():
         return
 
-    block_content = _get_instructions_block()
+    block_content = _get_instructions_block(profile=_profile_for_runtime(runtime))
     if not block_content:
         return
 
@@ -185,7 +271,7 @@ def _update_instruction_file(runtime: str, skills_path: Path) -> None:
 
 def _remove_instruction_block(runtime: str) -> None:
     """Remove the vague instructions block from the runtime's instruction file."""
-    _, _, instruction_file_str = RUNTIME_DIRS[runtime]
+    _, _, instruction_file_str = _effective_runtime_dirs()[runtime]
     if instruction_file_str is None:
         return
 
@@ -225,7 +311,7 @@ def _remove_instruction_block(runtime: str) -> None:
 
 def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> int:
     """Install skills and instruction block to a single runtime. Returns count installed."""
-    _, skills_target_str, _ = RUNTIME_DIRS[runtime]
+    _, skills_target_str, _ = _effective_runtime_dirs()[runtime]
     skills_target = Path(skills_target_str).expanduser()
     skills_src = assets / "skills"
 
@@ -285,13 +371,13 @@ def cmd_install(
     skill_names = sorted(d.name for d in skills_src.iterdir() if d.is_dir())
 
     if runtime is not None:
-        if runtime not in RUNTIME_DIRS:
+        runtimes = _resolve_requested_runtimes(runtime)
+        if not runtimes:
             typer.echo(
-                f"Error: unknown runtime '{runtime}'. Choose from: {', '.join(RUNTIME_DIRS)}",
+                f"Error: unknown runtime '{runtime}'. Choose from: {', '.join(_effective_runtime_dirs())}",
                 err=True,
             )
             raise typer.Exit(1)
-        runtimes = [runtime]
     else:
         runtimes = _detect_runtimes()
         if not runtimes:
@@ -299,9 +385,10 @@ def cmd_install(
             raise typer.Exit(1)
         typer.echo(f"Detected runtimes: {', '.join(runtimes)}", err=True)
 
+    effective = _effective_runtime_dirs()
     typer.echo(f"\nThis will install {len(skill_names)} skill(s) to {len(runtimes)} runtime(s):")
     for rt in runtimes:
-        _, skills_target_str, _ = RUNTIME_DIRS[rt]
+        _, skills_target_str, _ = effective[rt]
         skills_target = Path(skills_target_str).expanduser()
         typer.echo(f"\n  [{rt}] {skills_target}")
         for name in skill_names:
@@ -327,6 +414,63 @@ def cmd_install(
     typer.echo(f"\nInstalled {total} skill(s) across {len(runtimes)} runtime(s).", err=True)
 
 
+def _strip_managed_block(content: str) -> str:
+    """Return content with any vague-managed block removed."""
+    for start_marker, end_marker in (
+        (MARKER_START, MARKER_END),
+        (LEGACY_MARKER_START, LEGACY_MARKER_END),
+    ):
+        start_idx = content.find(start_marker)
+        end_idx = content.find(end_marker)
+        if start_idx != -1 and end_idx != -1:
+            content = content[:start_idx] + content[end_idx + len(end_marker) :]
+    return content.strip()
+
+
+def cmd_claude_init(source: Path | None = None, force: bool = False) -> None:
+    """Seed claude.d/ from an existing CLAUDE.md so nothing is lost on first sync.
+
+    The pre-existing hand-written content becomes the shared ``base.md``; an
+    empty overlay is created per configured profile, ready for anything that
+    should apply to only one of them.
+    """
+    profiles = claude_dirs()
+    if not profiles:
+        typer.echo(
+            f"Error: no Claude profiles configured. Set {CLAUDE_DIRS_HINT} in $VAGUE_HOME/config.env first.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    if source is None:
+        source = Path(profiles[0]) / "CLAUDE.md"
+
+    target_dir = claude_d_dir()
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    base_file = target_dir / BASE_FRAGMENT
+    if base_file.exists() and not force:
+        typer.echo(f"Kept existing {base_file} (use --force to overwrite)", err=True)
+    elif source.is_file():
+        base_file.write_text(_strip_managed_block(source.read_text()) + "\n")
+        typer.echo(f"Seeded {base_file} from {source}", err=True)
+    else:
+        base_file.write_text("")
+        typer.echo(f"Created empty {base_file} ({source} not found)", err=True)
+
+    for profile_dir in profiles:
+        overlay = target_dir / f"{profile_name_for(profile_dir)}.md"
+        if overlay.exists():
+            continue
+        overlay.write_text("")
+        typer.echo(f"Created empty overlay {overlay}", err=True)
+
+    typer.echo(
+        "\nEdit these files, then run 'vague install' to render them into every profile.",
+        err=True,
+    )
+
+
 def _get_vague_skill_names() -> set[str]:
     """Return the set of skill directory names bundled with vague."""
     skills_src = _get_assets_dir() / "skills"
@@ -340,13 +484,13 @@ def cmd_uninstall(
 ) -> None:
     """Remove vague skills from LLM runtime directories."""
     if runtime is not None:
-        if runtime not in RUNTIME_DIRS:
+        runtimes = _resolve_requested_runtimes(runtime)
+        if not runtimes:
             typer.echo(
-                f"Error: unknown runtime '{runtime}'. Choose from: {', '.join(RUNTIME_DIRS)}",
+                f"Error: unknown runtime '{runtime}'. Choose from: {', '.join(_effective_runtime_dirs())}",
                 err=True,
             )
             raise typer.Exit(1)
-        runtimes = [runtime]
     else:
         runtimes = _detect_runtimes()
         if not runtimes:
@@ -359,11 +503,10 @@ def cmd_uninstall(
     # Collect what's installed per runtime
     to_remove: dict[str, list[str]] = {}
     for rt in runtimes:
-        _, skills_target_str, _ = RUNTIME_DIRS[rt]
+        _, skills_target_str, _ = _effective_runtime_dirs()[rt]
         skills_target = Path(skills_target_str).expanduser()
         installed = sorted(
-            name for name in vague_skills
-            if (skills_target / name).is_dir() or (skills_target / name).is_symlink()
+            name for name in vague_skills if (skills_target / name).is_dir() or (skills_target / name).is_symlink()
         )
         if installed:
             to_remove[rt] = installed
@@ -375,7 +518,7 @@ def cmd_uninstall(
     total_skills = sum(len(v) for v in to_remove.values())
     typer.echo(f"\nThis will remove {total_skills} skill(s) from {len(to_remove)} runtime(s):")
     for rt, names in to_remove.items():
-        _, skills_target_str, _ = RUNTIME_DIRS[rt]
+        _, skills_target_str, _ = _effective_runtime_dirs()[rt]
         typer.echo(f"\n  [{rt}] {Path(skills_target_str).expanduser()}")
         for name in names:
             typer.echo(f"    - {name}")
@@ -387,7 +530,7 @@ def cmd_uninstall(
 
     removed = 0
     for rt, names in to_remove.items():
-        _, skills_target_str, _ = RUNTIME_DIRS[rt]
+        _, skills_target_str, _ = _effective_runtime_dirs()[rt]
         skills_target = Path(skills_target_str).expanduser()
         for name in names:
             _remove_existing(skills_target / name)
