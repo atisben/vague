@@ -131,6 +131,26 @@ def _parse_skill_trigger(skill_dir: Path) -> str | None:
     return trigger_text
 
 
+def _find_marker_span(content: str, start_marker: str, end_marker: str) -> tuple[int, int] | None:
+    """Locate a managed block, requiring each marker to sit alone on its line.
+
+    Prose that quotes a marker — "everything below the vague:start line is
+    generated" — is documentation, not a boundary. Matching it would splice
+    the block in mid-sentence and silently destroy the user's own content
+    after that point.
+    """
+    start_pattern = re.compile(rf"^[ \t]*{re.escape(start_marker)}[ \t]*$", re.MULTILINE)
+    end_pattern = re.compile(rf"^[ \t]*{re.escape(end_marker)}[ \t]*$", re.MULTILINE)
+
+    start_match = start_pattern.search(content)
+    if start_match is None:
+        return None
+    end_match = end_pattern.search(content, start_match.end())
+    if end_match is None:
+        return None
+    return start_match.start(), end_match.end()
+
+
 def _read_fragment(path: Path) -> str:
     """Read a claude.d fragment, returning '' if absent, unreadable, or blank."""
     if not path.is_file():
@@ -237,10 +257,9 @@ def _update_instruction_file(runtime: str, skills_path: Path) -> None:
             (MARKER_START, MARKER_END),
             (LEGACY_MARKER_START, LEGACY_MARKER_END),
         ]:
-            start_idx = content.find(start_marker)
-            end_idx = content.find(end_marker)
-            if start_idx != -1 and end_idx != -1:
-                end_idx += len(end_marker)
+            span = _find_marker_span(content, start_marker, end_marker)
+            if span is not None:
+                start_idx, end_idx = span
                 content = content[:start_idx] + wrapped_block + content[end_idx:]
                 try:
                     instruction_file.write_text(content)
@@ -289,10 +308,9 @@ def _remove_instruction_block(runtime: str) -> None:
         (MARKER_START, MARKER_END),
         (LEGACY_MARKER_START, LEGACY_MARKER_END),
     ]:
-        start_idx = content.find(start_marker)
-        end_idx = content.find(end_marker)
-        if start_idx != -1 and end_idx != -1:
-            end_idx += len(end_marker)
+        span = _find_marker_span(content, start_marker, end_marker)
+        if span is not None:
+            start_idx, end_idx = span
             # Remove block and surrounding blank lines
             before = content[:start_idx].rstrip("\n")
             after = content[end_idx:].lstrip("\n")
@@ -420,10 +438,10 @@ def _strip_managed_block(content: str) -> str:
         (MARKER_START, MARKER_END),
         (LEGACY_MARKER_START, LEGACY_MARKER_END),
     ):
-        start_idx = content.find(start_marker)
-        end_idx = content.find(end_marker)
-        if start_idx != -1 and end_idx != -1:
-            content = content[:start_idx] + content[end_idx + len(end_marker) :]
+        span = _find_marker_span(content, start_marker, end_marker)
+        if span is not None:
+            start_idx, end_idx = span
+            content = content[:start_idx] + content[end_idx:]
     return content.strip()
 
 

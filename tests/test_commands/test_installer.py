@@ -127,6 +127,73 @@ class TestUpdateInstructionFile:
         _update_instruction_file("missing", Path("/tmp/fake"))
 
 
+class TestMarkersMustOwnTheirLine:
+    """A marker quoted inside prose is documentation, not a block boundary.
+
+    Treating a mid-sentence mention as the start of the managed region
+    silently destroys everything the user wrote after it.
+    """
+
+    def test_prose_mention_before_the_block_is_not_the_boundary(self, fake_runtimes, monkeypatch):
+        tmp_path, patched = fake_runtimes
+        instruction_file = Path(patched["claude"][2])
+        instruction_file.write_text(
+            f"# Notes\n\nEverything after the `{MARKER_START}` line is generated.\n\n"
+            f"## Keep Me\n\nHand-written content.\n\n"
+            f"{MARKER_START}\nOLD_GENERATED\n{MARKER_END}\n"
+        )
+
+        monkeypatch.setattr(
+            "vague.installer._get_instructions_block",
+            lambda profile=None: "NEW_GENERATED",
+        )
+
+        _update_instruction_file("claude", Path(patched["claude"][1]))
+
+        content = instruction_file.read_text()
+        assert "## Keep Me" in content
+        assert "Hand-written content." in content
+        assert "Everything after the" in content
+        assert "NEW_GENERATED" in content
+        assert "OLD_GENERATED" not in content
+
+    def test_prose_mention_of_end_marker_is_ignored(self, fake_runtimes, monkeypatch):
+        tmp_path, patched = fake_runtimes
+        instruction_file = Path(patched["claude"][2])
+        instruction_file.write_text(
+            f"# Notes\n\nThe block ends at `{MARKER_END}` — do not edit it.\n\n"
+            f"{MARKER_START}\nOLD_GENERATED\n{MARKER_END}\n\n# Footer\n"
+        )
+
+        monkeypatch.setattr(
+            "vague.installer._get_instructions_block",
+            lambda profile=None: "NEW_GENERATED",
+        )
+
+        _update_instruction_file("claude", Path(patched["claude"][1]))
+
+        content = instruction_file.read_text()
+        assert "The block ends at" in content
+        assert "# Footer" in content
+        assert "NEW_GENERATED" in content
+        assert "OLD_GENERATED" not in content
+
+    def test_removal_ignores_prose_mentions(self, fake_runtimes):
+        tmp_path, patched = fake_runtimes
+        instruction_file = Path(patched["claude"][2])
+        instruction_file.write_text(
+            f"# Notes\n\nSee `{MARKER_START}` for details.\n\n"
+            f"{MARKER_START}\ngenerated\n{MARKER_END}\n\n# Footer\n"
+        )
+
+        _remove_instruction_block("claude")
+
+        content = instruction_file.read_text()
+        assert "generated" not in content
+        assert "See `" in content
+        assert "# Footer" in content
+
+
 class TestRemoveInstructionBlock:
     def test_removes_vague_block(self, fake_runtimes, monkeypatch):
         tmp_path, patched = fake_runtimes
