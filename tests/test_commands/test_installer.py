@@ -74,7 +74,7 @@ class TestUpdateInstructionFile:
         # Provide a simple template
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda profile=None: "## Vague Skills\nRouting table here.",
+            lambda: "## Vague Skills\nRouting table here.",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -90,7 +90,7 @@ class TestUpdateInstructionFile:
         instruction_file = Path(patched["claude"][2])
         instruction_file.write_text(f"# Config\n\n{MARKER_START}\nold content\n{MARKER_END}\n\n# Footer\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "new content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "new content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -105,7 +105,7 @@ class TestUpdateInstructionFile:
         instruction_file = Path(patched["claude"][2])
         instruction_file.write_text(f"# Config\n\n{LEGACY_MARKER_START}\nlegacy stuff\n{LEGACY_MARKER_END}\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "migrated content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "migrated content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -117,13 +117,13 @@ class TestUpdateInstructionFile:
 
     def test_skips_when_file_missing(self, fake_runtimes, monkeypatch):
         """Non-fatal when instruction file doesn't exist."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
         # Don't create the instruction file — should not raise
         _update_instruction_file("claude", Path("/tmp/fake"))
 
     def test_skips_when_no_instruction_file_configured(self, fake_runtimes, monkeypatch):
         """Runtimes with instruction_file=None are skipped."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
         _update_instruction_file("missing", Path("/tmp/fake"))
 
 
@@ -145,7 +145,7 @@ class TestMarkersMustOwnTheirLine:
 
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda profile=None: "NEW_GENERATED",
+            lambda: "NEW_GENERATED",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -167,7 +167,7 @@ class TestMarkersMustOwnTheirLine:
 
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda profile=None: "NEW_GENERATED",
+            lambda: "NEW_GENERATED",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))

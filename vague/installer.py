@@ -8,8 +8,7 @@ from pathlib import Path
 
 import typer
 
-from vague.config import CLAUDE_DIRS_KEY as CLAUDE_DIRS_HINT
-from vague.config import claude_d_dir, claude_dirs, profile_name_for
+from vague.config import claude_dirs, profile_name_for, vague_home
 
 RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
     # (base_dir, skills_dir, instruction_file)
@@ -26,8 +25,7 @@ LEGACY_MARKER_START = "<!-- bastack:start -->"
 LEGACY_MARKER_END = "<!-- bastack:end -->"
 
 CLAUDE_RUNTIME = "claude"
-BASE_FRAGMENT = "base.md"
-DEFAULT_PROFILE = "default"
+LEGACY_CLAUDE_D = "claude.d"
 
 
 def _effective_runtime_dirs() -> dict[str, tuple[str | None, str, str | None]]:
@@ -36,7 +34,7 @@ def _effective_runtime_dirs() -> dict[str, tuple[str | None, str, str | None]]:
     A user running several Claude profiles (work and personal, say) declares
     them in VAGUE_CLAUDE_DIRS. Each becomes its own runtime key —
     ``claude:work``, ``claude:personal`` — so every profile gets its own
-    skills directory and its own rendered CLAUDE.md. When nothing is
+    skills directory and its own CLAUDE.md. When nothing is
     configured the static default is returned unchanged.
     """
     dirs = dict(RUNTIME_DIRS)
@@ -68,14 +66,6 @@ def _resolve_requested_runtimes(runtime: str) -> list[str]:
     return [key for key in dirs if key.startswith(prefix)]
 
 
-def _profile_for_runtime(runtime: str) -> str | None:
-    """Return the claude.d profile name for a runtime key, or None for non-Claude ones."""
-    base, _, profile = runtime.partition(":")
-    if base != CLAUDE_RUNTIME:
-        return None
-    return profile or DEFAULT_PROFILE
-
-
 def _detect_runtimes() -> list[str]:
     """Return all runtimes whose base_dir exists on this machine."""
     found = []
@@ -95,6 +85,10 @@ def _detect_runtime() -> str:
 
 def _get_assets_dir() -> Path:
     return Path(__file__).parent / "assets"
+
+
+def _get_guidelines_file() -> Path:
+    return _get_assets_dir() / "claude" / "guidelines.md"
 
 
 def _remove_existing(path: Path) -> None:
@@ -151,60 +145,34 @@ def _find_marker_span(content: str, start_marker: str, end_marker: str) -> tuple
     return start_match.start(), end_match.end()
 
 
-def _read_fragment(path: Path) -> str:
-    """Read a claude.d fragment, returning '' if absent, unreadable, or blank."""
-    if not path.is_file():
-        return ""
-    try:
-        return path.read_text().strip()
-    except OSError:
-        return ""
+def _get_instructions_block() -> str:
+    """Assemble the managed block: public guidelines, then skill routing.
 
-
-def _get_instructions_block(profile: str | None = None) -> str:
-    """Assemble the managed block: shared base, profile overlay, then skill routing.
-
-    ``profile`` selects which overlay in ``claude.d/`` is included. Passing
-    None (non-Claude runtimes) yields the skill table alone, so personal
-    content never leaks into runtimes that did not ask for it.
+    Every runtime gets the same block. Private, per-profile content belongs in
+    the user's own file outside the markers, which install never touches.
+    A missing guidelines file degrades to the skill section alone rather than
+    failing the install.
     """
     skill_section = _build_skill_section()
-    if not skill_section:
-        return ""
-
-    sections: list[str] = []
-    if profile:
-        source = claude_d_dir()
-        for fragment in (source / BASE_FRAGMENT, source / f"{profile}.md"):
-            text = _read_fragment(fragment)
-            if text:
-                sections.append(text)
-    sections.append(skill_section.strip())
-
-    return "\n\n".join(sections) + "\n"
+    guidelines_file = _get_guidelines_file()
+    guidelines = guidelines_file.read_text().strip() if guidelines_file.is_file() else ""
+    if not guidelines:
+        return skill_section
+    return guidelines + "\n\n" + skill_section
 
 
 def _build_skill_section() -> str:
     """Build the vague skill routing section from skill metadata."""
-    template = _get_assets_dir() / "templates" / "instructions-block.md"
-    if not template.exists():
-        return ""
-
     skills_src = _get_assets_dir() / "skills"
-    if not skills_src.exists():
-        return template.read_text()
-
-    skill_dirs = sorted(d for d in skills_src.iterdir() if d.is_dir())
+    skill_dirs = sorted(d for d in skills_src.iterdir() if d.is_dir()) if skills_src.exists() else []
     skill_count = len(skill_dirs)
 
-    # Build routing table rows
     rows: list[str] = []
     for skill_dir in skill_dirs:
         trigger = _parse_skill_trigger(skill_dir)
         if trigger:
             rows.append(f"| {trigger} | `/{skill_dir.name}` |")
 
-    # Build the full block
     lines = [
         "# vague",
         "",
@@ -239,7 +207,7 @@ def _update_instruction_file(runtime: str, skills_path: Path) -> None:
     if not instruction_file.parent.exists():
         return
 
-    block_content = _get_instructions_block(profile=_profile_for_runtime(runtime))
+    block_content = _get_instructions_block()
     if not block_content:
         return
 
@@ -362,6 +330,20 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
     return count
 
 
+def _warn_legacy_claude_d() -> None:
+    """Point users of the old fragment overlay at its replacement.
+
+    The directory is deliberately left alone: it may hold the user's only copy
+    of private instructions, so it is neither read nor deleted.
+    """
+    legacy_dir = vague_home() / LEGACY_CLAUDE_D
+    if legacy_dir.exists():
+        typer.echo(
+            f"Note: {legacy_dir} is no longer read. Move its content into your CLAUDE.md, outside the vague markers.",
+            err=True,
+        )
+
+
 BANNER = r"""
 '||'  '|'                                  
  '|.  .'   ....     ... . ... ...    ....  
@@ -419,6 +401,8 @@ def cmd_install(
         typer.echo("Aborted.", err=True)
         raise typer.Exit(0)
 
+    _warn_legacy_claude_d()
+
     total = 0
     for rt in runtimes:
         total += _install_to_runtime(rt, assets, skill_names)
@@ -430,63 +414,6 @@ def cmd_install(
         typer.echo(f"vague found at: {vague_path}", err=True)
 
     typer.echo(f"\nInstalled {total} skill(s) across {len(runtimes)} runtime(s).", err=True)
-
-
-def _strip_managed_block(content: str) -> str:
-    """Return content with any vague-managed block removed."""
-    for start_marker, end_marker in (
-        (MARKER_START, MARKER_END),
-        (LEGACY_MARKER_START, LEGACY_MARKER_END),
-    ):
-        span = _find_marker_span(content, start_marker, end_marker)
-        if span is not None:
-            start_idx, end_idx = span
-            content = content[:start_idx] + content[end_idx:]
-    return content.strip()
-
-
-def cmd_claude_init(source: Path | None = None, force: bool = False) -> None:
-    """Seed claude.d/ from an existing CLAUDE.md so nothing is lost on first sync.
-
-    The pre-existing hand-written content becomes the shared ``base.md``; an
-    empty overlay is created per configured profile, ready for anything that
-    should apply to only one of them.
-    """
-    profiles = claude_dirs()
-    if not profiles:
-        typer.echo(
-            f"Error: no Claude profiles configured. Set {CLAUDE_DIRS_HINT} in $VAGUE_HOME/config.env first.",
-            err=True,
-        )
-        raise typer.Exit(1)
-
-    if source is None:
-        source = Path(profiles[0]) / "CLAUDE.md"
-
-    target_dir = claude_d_dir()
-    target_dir.mkdir(parents=True, exist_ok=True)
-
-    base_file = target_dir / BASE_FRAGMENT
-    if base_file.exists() and not force:
-        typer.echo(f"Kept existing {base_file} (use --force to overwrite)", err=True)
-    elif source.is_file():
-        base_file.write_text(_strip_managed_block(source.read_text()) + "\n")
-        typer.echo(f"Seeded {base_file} from {source}", err=True)
-    else:
-        base_file.write_text("")
-        typer.echo(f"Created empty {base_file} ({source} not found)", err=True)
-
-    for profile_dir in profiles:
-        overlay = target_dir / f"{profile_name_for(profile_dir)}.md"
-        if overlay.exists():
-            continue
-        overlay.write_text("")
-        typer.echo(f"Created empty overlay {overlay}", err=True)
-
-    typer.echo(
-        "\nEdit these files, then run 'vague install' to render them into every profile.",
-        err=True,
-    )
 
 
 def _get_vague_skill_names() -> set[str]:

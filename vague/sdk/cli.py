@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import sys
 import time
-from pathlib import Path
 from typing import Annotated
 
 import typer
 
-from vague.installer import cmd_claude_init, cmd_install, cmd_uninstall
+from vague.installer import cmd_install, cmd_uninstall
 from vague.sdk.commands.analytics import cmd_analytics_log, cmd_analytics_show
 from vague.sdk.commands.commit import cmd_commit
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
@@ -86,18 +85,6 @@ def uninstall(
 ) -> None:
     """Remove vague skills from your LLM runtime."""
     cmd_uninstall(runtime=runtime)
-
-
-@sdk_app.command("claude-init")
-def claude_init(
-    source: Annotated[
-        Path | None,
-        typer.Option("--source", help="CLAUDE.md to seed base.md from. Defaults to the first profile's."),
-    ] = None,
-    force: Annotated[bool, typer.Option("--force", help="Overwrite an existing base.md.")] = False,
-) -> None:
-    """Seed $VAGUE_HOME/claude.d/ from an existing CLAUDE.md."""
-    cmd_claude_init(source=source, force=force)
 
 
 @sdk_app.command("context")

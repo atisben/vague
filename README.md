@@ -147,32 +147,27 @@ vague install --runtime claude           # every configured Claude profile
 vague install --runtime claude:work      # just that one
 ```
 
-### Shared and per-profile instructions
+### What vague writes into CLAUDE.md
 
-The CLAUDE.md written into each profile is assembled from fragments you own:
+Each instruction file (every Claude profile's `CLAUDE.md`, Copilot's
+`instructions.md`, Cursor's rule) gets the same public block:
 
 ```
-~/.vague/claude.d/
-├── base.md         ← shared by every profile
-├── work.md         ← only ~/.claude-work
-└── personal.md     ← only ~/.claude-personal
+<!-- vague:start -->
+vague/assets/claude/guidelines.md   ← shared guidelines, shipped with the package
+generated skill routing table       ← built from assets/skills/*/SKILL.md
+<!-- vague:end -->
 ```
 
-The profile name comes from the directory: `~/.claude-work` → `work`,
-`~/.claude` → `default`. Rendered output is `base.md`, then the matching
-overlay, then the generated skill routing table.
+Only the region between `<!-- vague:start -->` and `<!-- vague:end -->` is
+ever rewritten. Personal or per-profile content — work conventions, vault
+paths, anything private — goes in that profile's own `CLAUDE.md`, *outside*
+the markers. Install leaves it byte-for-byte untouched, and `vague uninstall`
+removes the marked region without touching the rest of the file.
 
-Seed the fragments from a CLAUDE.md you already have:
-
-```bash
-vague claude-init                        # uses the first profile's CLAUDE.md
-vague claude-init --source ~/.claude-personal/CLAUDE.md
-```
-
-Everything vague writes is wrapped in `<!-- vague:start -->` /
-`<!-- vague:end -->`. Only that region is ever rewritten — anything you type
-outside the markers is left alone, and `vague uninstall` removes the region
-without touching the rest of the file.
+If you used the older `~/.vague/claude.d/` fragments, they are no longer read.
+`vague install` prints a reminder while the directory exists; move its content
+into your `CLAUDE.md` outside the markers, then delete it yourself.
 
 > **Careful where a profile lives.** Claude Code reads `CLAUDE_CONFIG_DIR`,
 > but it *also* scans every parent directory of your project for
@@ -200,7 +195,6 @@ vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract
 vague skill-audit <dir> --strict        # scan for legacy bash patterns
 vague install --runtime claude:work     # install/sync one Claude profile
-vague claude-init                       # seed ~/.vague/claude.d/ from an existing CLAUDE.md
 ```
 
 ---
