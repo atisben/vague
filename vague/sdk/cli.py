@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import sys
 import time
+from pathlib import Path
 from typing import Annotated
 
 import typer
 
-from vague.installer import cmd_install, cmd_uninstall
+from vague.installer import cmd_claude_init, cmd_install, cmd_uninstall
 from vague.sdk.commands.analytics import cmd_analytics_log, cmd_analytics_show
 from vague.sdk.commands.commit import cmd_commit
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
@@ -47,6 +48,7 @@ sdk_app = typer.Typer(
 def _version_callback(value: bool) -> None:
     if value:
         from importlib.metadata import PackageNotFoundError, version
+
         try:
             typer.echo(version("vague"))
         except PackageNotFoundError:
@@ -66,7 +68,10 @@ def _main(
 
 @sdk_app.command("install")
 def install(
-    runtime: Annotated[str | None, typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
+    runtime: Annotated[
+        str | None,
+        typer.Option("--runtime", help="claude|claude:<profile>|copilot|cursor|windsurf|generic"),
+    ] = None,
 ) -> None:
     """Install skills into your LLM runtime (e.g. ~/.claude/skills/)."""
     cmd_install(runtime=runtime)
@@ -74,16 +79,35 @@ def install(
 
 @sdk_app.command("uninstall")
 def uninstall(
-    runtime: Annotated[str | None, typer.Option("--runtime", help="claude|copilot|cursor|windsurf|generic")] = None,
+    runtime: Annotated[
+        str | None,
+        typer.Option("--runtime", help="claude|claude:<profile>|copilot|cursor|windsurf|generic"),
+    ] = None,
 ) -> None:
     """Remove vague skills from your LLM runtime."""
     cmd_uninstall(runtime=runtime)
 
 
+@sdk_app.command("claude-init")
+def claude_init(
+    source: Annotated[
+        Path | None,
+        typer.Option("--source", help="CLAUDE.md to seed base.md from. Defaults to the first profile's."),
+    ] = None,
+    force: Annotated[bool, typer.Option("--force", help="Overwrite an existing base.md.")] = False,
+) -> None:
+    """Seed $VAGUE_HOME/claude.d/ from an existing CLAUDE.md."""
+    cmd_claude_init(source=source, force=force)
+
+
 @sdk_app.command("context")
 def context(
-    shell: Annotated[bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")] = False,  # noqa: E501
-    skill: Annotated[str | None, typer.Option("--skill", help="Log a usage event for this skill (mechanical telemetry).")] = None,  # noqa: E501
+    shell: Annotated[
+        bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")
+    ] = False,  # noqa: E501
+    skill: Annotated[
+        str | None, typer.Option("--skill", help="Log a usage event for this skill (mechanical telemetry).")
+    ] = None,  # noqa: E501
 ) -> None:
     """Print project context for skill preambles. JSON by default, shell vars with --shell."""
     cmd_context(shell=shell, skill=skill)

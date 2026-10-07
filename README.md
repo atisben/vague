@@ -1,12 +1,12 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 25 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
 ## Overview
 
-- **25 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
+- **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
 - **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/ops-retro` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Copilot, Cursor, or Windsurf.
@@ -41,10 +41,7 @@ Then use any slash command in your AI tool.
 ### Design
 | Command | When to use |
 |---------|-------------|
-| `/design-consultation` | Create a complete design system — aesthetic, typography, color, layout. |
-| `/design-shotgun` | Visual brainstorm — generate 3 variants, pick one. |
-| `/design-html` | Turn an approved design into production HTML/CSS. |
-| `/design-review` | Visual QA on a live site — find and fix issues. |
+| `/design-diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
 
 ### Execution
 | Command | When to use |
@@ -96,8 +93,7 @@ Idea
       ├─ /plan-ceo          → scope decisions
       └─ /plan-eng          → architecture locked
 
-      ├─ /design-shotgun    → pick a layout
-      └─ /design-html       → production HTML
+      └─ /design-diagram    → architecture overview
 
           └─ /dev-ship      → implement + PR
               └─ /dev-review → pre-landing review
@@ -130,6 +126,63 @@ All data lives in `~/.vague/`:
 
 ---
 
+## Claude profiles
+
+If you run more than one Claude Code profile — a work account and a personal
+one, say — declare them once and `vague install` keeps every profile in sync.
+
+```bash
+# ~/.vague/config.env
+VAGUE_CLAUDE_DIRS=~/.claude-work:~/.claude-personal
+```
+
+`VAGUE_CLAUDE_DIRS` as a real environment variable overrides the file. With
+neither set, vague falls back to `CLAUDE_CONFIG_DIR`, then to `~/.claude`.
+
+Each directory becomes its own runtime key, so you can target one or all:
+
+```bash
+vague install                            # every detected runtime
+vague install --runtime claude           # every configured Claude profile
+vague install --runtime claude:work      # just that one
+```
+
+### Shared and per-profile instructions
+
+The CLAUDE.md written into each profile is assembled from fragments you own:
+
+```
+~/.vague/claude.d/
+├── base.md         ← shared by every profile
+├── work.md         ← only ~/.claude-work
+└── personal.md     ← only ~/.claude-personal
+```
+
+The profile name comes from the directory: `~/.claude-work` → `work`,
+`~/.claude` → `default`. Rendered output is `base.md`, then the matching
+overlay, then the generated skill routing table.
+
+Seed the fragments from a CLAUDE.md you already have:
+
+```bash
+vague claude-init                        # uses the first profile's CLAUDE.md
+vague claude-init --source ~/.claude-personal/CLAUDE.md
+```
+
+Everything vague writes is wrapped in `<!-- vague:start -->` /
+`<!-- vague:end -->`. Only that region is ever rewritten — anything you type
+outside the markers is left alone, and `vague uninstall` removes the region
+without touching the rest of the file.
+
+> **Careful where a profile lives.** Claude Code reads `CLAUDE_CONFIG_DIR`,
+> but it *also* scans every parent directory of your project for
+> `CLAUDE.md` and `.claude/CLAUDE.md`. A profile at `~/.claude` therefore
+> loads into every session run from anywhere under `~`, whichever profile
+> you actually selected. Naming both profiles explicitly — `~/.claude-work`
+> and `~/.claude-personal` — keeps them isolated.
+
+---
+
 ## CLI Reference
 
 ```bash
@@ -146,6 +199,8 @@ vague timeline-log '<json>'             # append session event
 vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract
 vague skill-audit <dir> --strict        # scan for legacy bash patterns
+vague install --runtime claude:work     # install/sync one Claude profile
+vague claude-init                       # seed ~/.vague/claude.d/ from an existing CLAUDE.md
 ```
 
 ---

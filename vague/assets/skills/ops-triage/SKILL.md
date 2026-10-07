@@ -100,7 +100,7 @@ When you must ask, use AskUserQuestion with a recommendation based on Step 1:
 | Architecture or implementation plan for defined work | `/plan-eng` | Locks data flow, edge cases, test strategy |
 | A new idea, "is this worth building" | `/plan-ideation` | Validates demand, writes a design doc |
 | Roadmap, scope, "think bigger", strategy | `/plan-ceo` | Finds the 10-star version, expands or cuts scope |
-| Visual brainstorm, design options | `/design-shotgun` | Generates and iterates design variants |
+| Mind map, architecture overview, "how do these connect" | `/design-diagram` | Draws it from the real code or notes |
 | A bug, an error, "why is this broken" | `/dev-investigate` | Root-cause first, no fixes without diagnosis |
 | A defined task to build out | `/dev-develop` | Orchestrates the build across subagents |
 | Code is ready to land | `/dev-ship` | Tests, version, changelog, PR |

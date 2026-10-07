@@ -94,7 +94,7 @@ Analyze the content and propose 2–5 tags. Use these conventions:
 
 | Domain | Tags |
 |--------|------|
-| Work / Alma | `alma`, `engineering`, `scoring`, `ml`, `data`, `oncall`, `alma-card` |
+| Work | `engineering`, `ml`, `data`, `oncall` |
 | ML / AI | `ml_fundamental`, `llm`, `ai`, `model_training` |
 | Infrastructure / homelab | `homelab`, `devops`, `proxmox`, `docker` |
 | Personal | `personal` |
@@ -102,7 +102,7 @@ Analyze the content and propose 2–5 tags. Use these conventions:
 
 Present proposed tags and confirm/adjust via AskUserQuestion:
 ```
-Proposed tags: alma, engineering, architecture
+Proposed tags: engineering, architecture, decision
 
 A) Accept
 B) Edit — tell me which to add/remove

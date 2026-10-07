@@ -227,7 +227,7 @@ Each item must reference the failing test from the Test Layer it makes pass.
 [Unresolved issues after review]
 
 ## Next Steps
-- [ ] /design-review (if UI changes)
+- [ ] /design-diagram (architecture overview, if the plan touches several components)
 - [ ] /dev-ship to implement
 ```
 
@@ -264,7 +264,7 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Engineering plan saved. You're ready to build. Run `/dev-ship` to implement, or `/design-review` first if there are visual components."
+> "Engineering plan saved. You're ready to build. Run `/dev-ship` to implement, or `/design-diagram` first to draw the architecture overview."
 
 Log a learning if any non-obvious architectural insight was discovered:
 ```bash
