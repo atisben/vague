@@ -79,7 +79,7 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 │  │    /plan-ideation     → prior design docs (if any)              │   │
 │  │    /plan-ceo          → most recent design doc                   │   │
 │  │    /plan-eng          → design doc + CEO plan doc                │   │
-│  │    /design-*          → DESIGN.md (if present)                  │   │
+│  │    /design-diagram    → source tree, entry points, design doc    │   │
 │  │    /dev-ship          → git diff, git log, test output           │   │
 │  │    /dev-review        → full git diff                            │   │
 │  │    /dev-investigate   → stack trace, git log, error logs         │   │
@@ -236,9 +236,7 @@ no artifact, it reads git state and routes to the skill below that fits.
 /plan-ceo           → reads that doc, writes CEO plan doc
 /plan-eng           → reads CEO plan + design doc, writes engineering plan
 
-/design-shotgun     → writes HTML variants to ~/.vague/projects/{slug}/designs/
-/design-html        → reads shotgun HTML, writes production HTML to project root
-/design-review      → audits live source files against DESIGN.md
+/design-diagram     → reads code or notes, writes HTML diagram to ~/.vague/projects/{slug}/diagrams/
 
 /dev-ship           → implements, commits, opens PR
 /dev-review         → reads git diff, applies fixes pre-merge

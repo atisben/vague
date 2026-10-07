@@ -1,12 +1,12 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 25 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
 ## Overview
 
-- **25 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
+- **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
 - **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/ops-retro` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Copilot, Cursor, or Windsurf.
@@ -41,10 +41,7 @@ Then use any slash command in your AI tool.
 ### Design
 | Command | When to use |
 |---------|-------------|
-| `/design-consultation` | Create a complete design system — aesthetic, typography, color, layout. |
-| `/design-shotgun` | Visual brainstorm — generate 3 variants, pick one. |
-| `/design-html` | Turn an approved design into production HTML/CSS. |
-| `/design-review` | Visual QA on a live site — find and fix issues. |
+| `/design-diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
 
 ### Execution
 | Command | When to use |
@@ -96,8 +93,7 @@ Idea
       ├─ /plan-ceo          → scope decisions
       └─ /plan-eng          → architecture locked
 
-      ├─ /design-shotgun    → pick a layout
-      └─ /design-html       → production HTML
+      └─ /design-diagram    → architecture overview
 
           └─ /dev-ship      → implement + PR
               └─ /dev-review → pre-landing review

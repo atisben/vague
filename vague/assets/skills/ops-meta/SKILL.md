@@ -31,10 +31,7 @@ benefits-from:
   - plan-eng-review
   - plan-ceo-review
   - office-hours
-  - design-consultation
-  - design-html
-  - design-review
-  - design-shotgun
+  - design-diagram
   - retro
   - learn
   - vault
@@ -221,7 +218,7 @@ Present a summary:
 ### Observations Declined: #18 (user decided branch protection is out of scope)
 
 ### Principles Propagated
-- "Pre-flight verification" applied to: design-html, design-shotgun
+- "Pre-flight verification" applied to: design-diagram, dev-ship
 ```
 
 Log a learning if any non-obvious insight emerged:

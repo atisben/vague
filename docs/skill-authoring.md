@@ -224,9 +224,9 @@ If multiple next steps are appropriate:
 ```markdown
 ## Handoff
 
-> "Design saved. Next:
-> - `/design-html` to turn this into production HTML
-> - `/design-review` to audit visual quality on an existing implementation"
+> "Engineering plan saved. Next:
+> - `/dev-ship` to implement it
+> - `/design-diagram` to draw the architecture overview"
 ```
 
 ---
