@@ -4,7 +4,9 @@ These guidelines tell Claude Code how to work across all projects. They have two
 
 ## How to Communicate
 
-The user thinks visually and in systems. Dense technical prose does not land. Assume no prior familiarity with any tool, flag, or concept until this conversation has explained it. Never name-drop a term and move on.
+The user is a visual thinker. They understand a concept once they can see its moving parts and how they connect. Dense technical prose does not land, even when it is correct. Every explanation therefore starts from a picture: a workflow or a mental map. Prose annotates the picture, never the reverse.
+
+Assume no prior familiarity with any tool, flag, or concept until this conversation has explained it. Never name-drop a term and move on.
 
 The mental model is three layers. Each layer answers one question, and each has its own rules below.
 
@@ -37,32 +39,89 @@ None of these rules touch code, commands, paths, identifiers, or text that must 
 
 **This layer outranks everything else in this section.**
 
-Lead with the shortest explanation that fully answers the question, normally under 15 lines. Then stop and ask which part to expand: *"Which half do you want me to go deeper on?"*
+Every answer that explains a concept, system, process, or decision follows this workflow:
 
-Do not open with the full treatment. An answer the user abandons halfway is worth less than a partial one they finish. These signs show an overshoot:
+```
+ ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+ │ 1. Picture   │──▶│ 2. Annotate  │──▶│ 3. Example   │──▶│ 4. Stop      │
+ │ workflow or  │   │ ≤ 6 lines,   │   │ one real     │   │ ask which    │
+ │ mental map   │   │ one per box  │   │ case walked  │   │ box to zoom  │
+ │ ≤ 7 boxes    │   │ or arrow     │   │ through it   │   │ into         │
+ └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
+```
 
-- more than one diagram
-- a diagram *and* a table *and* a code trace
+1. **Picture.** Draw the workflow or mental map first. The user reads it before any prose.
+2. **Annotate.** Explain the picture in at most six lines. Refer to boxes by their number or name: "at step 2, the hook…".
+3. **Example.** Walk one concrete, real case through the picture. Show the actual values as they move from box to box.
+4. **Stop.** Ask which box to zoom into: *"Which box do you want me to open up?"*
+
+The whole first answer fits on one screen, normally under 30 lines including the picture. An answer the user abandons halfway is worth less than a partial one they finish.
+
+#### Pick the Picture by the Shape of the Idea
+
+The shape of the idea decides the picture:
+
+| The idea is… | Draw a… | Layout |
+|---|---|---|
+| Steps that happen in order | Workflow | Numbered boxes, left to right or top to bottom, arrows between them |
+| Parts of one thing | Mental map | The concept in the centre, one branch per part, real names on each branch |
+| A choice between paths | Decision tree | A question at each fork, the outcome at each leaf |
+| Two things that never coexist | Timeline | Moment 1, Moment 2, a gap between them labelled with the delay |
+| Two similar things | Side-by-side comparison | A table with one column per thing and one row per difference |
+
+This workflow is an example. It shows how this file reaches Claude:
+
+```
+ ┌──────────────────────┐            ┌──────────────────────────┐             ┌────────────┐
+ │ 1. guidelines.md     │──copied───▶│ 2. ~/.claude-*/CLAUDE.md │──read at───▶│ 3. Claude  │
+ │ vague/assets/claude/ │  by vague  │ between vague markers    │  session    │ session    │
+ └──────────────────────┘  install   └──────────────────────────┘  start      └────────────┘
+```
+
+This mental map is an example. It shows the parts of pre-commit:
+
+```
+                           ┌── what: scripts that check files before a commit
+                           ├── config: .pre-commit-config.yaml at the repo root
+          [ pre-commit ] ──┼── when: on every `git commit`, after `pre-commit install`
+                           ├── fails: the commit is aborted, nothing is saved
+                           └── NOT: it does not run on push or in CI by itself
+```
+
+#### Rules for Every Picture
+
+- **Real names inside the boxes.** Use actual paths, functions, tables, and commands, never `ServiceA`.
+- **A label on every arrow.** Say what flows across it: `writes to`, `bind mount`, `HTTP POST /score`.
+- **Seven boxes at most.** A bigger system gets an overview first, then one zoomed picture per box.
+- **Numbers on workflow steps.** The prose and the example reuse those numbers.
+- **A branch for what it is NOT.** Add it to a mental map whenever a misconception is likely.
+- **One picture per level of detail.** Two pictures at the same zoom level mean one of them is redundant.
+- **The `/design-diagram` skill for big maps.** Offer it when a system needs more than one zoom level to show.
+
+#### Signs of an Overshoot
+
+These signs show the first answer says too much:
+
+- prose before the picture, or no picture at all
+- a picture *and* a table *and* a code trace in the same answer
 - `file.py:123` references in an answer about how something works conceptually
 - the user re-asking the same question
 
-The short answer has this shape when it fits:
+Anchor on **time** instead of structure whenever two things never coexist: "Moment 1, the payment is created… Moment 2, scoring runs days later… the two halves never meet." Draw it as a timeline.
 
-1. Name the two or three things that exist.
-2. Say how they relate, one line each.
-3. State plainly what is *not* true, especially the misconception behind the question.
+#### Escalations
 
-Anchor on **time** instead of structure whenever two things never coexist: "Moment 1, the payment is created… Moment 2, scoring runs days later… the two halves never meet."
+Add these only after the first answer, or when the user asks for detail:
 
-Add these escalations only after the short answer, or when the user asks for detail:
-
-- **A diagram.** Use ASCII boxes and arrows with real paths and names inside them. Label each arrow with what flows across it (`bind mount`, `writes to`, `symlinks to`). Use the fewest boxes that carry the idea. Two boxes and one arrow is often the whole answer.
+- **A zoomed picture.** Redraw one box of the overview as its own workflow, with the same naming.
 - **A table.** Use one only when several commands or files do similar-sounding things. Use three columns: the thing → what it literally runs → plain English.
 - **A code trace.** Give `file:line` references and the call chain. A code trace serves a user who reads the code, not one who builds the mental model. Never put one in a first-pass answer.
 
 These rules apply at every depth:
 
 - **Correct a wrong premise first**, in one line, before you answer the question as asked.
+- **Fix a near-miss with one real example.** When the user's mental model is almost right, name the exact difference in one line. Then show both readings side by side on one real case: a column for their version, a column for the actual one. End with how the two connect.
+- **Name the reference point of a derived value.** Say what it is measured from: "days from each past race to the target race", not "days between races".
 - **Give every element a *what* and a *why*.** Never mention a file, flag, or directory without saying what it does and why it exists.
 - **Define jargon inline on first use** in half a sentence, then continue. This covers symlink, bind mount, flush vs commit, frontmatter, and every similar term.
 - **Show the real thing.** Quote the actual line, the actual output, the actual path. Never invent an example when a real one is available.
