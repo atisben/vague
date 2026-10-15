@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 from pathlib import Path
@@ -97,6 +98,20 @@ def _remove_existing(path: Path) -> None:
         path.unlink()
     elif path.is_dir():
         shutil.rmtree(path)
+
+
+def _remove_dangling_skill_links(skills_target: Path, skills_src: Path) -> None:
+    """Drop links left behind by renamed or deleted vague skills.
+
+    Only broken symlinks that point into vague's own skills directory are
+    removed, so the user's own skills and links survive.
+    """
+    src_root = skills_src.resolve()
+    for entry in skills_target.iterdir():
+        if not entry.is_symlink() or entry.exists():
+            continue
+        if Path(os.readlink(entry)).parent.resolve() == src_root:
+            entry.unlink()
 
 
 def _parse_skill_trigger(skill_dir: Path) -> str | None:
@@ -302,6 +317,7 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
     skills_src = assets / "skills"
 
     skills_target.mkdir(parents=True, exist_ok=True)
+    _remove_dangling_skill_links(skills_target, skills_src)
 
     count = 0
     for skill_dir in skills_src.iterdir():

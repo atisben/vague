@@ -1,5 +1,5 @@
 ---
-name: ops-retro
+name: retro
 version: 1.0.0
 description: |
   Engineering retrospective. Analyzes commit history, work patterns, and code quality
@@ -22,7 +22,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell --skill ops-retro)"
+eval "$(vague context --shell --skill retro)"
 SESSION_ID="$$-$(date +%s)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
@@ -33,7 +33,7 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 
 ## Step 1: Define the Time Window
 
-Default: last 7 days. The user can pass an argument: `/ops-retro 14d`, `/ops-retro 30d`.
+Default: last 7 days. The user can pass an argument: `/retro 14d`, `/retro 30d`.
 
 ```bash
 # Compute time window (macOS date)
@@ -96,7 +96,7 @@ git log --since="$SINCE" --oneline 2>/dev/null | grep -iE '^[a-f0-9]+ test' | wc
 ## Step 5: Load Prior Retro (for trend comparison)
 
 ```bash
-eval "$(vague context --shell --skill ops-retro)"
+eval "$(vague context --shell --skill retro)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ls -t "$VAGUE_HOME/projects/$SLUG/retros/"*.md 2>/dev/null | head -1 || echo "NO_PRIOR_RETRO"
 ```
@@ -167,7 +167,7 @@ Then:
 ## Step 8: Save the Retro
 
 ```bash
-eval "$(vague context --shell --skill ops-retro)"
+eval "$(vague context --shell --skill retro)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 mkdir -p "$VAGUE_HOME/projects/$SLUG/retros"
 RETRO_FILE="$VAGUE_HOME/projects/$SLUG/retros/retro-$(date +%Y-%m-%d).md"
@@ -195,13 +195,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"ops-retro","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-retro"}'
+vague observations-log '{"skill":"retro","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"retro"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"ops-retro","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-retro"}'
+vague observations-log '{"skill":"retro","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"retro"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.

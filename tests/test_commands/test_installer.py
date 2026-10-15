@@ -248,6 +248,34 @@ class TestCmdInstall:
         skills_dir = Path(patched["claude"][1])
         assert not any(skills_dir.iterdir())
 
+    def test_install_removes_links_to_renamed_skills(self, fake_runtimes, vague_home):
+        tmp_path, patched = fake_runtimes
+        skills_dir = Path(patched["claude"][1])
+        skills_dir.mkdir()
+        assets_skills = Path(__file__).parents[2] / "vague" / "assets" / "skills"
+        stale = skills_dir / "ops-renamed-away"
+        stale.symlink_to(assets_skills / "ops-renamed-away", target_is_directory=True)
+
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+
+        assert result.exit_code == 0
+        assert not stale.is_symlink()
+
+    def test_install_keeps_skills_not_owned_by_vague(self, fake_runtimes, vague_home):
+        tmp_path, patched = fake_runtimes
+        skills_dir = Path(patched["claude"][1])
+        skills_dir.mkdir()
+        own_skill = skills_dir / "my-skill"
+        own_skill.mkdir()
+        broken_foreign_link = skills_dir / "foreign"
+        broken_foreign_link.symlink_to(tmp_path / "elsewhere", target_is_directory=True)
+
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+
+        assert result.exit_code == 0
+        assert own_skill.is_dir()
+        assert broken_foreign_link.is_symlink()
+
     def test_install_unknown_runtime(self, fake_runtimes, vague_home):
         result = runner.invoke(sdk_app, ["install", "--runtime", "foobar"])
         assert result.exit_code != 0

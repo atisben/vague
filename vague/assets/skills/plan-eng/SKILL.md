@@ -7,7 +7,6 @@ description: |
   Trigger: "review the architecture", "engineering review", "lock in the plan".
 benefits-from:
   - office-hours
-  - plan-ceo-review
 sdk_commands:
   - vague init
   - vague learnings-log
@@ -227,8 +226,8 @@ Each item must reference the failing test from the Test Layer it makes pass.
 [Unresolved issues after review]
 
 ## Next Steps
-- [ ] /design-diagram (architecture overview, if the plan touches several components)
-- [ ] /dev-ship to implement
+- [ ] /diagram (architecture overview, if the plan touches several components)
+- [ ] /dev-develop to implement
 ```
 
 Show to user, support revision loops, then save.
@@ -264,7 +263,7 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Engineering plan saved. You're ready to build. Run `/dev-ship` to implement, or `/design-diagram` first to draw the architecture overview."
+> "Engineering plan saved. You're ready to build. Run `/dev-develop` to implement, or `/diagram` first to draw the architecture overview."
 
 Log a learning if any non-obvious architectural insight was discovered:
 ```bash

@@ -2,7 +2,7 @@
 name: dev-ship
 version: 1.0.0
 description: |
-  Ship workflow: implement, run tests, review diff, bump VERSION, update CHANGELOG,
+  Ship workflow: run tests, review diff, bump VERSION, update CHANGELOG,
   commit, push, create PR. Never push directly — always creates a PR.
   Trigger: "ship", "deploy", "push to main", "create a PR", "merge and push".
 sdk_commands:
@@ -56,7 +56,7 @@ echo "PLAN_FILE: ${PLAN_FILE:-NONE}"
 
 If on the base branch, ask: "You're on `$BASE`. Should I create a feature branch first?"
 
-**If there is no diff but pending designs exist:** Tell the user: "No code changes yet, but I found a pending plan: [filename]. Should I implement it first?" If yes, implement the plan, then continue with the ship workflow.
+**If there is no diff but pending designs exist:** Tell the user: "No code changes yet, but I found a pending plan: [filename]. Run `/dev-develop` to implement it first." Stop there: this skill lands code, it does not write it.
 
 ---
 
@@ -255,4 +255,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "PR created: [URL]. Next: `/dev-review` for a pre-landing code review, or ask a teammate to review."
+> "PR created: [URL]. Next: `/code-review` for a pre-landing code review, or ask a teammate to review."

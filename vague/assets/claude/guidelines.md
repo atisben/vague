@@ -96,7 +96,7 @@ This mental map is an example. It shows the parts of pre-commit:
 - **Numbers on workflow steps.** The prose and the example reuse those numbers.
 - **A branch for what it is NOT.** Add it to a mental map whenever a misconception is likely.
 - **One picture per level of detail.** Two pictures at the same zoom level mean one of them is redundant.
-- **The `/design-diagram` skill for big maps.** Offer it when a system needs more than one zoom level to show.
+- **The `/diagram` skill for big maps.** Offer it when a system needs more than one zoom level to show.
 
 #### Signs of an Overshoot
 

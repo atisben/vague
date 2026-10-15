@@ -1,5 +1,5 @@
 ---
-name: ops-triage
+name: triage
 version: 1.0.0
 description: |
   The front door for an ML engineering manager's day. Triages what you're
@@ -7,7 +7,7 @@ description: |
   a strategy to brainstorm, a bug, a build — and hands off to the right skill.
   Does light framing only; never does the deep work itself.
   Trigger: "what should I look at", "here's what's on my plate", "where do I start",
-  "/ops-triage", "triage this", "help me figure out what I need".
+  "/triage", "triage this", "help me figure out what I need".
 sdk_commands:
   - vague context
   - vague status
@@ -24,7 +24,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell --skill ops-triage)"
+eval "$(vague context --shell --skill triage)"
 ```
 
 If `PROACTIVE` is `"False"`, only run when explicitly invoked. Otherwise auto-invoke when the user describes their plate without naming a specific skill ("here's what I'm dealing with today", "where should I start").
@@ -96,23 +96,23 @@ When you must ask, use AskUserQuestion with a recommendation based on Step 1:
 
 | Manager is dealing with | Hand off to | One-line why |
 |---|---|---|
-| A PR or uncommitted diff, correctness/safety | `/dev-review` | Diff-level safety and fix-first review |
+| A PR or uncommitted diff, correctness/safety | `/code-review` | Built-in diff review, `--fix` applies findings |
 | Architecture or implementation plan for defined work | `/plan-eng` | Locks data flow, edge cases, test strategy |
 | A new idea, "is this worth building" | `/plan-ideation` | Validates demand, writes a design doc |
-| Roadmap, scope, "think bigger", strategy | `/plan-ceo` | Finds the 10-star version, expands or cuts scope |
-| Mind map, architecture overview, "how do these connect" | `/design-diagram` | Draws it from the real code or notes |
+| Roadmap, scope, "think bigger", strategy | `/plan-ideation` (scope review) | Finds the 10-star version, expands or cuts scope |
+| Mind map, architecture overview, "how do these connect" | `/diagram` | Draws it from the real code or notes |
 | A bug, an error, "why is this broken" | `/dev-investigate` | Root-cause first, no fixes without diagnosis |
 | A defined task to build out | `/dev-develop` | Orchestrates the build across subagents |
 | Code is ready to land | `/dev-ship` | Tests, version, changelog, PR |
-| "What did we ship", weekly retro | `/ops-retro` | Commit history and work-pattern analysis |
+| "What did we ship", weekly retro | `/retro` | Commit history and work-pattern analysis |
 
 Hand off explicitly. Say what you're routing to and why in one line, then invoke it:
 
-> "This is a diff that needs a correctness pass before it lands. Running `/dev-review`."
+> "This is a diff that needs a correctness pass before it lands. Running `/code-review`."
 
 If the plate has several items, route the highest-leverage one first and name the rest:
 
-> "Three things here. The PR is blocking a teammate, so `/dev-review` first. Then `/plan-ceo` on the Q3 roadmap, and the new idea can wait for `/plan-ideation` when you have a clear hour."
+> "Three things here. The PR is blocking a teammate, so `/code-review` first. Then a `/plan-ideation` scope review on the Q3 roadmap, and the new idea can wait for `/plan-ideation` when you have a clear hour."
 
 ---
 
@@ -132,17 +132,17 @@ Throughout, watch for:
 Log silently — do not interrupt the handoff:
 
 ```bash
-vague observations-log '{"skill":"ops-triage","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-triage"}'
+vague observations-log '{"skill":"triage","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"triage"}'
 ```
 
 If a request fit no lane, log it as a new-skill candidate:
 
 ```bash
-vague observations-log '{"skill":"new:WORKING_NAME","type":"new-skill","issue":"Manager needed X; no skill covers it","suggestion":"PROPOSED_SKILL","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-triage"}'
+vague observations-log '{"skill":"new:WORKING_NAME","type":"new-skill","issue":"Manager needed X; no skill covers it","suggestion":"PROPOSED_SKILL","principle":"GENERALISABLE_TAKEAWAY","source_skill":"triage"}'
 ```
 
 ---
 
 ## Handoff
 
-> "Routed to `/{skill}`. That's where the work happens — come back to `/ops-triage` when you're onto the next thing."
+> "Routed to `/{skill}`. That's where the work happens — come back to `/triage` when you're onto the next thing."

@@ -1,5 +1,5 @@
 ---
-name: ops-meta
+name: meta
 version: 1.0.0
 description: |
   Meta-skill for improving all other skills. Reviews observations logged during
@@ -26,12 +26,10 @@ allowed-tools:
   - AskUserQuestion
 benefits-from:
   - ship
-  - review
   - investigate
   - plan-eng-review
-  - plan-ceo-review
   - office-hours
-  - design-diagram
+  - diagram
   - retro
   - learn
   - vault
@@ -40,18 +38,18 @@ benefits-from:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell --skill ops-meta)"
+eval "$(vague context --shell --skill meta)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 
-**Proactive invocation:** Suggest when the user discusses skill quality, mentions friction with a skill, or says something like "that skill could be better". If PROACTIVE is "False", say: "I think /ops-meta might help — want me to run it?"
+**Proactive invocation:** Suggest when the user discusses skill quality, mentions friction with a skill, or says something like "that skill could be better". If PROACTIVE is "False", say: "I think /meta might help — want me to run it?"
 
 ---
 
 ## Step 0: Load Context
 
 ```bash
-eval "$(vague context --shell --skill ops-meta)"
+eval "$(vague context --shell --skill meta)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 # Load open observations
 vague observations-list --status open
@@ -166,7 +164,7 @@ For observations with `skill: "new:working-name"`:
 
 Read the principles file:
 ```bash
-eval "$(vague context --shell --skill ops-meta)"
+eval "$(vague context --shell --skill meta)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 cat "$VAGUE_HOME/projects/$SLUG/principles.md" 2>/dev/null
 ```
@@ -205,7 +203,7 @@ Fix any issues found.
 Present a summary:
 
 ```
-## /ops-meta Review Complete
+## /meta Review Complete
 
 ### Skills Updated
 - **ship**: Added test verification step before commit (#12), fixed changelog date format (#15)
@@ -218,12 +216,12 @@ Present a summary:
 ### Observations Declined: #18 (user decided branch protection is out of scope)
 
 ### Principles Propagated
-- "Pre-flight verification" applied to: design-diagram, dev-ship
+- "Pre-flight verification" applied to: diagram, dev-ship
 ```
 
 Log a learning if any non-obvious insight emerged:
 ```bash
-vague learnings-log '{"skill":"ops-meta","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague learnings-log '{"skill":"meta","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
 ```
 
 > "Skills updated. Next steps:
@@ -245,13 +243,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"ops-meta","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-meta"}'
+vague observations-log '{"skill":"meta","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"meta"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"ops-meta","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"ops-meta"}'
+vague observations-log '{"skill":"meta","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"meta"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.

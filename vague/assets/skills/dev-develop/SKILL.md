@@ -20,7 +20,6 @@ allowed-tools:
   - AskUserQuestion
 benefits-from:
   - office-hours
-  - plan-ceo-review
   - plan-eng-review
 ---
 
@@ -283,4 +282,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Feature implemented and verified. Next: `/dev-review` for pre-landing code review, or `/dev-ship` to create a PR."
+> "Feature implemented and verified. Next: `/code-review` for pre-landing code review, or `/dev-ship` to create a PR."
