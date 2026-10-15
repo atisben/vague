@@ -5,9 +5,9 @@
 `vague` is a Python CLI package that sits between AI tool skills (Markdown files) and the local filesystem. There is no server, no cloud, no registry.
 
 ```
-AI tool session (Claude Code / GitHub Copilot CLI / Cursor / Windsurf)
+AI tool session (Claude Code / Cursor / Windsurf)
     │
-    ├── reads  ~/.claude/skills/{skill-name}/SKILL.md   (or ~/.copilot/skills/…)
+    ├── reads  ~/.claude/skills/{skill-name}/SKILL.md   (or ~/.cursor/skills/…)
     │          └── skill calls `vague` CLI commands
     └── vague  ← Python package on $PATH
                └── reads/writes ~/.vague/
@@ -24,7 +24,7 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 │                         LLM CONTEXT WINDOW                              │
 │                                                                         │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │ 1. CLAUDE.md / .github/copilot-instructions.md                   │   │
+│  │ 1. CLAUDE.md / .cursor/rules/vague.mdc                           │   │
 │  │    (project-level, always present)                               │   │
 │  │                                                                  │   │
 │  │    - Skill routing table (which /command maps to which skill)    │   │
@@ -314,7 +314,7 @@ Day 1 — Claude Code session
 
 ### Complex: Persistent Memory Across Sessions and Agents
 
-`~/.vague/` is agent-agnostic. Learnings written by Claude Code are read by GitHub Copilot CLI (and vice versa). Memory persists indefinitely across sessions.
+`~/.vague/` is agent-agnostic. Learnings written by Claude Code are read by Cursor (and vice versa). Memory persists indefinitely across sessions.
 
 ```
 Day 1 — Claude Code session — investigating a production bug
@@ -346,7 +346,7 @@ Day 1 — Claude Code session — investigating a production bug
 
 ─────────────────────────────────────────────────────── Day 3 — new session
 
-  ┌─ /dev-ship — GitHub Copilot CLI session ─────────────────────────────┐
+  ┌─ /dev-ship — Cursor session ─────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api", branch: "fix/slow-checkout"                    │
   │  → learnings: [                                                      │
@@ -405,7 +405,7 @@ State at end of week:
 
 | Property | Behaviour |
 |----------|-----------|
-| Agent-agnostic | Claude Code and GitHub Copilot CLI read and write the same `~/.vague/` |
+| Agent-agnostic | Claude Code and Cursor read and write the same `~/.vague/` |
 | Session-persistent | Learnings survive session restarts, computer reboots |
 | Slug-scoped | Each repo has isolated memory — `acme-api` and `acme-frontend` never mix |
 | Deduplicating | Logging the same `(key, type)` twice keeps only the latest insight |

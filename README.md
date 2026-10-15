@@ -9,7 +9,7 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 - **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
 - **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/retro` with zero agent cooperation.
-- **Installs into your runtime** of choice: Claude Code, Copilot, Cursor, or Windsurf.
+- **Installs into your runtime** of choice: Claude Code, Cursor, or Windsurf.
 - **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite.
 
 ## Quickstart
@@ -17,7 +17,7 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 ```bash
 git clone https://github.com/atisben/vague.git && cd vague
 uv tool install . --force --reinstall
-vague install          # auto-detects Claude Code, Copilot, Cursor, or Windsurf
+vague install          # auto-detects Claude Code, Cursor, or Windsurf
 ```
 
 Then use any slash command in your AI tool.
@@ -149,8 +149,8 @@ vague install --runtime claude:work      # just that one
 
 ### What vague writes into CLAUDE.md
 
-Each instruction file (every Claude profile's `CLAUDE.md`, Copilot's
-`instructions.md`, Cursor's rule) gets the same public block:
+Each instruction file (every Claude profile's `CLAUDE.md`, Cursor's rule) gets
+the same public block:
 
 ```
 <!-- vague:start -->
@@ -280,7 +280,7 @@ agent spawns inherits it. When running `vague` by hand, add
 - Python 3.11+
 - `git`
 - `gh` CLI (optional, for PR creation in `/dev-ship`)
-- Claude Code and/or GitHub Copilot CLI
+- Claude Code (or Cursor / Windsurf)
 
 ---
 

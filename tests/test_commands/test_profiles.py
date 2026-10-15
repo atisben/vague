@@ -50,11 +50,14 @@ class TestEffectiveRuntimeDirs:
 
     def test_other_runtimes_are_untouched(self, two_profiles):
         dirs = _effective_runtime_dirs()
-        assert dirs["copilot"] == (
-            "~/.copilot/",
-            "~/.copilot/skills/",
-            "~/.copilot/instructions.md",
+        assert dirs["cursor"] == (
+            "~/.cursor/",
+            "~/.cursor/skills/",
+            "~/.cursor/rules/vague.mdc",
         )
+
+    def test_copilot_is_not_a_runtime(self, two_profiles):
+        assert "copilot" not in _effective_runtime_dirs()
 
     def test_falls_back_to_default_when_unconfigured(self, vague_home_dir, monkeypatch):
         monkeypatch.setenv("VAGUE_HOME", str(vague_home_dir))
@@ -74,7 +77,7 @@ class TestResolveRequestedRuntimes:
         assert _resolve_requested_runtimes("foobar") == []
 
     def test_non_claude_runtime_still_resolves(self, two_profiles):
-        assert _resolve_requested_runtimes("copilot") == ["copilot"]
+        assert _resolve_requested_runtimes("cursor") == ["cursor"]
 
 
 GUIDELINES_TEXT = "# Shared Guidelines\n\nAlways explain with a diagram.\n"
@@ -173,25 +176,25 @@ class TestSyncPreservesUserContent:
 
     def test_every_runtime_gets_the_same_full_block(self, two_profiles, guidelines_file, tmp_path, monkeypatch):
         work, personal, _ = two_profiles
-        copilot = tmp_path / ".copilot"
-        copilot.mkdir()
-        (copilot / "instructions.md").write_text("")
+        cursor = tmp_path / ".cursor"
+        (cursor / "rules").mkdir(parents=True)
+        (cursor / "rules" / "vague.mdc").write_text("")
         (work / "CLAUDE.md").write_text("")
         (personal / "CLAUDE.md").write_text("")
         monkeypatch.setitem(
             RUNTIME_DIRS,
-            "copilot",
-            (str(copilot), str(copilot / "skills"), str(copilot / "instructions.md")),
+            "cursor",
+            (str(cursor), str(cursor / "skills"), str(cursor / "rules" / "vague.mdc")),
         )
 
-        for runtime in ("claude", "copilot"):
+        for runtime in ("claude", "cursor"):
             result = runner.invoke(sdk_app, ["install", "--runtime", runtime], input="y\n")
             assert result.exit_code == 0
 
         contents = [
             (work / "CLAUDE.md").read_text(),
             (personal / "CLAUDE.md").read_text(),
-            (copilot / "instructions.md").read_text(),
+            (cursor / "rules" / "vague.mdc").read_text(),
         ]
         for content in contents:
             assert "Always explain with a diagram." in content

@@ -14,7 +14,6 @@ from vague.config import claude_dirs, profile_name_for, vague_home
 RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
     # (base_dir, skills_dir, instruction_file)
     "claude": ("~/.claude/", "~/.claude/skills/", "~/.claude/CLAUDE.md"),
-    "copilot": ("~/.copilot/", "~/.copilot/skills/", "~/.copilot/instructions.md"),
     "cursor": ("~/.cursor/", "~/.cursor/skills/", "~/.cursor/rules/vague.mdc"),
     "windsurf": ("~/.codeium/windsurf/", "~/.codeium/windsurf/skills/", None),
     "generic": (None, "~/skills/", None),

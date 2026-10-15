@@ -23,13 +23,13 @@ runner = CliRunner()
 def fake_runtimes(tmp_path, monkeypatch):
     """Set up fake runtime directories and patch RUNTIME_DIRS to use them."""
     claude_dir = tmp_path / ".claude"
-    copilot_dir = tmp_path / ".copilot"
+    cursor_dir = tmp_path / ".cursor"
     claude_dir.mkdir()
-    copilot_dir.mkdir()
+    cursor_dir.mkdir()
 
     patched = {
         "claude": (str(claude_dir), str(claude_dir / "skills"), str(claude_dir / "CLAUDE.md")),
-        "copilot": (str(copilot_dir), str(copilot_dir / "skills"), str(copilot_dir / "instructions.md")),
+        "cursor": (str(cursor_dir), str(cursor_dir / "skills"), str(cursor_dir / "rules" / "vague.mdc")),
         "missing": (str(tmp_path / ".missing"), str(tmp_path / ".missing" / "skills"), None),
     }
     monkeypatch.setattr("vague.installer.RUNTIME_DIRS", patched)
@@ -40,7 +40,7 @@ class TestDetectRuntimes:
     def test_detects_multiple(self, fake_runtimes):
         runtimes = _detect_runtimes()
         assert "claude" in runtimes
-        assert "copilot" in runtimes
+        assert "cursor" in runtimes
 
     def test_skips_missing(self, fake_runtimes):
         runtimes = _detect_runtimes()
