@@ -20,11 +20,6 @@ def vague_home() -> Path:
     return Path(os.environ.get("VAGUE_HOME", "~/.vague")).expanduser()
 
 
-def claude_d_dir() -> Path:
-    """Return the directory holding the user's CLAUDE.md source fragments."""
-    return vague_home() / "claude.d"
-
-
 def load_config() -> dict[str, str]:
     """Parse $VAGUE_HOME/config.env into a dict. Missing file yields {}."""
     config_file = vague_home() / CONFIG_FILENAME
@@ -77,7 +72,7 @@ def profile_name_for(directory: Path) -> str:
     """Derive a readable profile name from a Claude config directory.
 
     ``~/.claude-work`` becomes ``work``, ``~/.claude`` becomes ``default``.
-    The name selects the per-profile overlay in ``claude.d/<name>.md``.
+    The name becomes the runtime key suffix, as in ``claude:work``.
     """
     name = directory.name.lstrip(".")
     if name == "claude":

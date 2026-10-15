@@ -1,11 +1,13 @@
 ---
 name: plan-ideation
-version: 1.1.0
+version: 2.0.0
 description: |
-  YC-style office hours for idea validation and design doc generation.
-  Two modes: Startup (hard-nosed, demand-focused) and Builder (side projects,
-  fastest path to shippable). Never writes code — outputs a design doc only.
-  Trigger: "I have an idea", "help me think through this", "is this worth building".
+  YC-style office hours for idea validation, design doc generation, and scope review.
+  Three modes: Startup (hard-nosed, demand-focused), Builder (side projects,
+  fastest path to shippable), and Scope Review (CEO-mode pass on an existing plan:
+  find the 10-star version, then expand or reduce scope). Never writes code.
+  Trigger: "I have an idea", "help me think through this", "is this worth building",
+  "think bigger", "expand scope", "strategy review", "is this ambitious enough".
 sdk_commands:
   - vague init
   - vague learnings-log
@@ -69,7 +71,9 @@ ls "$VAGUE_HOME/projects/$SLUG/designs/" 2>/dev/null || echo "NO_PRIOR_DESIGNS"
 git log --oneline -10 2>/dev/null || echo "NO_GIT"
 ```
 
-Ask the user (one question):
+**Scope Review shortcut:** if the user asks to "think bigger", "expand scope", or review the scope of an existing plan, and a design doc exists in `designs/`, go straight to **Phase 2C**. If several docs exist, ask which one to review.
+
+Otherwise, ask the user (one question):
 > What are you trying to build, and what's driving you to build it now?
 
 Then ask about their goal via AskUserQuestion:
@@ -172,6 +176,112 @@ Ask one question at a time. Wait for response. Be genuinely curious, not interro
 3. "Is there existing open source that gets you 50% of the way there?"
 4. "Who is the one person you'd most want to use this — and what would their reaction be?"
 5. "What would make you proud of this if you shipped it?"
+
+---
+
+## Phase 2C: Scope Review Mode
+
+CEO/founder-mode review of a plan that already exists. This mode replaces Phases 2.5–6: it ends with its own scope doc and handoff.
+
+### Load the plan
+
+Read the chosen design doc. Also check for an engineering plan:
+
+```bash
+ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md 2>/dev/null | head -1 || echo "NO_ENG_PLAN"
+```
+
+If one exists, read it and warn: "An engineering plan already exists: [filename]. Scope changes from this review may invalidate it. I'll flag any conflicts."
+
+### The 10-star question
+
+Before anything else, ask:
+> "What would the 10-star version of this look like — the version that makes users say 'I can't believe this exists'? No constraints yet."
+
+This is calibration, not a trick. Knowing the ceiling shows how far the current plan falls short. Record the answer: it becomes the expansion target.
+
+### Feasibility triage
+
+Evaluate what's already in the plan against three filters:
+
+1. **User impact**: does each part make a meaningful difference to the user? Remove anything that doesn't.
+2. **Implementation risk**: what are the highest-risk assumptions? (Unproven tech, unknown APIs, unclear data model)
+3. **Scope creep**: flag anything added "just in case" or "while we're here".
+
+Then run **Phase 4: Alternatives Generation** against the plan as it stands.
+
+### Mode selection
+
+Present four scope modes via AskUserQuestion:
+
+> 1. **SCOPE EXPANSION** — The plan is good but could be great. Find the ambitious version.
+> 2. **SELECTIVE EXPANSION** — Hold current scope as baseline, but show cherry-pick opportunities.
+> 3. **HOLD SCOPE** — The scope is right. Make it bulletproof: architecture, security, edge cases.
+> 4. **SCOPE REDUCTION** — The plan is overbuilt. Strip it to the essential core.
+>
+> Context-dependent defaults:
+> - Greenfield feature → EXPANSION
+> - Iteration on existing → SELECTIVE EXPANSION
+> - Bug fix / hotfix / refactor → HOLD SCOPE
+> - >15 files touched → suggest REDUCTION
+
+Once a mode is selected, commit to it. Do not silently drift.
+
+### Expansion proposals (EXPANSION and SELECTIVE only)
+
+Present ONE opportunity at a time via AskUserQuestion. Never batch them.
+
+```
+EXPANSION #{N}: [Title]
+  What it adds:  [1-2 sentences]
+  Why it matters: [user impact]
+  Effort delta:  [+S/M/L]
+  Risk:          [Low/Med/High]
+
+→ A) Add to plan   B) Defer to TODOS   C) Skip
+RECOMMENDATION: [A/B/C] because [one-line reason]
+```
+
+### Temporal interrogation (all modes except REDUCTION)
+
+Surface the decisions implementation will hit, and resolve them now as questions to the user:
+
+```
+FOUNDATIONS (hour 1):    What does the implementer need to know first?
+CORE LOGIC (hours 2-3): What ambiguities will they hit?
+INTEGRATION (hours 4-5): What will surprise them?
+POLISH/TESTS (hour 6+): What will they wish they'd planned for?
+```
+
+### Write the scope doc
+
+Save to `$VAGUE_HOME/projects/$SLUG/designs/{slug}-{branch}-ceo-{YYYYMMDD}.md`:
+
+```markdown
+# Scope Review: [Feature Name]
+
+**Date:** [ISO date]
+**Mode:** [EXPANSION | SELECTIVE | HOLD | REDUCTION]
+**Based on:** [source design doc filename]
+
+## 10-Star Vision
+## Scope Decisions
+| # | Proposal | Effort | Decision | Reasoning |
+|---|----------|--------|----------|-----------|
+| 1 | {proposal} | S/M/L | ACCEPTED / DEFERRED / SKIPPED | {why} |
+
+## Accepted Scope
+## Deferred to TODOS
+## Temporal Questions Resolved
+## Reviewer Concerns
+[Unresolved issues — visible to downstream skills]
+
+## Next Steps
+- [ ] Run /plan-eng to lock in architecture
+```
+
+Show it to the user, support revision loops, then save. Hand off with:
+> "Scope review saved. Next: `/plan-eng` to lock in architecture and test strategy before writing code."
 
 ---
 
@@ -400,11 +510,11 @@ One more thing.
 
 **Startup mode — 5+ signals:**
 > "The signal is real. You named specific users, cited behavior not interest, and identified a wedge that doesn't require the full platform. The risk now is over-building before the wedge is proven.
-> Run `/plan-ceo` to pressure-test scope and find the 10-star version. Then `/plan-eng` before writing a line of code."
+> Say "think bigger" to run a scope review on this doc and find the 10-star version. Then `/plan-eng` before writing a line of code."
 
 **Startup mode — 3-4 signals:**
 > "There's a real idea here. The weakest premise is [X] — that's the one to validate before going further. Talk to [specific persona] before planning.
-> When you've validated that: `/plan-ceo` to lock scope, then `/plan-eng`."
+> When you've validated that: a scope review ("think bigger") to lock scope, then `/plan-eng`."
 
 **Startup mode — 1-2 signals:**
 > "There's an interesting direction here, but the demand signal is too thin to build on. The difference between a good idea and a product is one specific person who said 'I need this right now and I'll pay for it.'
@@ -412,7 +522,7 @@ One more thing.
 
 **Builder mode:**
 > "Design doc saved. This is the kind of thing that's satisfying to build because [callback to what would make them proud].
-> When you're ready: `/plan-eng` to lock in the architecture, then `/dev-ship`. Don't over-plan it — the best builder projects are started, not planned."
+> When you're ready: `/plan-eng` to lock in the architecture, then `/dev-develop`. Don't over-plan it — the best builder projects are started, not planned."
 
 Close with 2-3 curated resources (essays, repos, tools) specifically relevant to this problem space. Non-obvious — not the first search result.
 

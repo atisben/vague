@@ -74,7 +74,7 @@ class TestUpdateInstructionFile:
         # Provide a simple template
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda profile=None: "## Vague Skills\nRouting table here.",
+            lambda: "## Vague Skills\nRouting table here.",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -90,7 +90,7 @@ class TestUpdateInstructionFile:
         instruction_file = Path(patched["claude"][2])
         instruction_file.write_text(f"# Config\n\n{MARKER_START}\nold content\n{MARKER_END}\n\n# Footer\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "new content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "new content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -105,7 +105,7 @@ class TestUpdateInstructionFile:
         instruction_file = Path(patched["claude"][2])
         instruction_file.write_text(f"# Config\n\n{LEGACY_MARKER_START}\nlegacy stuff\n{LEGACY_MARKER_END}\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "migrated content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "migrated content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -117,13 +117,13 @@ class TestUpdateInstructionFile:
 
     def test_skips_when_file_missing(self, fake_runtimes, monkeypatch):
         """Non-fatal when instruction file doesn't exist."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
         # Don't create the instruction file — should not raise
         _update_instruction_file("claude", Path("/tmp/fake"))
 
     def test_skips_when_no_instruction_file_configured(self, fake_runtimes, monkeypatch):
         """Runtimes with instruction_file=None are skipped."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda profile=None: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
         _update_instruction_file("missing", Path("/tmp/fake"))
 
 
@@ -145,7 +145,7 @@ class TestMarkersMustOwnTheirLine:
 
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda profile=None: "NEW_GENERATED",
+            lambda: "NEW_GENERATED",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -167,7 +167,7 @@ class TestMarkersMustOwnTheirLine:
 
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda profile=None: "NEW_GENERATED",
+            lambda: "NEW_GENERATED",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -247,6 +247,34 @@ class TestCmdInstall:
         assert result.exit_code == 0
         skills_dir = Path(patched["claude"][1])
         assert not any(skills_dir.iterdir())
+
+    def test_install_removes_links_to_renamed_skills(self, fake_runtimes, vague_home):
+        tmp_path, patched = fake_runtimes
+        skills_dir = Path(patched["claude"][1])
+        skills_dir.mkdir()
+        assets_skills = Path(__file__).parents[2] / "vague" / "assets" / "skills"
+        stale = skills_dir / "ops-renamed-away"
+        stale.symlink_to(assets_skills / "ops-renamed-away", target_is_directory=True)
+
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+
+        assert result.exit_code == 0
+        assert not stale.is_symlink()
+
+    def test_install_keeps_skills_not_owned_by_vague(self, fake_runtimes, vague_home):
+        tmp_path, patched = fake_runtimes
+        skills_dir = Path(patched["claude"][1])
+        skills_dir.mkdir()
+        own_skill = skills_dir / "my-skill"
+        own_skill.mkdir()
+        broken_foreign_link = skills_dir / "foreign"
+        broken_foreign_link.symlink_to(tmp_path / "elsewhere", target_is_directory=True)
+
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+
+        assert result.exit_code == 0
+        assert own_skill.is_dir()
+        assert broken_foreign_link.is_symlink()
 
     def test_install_unknown_runtime(self, fake_runtimes, vague_home):
         result = runner.invoke(sdk_app, ["install", "--runtime", "foobar"])

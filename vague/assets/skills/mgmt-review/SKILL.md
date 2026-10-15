@@ -138,21 +138,21 @@ config.
 
 ---
 
-## Step 4: Retrieve past reviews (via /ops-vault)
+## Step 4: Retrieve past reviews (via /vault)
 
 Prior reviews establish the trajectory — how the person has *grown*, not just how ratings
-moved. Retrieve them by invoking the `/ops-vault` skill with the Skill tool:
+moved. Retrieve them by invoking the `/vault` skill with the Skill tool:
 
-> Invoke `/ops-vault` in **search** mode: `search <Member Name> review` (also try the
+> Invoke `/vault` in **search** mode: `search <Member Name> review` (also try the
 > slug if the name is common).
 
 Vault retrieval is ad-hoc and name collisions happen ("review" is a broad word, and
 two people may share a first name), so:
 
-- **Present the candidate matches** returned by `/ops-vault` and let the manager
+- **Present the candidate matches** returned by `/vault` and let the manager
   **confirm which are genuine prior reviews** for this member. Do not assume the top
   hit is correct.
-- **Empty-safe:** if `/ops-vault` returns nothing, treat this as a **BASELINE review**
+- **Empty-safe:** if `/vault` returns nothing, treat this as a **BASELINE review**
   and say so explicitly ("No prior review found — this is a baseline; growth deltas below
   are vs. where they started, not a previous cycle."). Never crash or block on empty results.
 
@@ -161,7 +161,7 @@ blind spots** the last review named — did they move? Closed growth edges are s
 strongest evidence in Step 5.
 
 *(Fallback only if the Skill tool is unavailable: `grep -rilF "<Member Name>"
-"$HOME/Obsidian/8. Team" --include="*.md"`; the primary path is the `/ops-vault`
+"$HOME/Obsidian/8. Team" --include="*.md"`; the primary path is the `/vault`
 invocation above.)*
 
 ---
@@ -322,9 +322,9 @@ Confirm the local path once written: "Snapshot written to `<SNAP>`."
 
 ---
 
-## Step 8: Save a copy to the vault (via /ops-vault)
+## Step 8: Save a copy to the vault (via /vault)
 
-Invoke the `/ops-vault` skill with the Skill tool in **save** mode, using the LOCKED
+Invoke the `/vault` skill with the Skill tool in **save** mode, using the LOCKED
 conventions:
 
 - **Folder:** `8. Team/`
@@ -332,7 +332,7 @@ conventions:
 - **Title:** `Perf Review — <Name> — <CYCLE>`
 - **Content:** the snapshot body from Step 7.
 
-> Invoke `/ops-vault save Perf Review — <Name> — <CYCLE>` and supply the folder, tags,
+> Invoke `/vault save Perf Review — <Name> — <CYCLE>` and supply the folder, tags,
 > and content above.
 
 (The vault title keeps the `Perf Review — …` convention for continuity with existing

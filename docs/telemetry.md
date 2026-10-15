@@ -51,7 +51,7 @@ entries:
 ---
 ```
 
-Timeline data is used locally by `/ops-retro` to track session history and skill usage patterns. It never leaves your machine.
+Timeline data is used locally by `/retro` to track session history and skill usage patterns. It never leaves your machine.
 
 ### learnings.md
 Written to `~/.vague/projects/{slug}/learnings.md` when a skill calls `vague learnings-log`.

@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from vague.config import (
-    claude_d_dir,
     claude_dirs,
     load_config,
     profile_name_for,
@@ -134,9 +133,3 @@ class TestProfileNameFor:
 
     def test_falls_back_to_directory_name(self, tmp_path):
         assert profile_name_for(tmp_path / ".somethingelse") == "somethingelse"
-
-
-class TestClaudeDDir:
-    def test_lives_under_vague_home(self, vague_home_dir, monkeypatch):
-        monkeypatch.setenv("VAGUE_HOME", str(vague_home_dir))
-        assert claude_d_dir() == vague_home_dir / "claude.d"

@@ -1,5 +1,5 @@
 ---
-name: design-diagram
+name: diagram
 version: 2.0.0
 description: |
   Build a mind map or an architecture overview as a single self-contained HTML page
@@ -25,7 +25,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell --skill design-diagram)"
+eval "$(vague context --shell --skill diagram)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 DIAGRAM_DIR="$VAGUE_HOME/projects/$SLUG/diagrams"
 mkdir -p "$DIAGRAM_DIR"
@@ -129,7 +129,7 @@ Ask via AskUserQuestion: "Opened in your browser. What should change?" Apply, re
 
 Once approved, offer:
 - Copy into the repo (e.g. `docs/architecture.html`) if it documents this codebase.
-- Save to the vault via `/ops-vault` (architecture → `7. Code/`, mind map → `6. Atomic Notes/`), linking the HTML path.
+- Export to the vault via `/vault export <path>`: it copies the HTML to `Attachments/` and writes a note that embeds it.
 
 ---
 
@@ -145,13 +145,13 @@ Throughout this skill's execution, watch for:
 When you notice any of these, log an observation:
 
 ```bash
-vague observations-log '{"skill":"design-diagram","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"design-diagram"}'
+vague observations-log '{"skill":"diagram","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"diagram"}'
 ```
 
 **User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
 
 ```bash
-vague observations-log '{"skill":"design-diagram","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"design-diagram"}'
+vague observations-log '{"skill":"diagram","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"diagram"}'
 ```
 
 Log silently — do not interrupt the user's workflow to announce observations.
@@ -160,4 +160,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Diagram saved to `$OUTPUT_FILE`. Next: `/ops-vault` to keep it in your notes, or `/plan-eng` if the overview surfaced architecture questions worth locking down."
+> "Diagram saved to `$OUTPUT_FILE`. Next: `/vault` to keep it in your notes, or `/plan-eng` if the overview surfaced architecture questions worth locking down."

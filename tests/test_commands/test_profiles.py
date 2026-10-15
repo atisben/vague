@@ -1,4 +1,4 @@
-"""Tests for multi-profile Claude sync: runtime expansion and block assembly."""
+"""Tests for multi-profile Claude sync: runtime expansion and the public managed block."""
 
 import pytest
 from typer.testing import CliRunner
@@ -6,10 +6,13 @@ from typer.testing import CliRunner
 from vague.installer import (
     MARKER_END,
     MARKER_START,
+    RUNTIME_DIRS,
+    _build_skill_section,
     _effective_runtime_dirs,
+    _get_assets_dir,
+    _get_guidelines_file,
     _get_instructions_block,
     _resolve_requested_runtimes,
-    cmd_claude_init,
 )
 from vague.sdk.cli import sdk_app
 
@@ -74,128 +77,67 @@ class TestResolveRequestedRuntimes:
         assert _resolve_requested_runtimes("copilot") == ["copilot"]
 
 
+GUIDELINES_TEXT = "# Shared Guidelines\n\nAlways explain with a diagram.\n"
+
+
+@pytest.fixture
+def guidelines_file(tmp_path, monkeypatch):
+    """A stand-in for vague/assets/claude/guidelines.md with known content."""
+    path = tmp_path / "guidelines.md"
+    path.write_text(GUIDELINES_TEXT)
+    monkeypatch.setattr("vague.installer._get_guidelines_file", lambda: path)
+    return path
+
+
 class TestInstructionsBlockAssembly:
-    def test_includes_skill_table_without_claude_d(self, two_profiles):
-        block = _get_instructions_block(profile="work")
-        assert "## Skill Routing" in block
+    def test_block_starts_with_guidelines_then_skill_table(self, guidelines_file):
+        block = _get_instructions_block()
+
+        assert block.startswith(GUIDELINES_TEXT.strip() + "\n\n# vague\n")
+        assert block.index("Always explain with a diagram.") < block.index("## Skill Routing")
         assert "/dev-ship" in block
+        assert block.endswith("\n")
 
-    def test_prepends_shared_base(self, two_profiles):
+    def test_bundled_guidelines_file_is_included_verbatim_when_present(self):
+        bundled = _get_guidelines_file()
+        if not bundled.is_file():
+            pytest.skip("bundled guidelines.md not present yet")
+
+        block = _get_instructions_block()
+
+        assert bundled.read_text().strip() in block
+        assert block.index(bundled.read_text().strip()) < block.index("# vague")
+
+    def test_missing_guidelines_yields_skill_section_alone(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("vague.installer._get_guidelines_file", lambda: tmp_path / "absent.md")
+
+        block = _get_instructions_block()
+
+        assert block == _build_skill_section()
+        assert block.startswith("# vague")
+
+    def test_skill_section_does_not_need_instructions_template(self):
+        assert not (_get_assets_dir() / "templates" / "instructions-block.md").exists()
+        assert "## Skill Routing" in _build_skill_section()
+
+    def test_leftover_claude_d_base_is_never_included(self, two_profiles, guidelines_file):
         _, _, home = two_profiles
         claude_d = home / "claude.d"
         claude_d.mkdir()
-        (claude_d / "base.md").write_text("# Shared Rules\n\nAlways use uv.\n")
+        (claude_d / "base.md").write_text("# PRIVATE_BASE_CONTENT\n")
+        (claude_d / "work.md").write_text("# PRIVATE_WORK_CONTENT\n")
 
-        block = _get_instructions_block(profile="work")
+        block = _get_instructions_block()
 
-        assert "# Shared Rules" in block
-        assert "Always use uv." in block
-        assert block.index("# Shared Rules") < block.index("## Skill Routing")
-
-    def test_appends_matching_profile_overlay(self, two_profiles):
-        _, _, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "base.md").write_text("# Shared\n")
-        (claude_d / "work.md").write_text("# Work Only\n\nInternal service notes.\n")
-        (claude_d / "personal.md").write_text("# Personal Only\n\nObsidian vault.\n")
-
-        block = _get_instructions_block(profile="work")
-
-        assert "# Work Only" in block
-        assert "Internal service notes." in block
-
-    def test_excludes_other_profiles_overlay(self, two_profiles):
-        """The whole point of profiles: work content must not reach personal."""
-        _, _, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "work.md").write_text("# Work Only\n\nInternal service notes.\n")
-        (claude_d / "personal.md").write_text("# Personal Only\n\nObsidian vault.\n")
-
-        personal_block = _get_instructions_block(profile="personal")
-
-        assert "# Personal Only" in personal_block
-        assert "Internal service notes." not in personal_block
-        assert "# Work Only" not in personal_block
-
-    def test_base_precedes_overlay(self, two_profiles):
-        _, _, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "base.md").write_text("# Shared\n")
-        (claude_d / "work.md").write_text("# Work Only\n")
-
-        block = _get_instructions_block(profile="work")
-
-        assert block.index("# Shared") < block.index("# Work Only")
-
-    def test_no_profile_yields_skill_table_only(self, two_profiles):
-        """Runtimes without a Claude profile (copilot) get no personal content."""
-        _, _, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "base.md").write_text("# Shared\n")
-
-        block = _get_instructions_block(profile=None)
-
-        assert "# Shared" not in block
-        assert "## Skill Routing" in block
+        assert "PRIVATE_BASE_CONTENT" not in block
+        assert "PRIVATE_WORK_CONTENT" not in block
 
 
-class TestClaudeInit:
-    def test_seeds_base_from_existing_file(self, two_profiles):
-        work, personal, home = two_profiles
-        (personal / "CLAUDE.md").write_text(
-            f"# My Rules\n\nAlways use uv.\n\n{MARKER_START}\nold skills\n{MARKER_END}\n"
-        )
-
-        cmd_claude_init(source=personal / "CLAUDE.md")
-
-        base = (home / "claude.d" / "base.md").read_text()
-        assert "# My Rules" in base
-        assert "Always use uv." in base
-
-    def test_seeded_base_excludes_the_vague_block(self, two_profiles):
-        work, personal, home = two_profiles
-        (personal / "CLAUDE.md").write_text(f"# My Rules\n\n{MARKER_START}\nold skill table\n{MARKER_END}\n")
-
-        cmd_claude_init(source=personal / "CLAUDE.md")
-
-        base = (home / "claude.d" / "base.md").read_text()
-        assert "old skill table" not in base
-        assert MARKER_START not in base
-
-    def test_creates_empty_overlay_per_profile(self, two_profiles):
-        work, personal, home = two_profiles
-        (personal / "CLAUDE.md").write_text("# My Rules\n")
-
-        cmd_claude_init(source=personal / "CLAUDE.md")
-
-        assert (home / "claude.d" / "work.md").exists()
-        assert (home / "claude.d" / "personal.md").exists()
-
-    def test_does_not_clobber_existing_base(self, two_profiles):
-        work, personal, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "base.md").write_text("# Already Here\n")
-        (personal / "CLAUDE.md").write_text("# Would Overwrite\n")
-
-        cmd_claude_init(source=personal / "CLAUDE.md")
-
-        assert (claude_d / "base.md").read_text() == "# Already Here\n"
-
-    def test_force_overwrites_existing_base(self, two_profiles):
-        work, personal, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "base.md").write_text("# Already Here\n")
-        (personal / "CLAUDE.md").write_text("# Replaces It\n")
-
-        cmd_claude_init(source=personal / "CLAUDE.md", force=True)
-
-        assert "# Replaces It" in (claude_d / "base.md").read_text()
+class TestClaudeInitRemoved:
+    def test_claude_init_command_no_longer_exists(self):
+        result = runner.invoke(sdk_app, ["claude-init"])
+        assert result.exit_code != 0
+        assert "No such command" in result.output
 
 
 class TestSyncPreservesUserContent:
@@ -229,21 +171,64 @@ class TestSyncPreservesUserContent:
             assert linked
             assert all(entry.is_symlink() for entry in linked)
 
-    def test_profiles_receive_their_own_overlay(self, two_profiles):
-        work, personal, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "work.md").write_text("# Work internal\n")
-        (claude_d / "personal.md").write_text("# Obsidian vault\n")
+    def test_every_runtime_gets_the_same_full_block(self, two_profiles, guidelines_file, tmp_path, monkeypatch):
+        work, personal, _ = two_profiles
+        copilot = tmp_path / ".copilot"
+        copilot.mkdir()
+        (copilot / "instructions.md").write_text("")
         (work / "CLAUDE.md").write_text("")
         (personal / "CLAUDE.md").write_text("")
+        monkeypatch.setitem(
+            RUNTIME_DIRS,
+            "copilot",
+            (str(copilot), str(copilot / "skills"), str(copilot / "instructions.md")),
+        )
 
-        result = runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+        for runtime in ("claude", "copilot"):
+            result = runner.invoke(sdk_app, ["install", "--runtime", runtime], input="y\n")
+            assert result.exit_code == 0
+
+        contents = [
+            (work / "CLAUDE.md").read_text(),
+            (personal / "CLAUDE.md").read_text(),
+            (copilot / "instructions.md").read_text(),
+        ]
+        for content in contents:
+            assert "Always explain with a diagram." in content
+            assert "## Skill Routing" in content
+        assert contents[0] == contents[1] == contents[2]
+
+    def test_text_outside_the_markers_is_byte_identical(self, two_profiles, guidelines_file):
+        work, _, _ = two_profiles
+        header = "# Private header\n\nKeep  this   spacing\t exactly.\n\n"
+        footer = "\n\n## Private footer\n- [ ] trailing item  \n"
+        target = work / "CLAUDE.md"
+        target.write_text(f"{header}{MARKER_START}\nOUTDATED\n{MARKER_END}{footer}")
+
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude:work"], input="y\n")
 
         assert result.exit_code == 0
-        work_content = (work / "CLAUDE.md").read_text()
-        personal_content = (personal / "CLAUDE.md").read_text()
-        assert "# Work internal" in work_content
-        assert "# Work internal" not in personal_content
-        assert "# Obsidian vault" in personal_content
-        assert "# Obsidian vault" not in work_content
+        content = target.read_text()
+        assert content.startswith(header + MARKER_START)
+        assert content.endswith(MARKER_END + footer)
+        assert "OUTDATED" not in content
+
+    def test_leftover_claude_d_is_not_rendered_and_triggers_warning(self, two_profiles, guidelines_file):
+        work, _, home = two_profiles
+        claude_d = home / "claude.d"
+        claude_d.mkdir()
+        (claude_d / "base.md").write_text("# PRIVATE_BASE_CONTENT\n")
+        (work / "CLAUDE.md").write_text("")
+
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude:work"], input="y\n")
+
+        assert result.exit_code == 0
+        assert "PRIVATE_BASE_CONTENT" not in (work / "CLAUDE.md").read_text()
+        assert f"{claude_d} is no longer read" in result.output
+        assert (claude_d / "base.md").read_text() == "# PRIVATE_BASE_CONTENT\n"
+
+    def test_no_legacy_warning_without_claude_d(self, two_profiles, guidelines_file):
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude:work"], input="y\n")
+
+        assert result.exit_code == 0
+        assert "no longer read" not in result.output

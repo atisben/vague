@@ -1,6 +1,6 @@
 # vague
 
-Personal development workflow toolkit. 22 skills for the full software development lifecycle.
+Personal development workflow toolkit. 20 skills for the full software development lifecycle.
 
 ## Skill Routing
 
@@ -8,19 +8,17 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 
 | Trigger | Skill |
 |---------|-------|
-| "what should I look at", "here's what's on my plate", "where do I start", "triage this" | `/ops-triage` |
-| "I have an idea", "is this worth building", "help me think through this" | `/plan-ideation` |
-| "think bigger", "expand scope", "strategy review", "is this ambitious enough" | `/plan-ceo` |
+| "what should I look at", "here's what's on my plate", "where do I start", "triage this" | `/triage` |
+| "I have an idea", "is this worth building", "help me think through this", "think bigger", "expand scope", "strategy review" | `/plan-ideation` |
 | "review the architecture", "engineering review", "lock in the plan" | `/plan-eng` |
-| "mind map", "map this out", "architecture overview", "diagram this", "visualize the system" | `/design-diagram` |
+| "mind map", "map this out", "architecture overview", "diagram this", "visualize the system" | `/diagram` |
 | "ship", "deploy", "push to main", "create a PR", code is ready | `/dev-ship` |
-| "review this PR", "code review", "pre-landing review", "check my diff" | `/dev-review` |
 | "debug this", "fix this bug", "why is this broken", error / stack trace | `/dev-investigate` |
-| "what have we learned", "show learnings", "prune learnings" | `/ops-learn` |
-| "weekly retro", "what did we ship", "engineering retrospective" | `/ops-retro` |
+| "what have we learned", "show learnings", "prune learnings" | `/learn` |
+| "weekly retro", "what did we ship", "engineering retrospective" | `/retro` |
 | "develop this", "build this feature", "implement this", "orchestrate" | `/dev-develop` |
-| "improve skills", "meta review", "skill improvement", "review observations" | `/ops-meta` |
-| "save to vault", "note this down", "save this note", "search the vault", "find in vault", "recall from vault" | `/ops-vault` |
+| "improve skills", "meta review", "skill improvement", "review observations" | `/meta` |
+| "save to vault", "note this down", "save this note", "search the vault", "find in vault", "recall from vault", "export to vault", "send this diagram to obsidian" | `/vault` |
 | "set up my team", "import career ladder", "add a team member", "/mgmt-setup" | `/mgmt-setup` |
 | "log a 1:1", "note feedback for <name>", "capture a win", "/mgmt-log" | `/mgmt-log` |
 | "run a performance review", "review <name>", "management review", "/mgmt-review" | `/mgmt-review` |

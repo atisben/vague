@@ -75,15 +75,14 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 │  ┌──────────────────────────────────────────────────────────────────┐   │
 │  │ 4. ON-DEMAND READS  (skill-specific, injected as tool outputs)   │   │
 │  │                                                                  │   │
-│  │    /ops-triage        → git status, git log, git diff --stat     │   │
-│  │    /plan-ideation     → prior design docs (if any)              │   │
-│  │    /plan-ceo          → most recent design doc                   │   │
-│  │    /plan-eng          → design doc + CEO plan doc                │   │
-│  │    /design-diagram    → source tree, entry points, design doc    │   │
+│  │    /triage            → git status, git log, git diff --stat     │   │
+│  │    /plan-ideation     → prior design docs (scope review: latest) │   │
+│  │    /plan-eng          → design doc + scope review doc            │   │
+│  │    /diagram           → source tree, entry points, design doc    │   │
+│  │    /vault             → artifact file, existing vault notes      │   │
 │  │    /dev-ship          → git diff, git log, test output           │   │
-│  │    /dev-review        → full git diff                            │   │
 │  │    /dev-investigate   → stack trace, git log, error logs         │   │
-│  │    /ops-retro         → git log --stat, prior retro doc          │   │
+│  │    /retro             → git log --stat, prior retro doc          │   │
 │  │                                                                  │   │
 │  │    ~ 1–50 KB depending on diff/log size                          │   │
 │  └──────────────────────────────────────────────────────────────────┘   │
@@ -116,7 +115,7 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 ### What Is NOT Injected
 
 - Full `learnings.md` (only top 3 by confidence, surfaced by `vague init`)
-- Full `timeline.md` (write-only from skills — read by `/ops-retro` only)
+- Full `timeline.md` (write-only from skills — read by `/retro` only)
 - `skill-usage.md` analytics (only read by `vague analytics-show`, not by LLM)
 - Other projects' data (scoped strictly to the current slug)
 
@@ -185,7 +184,7 @@ a valid context.
 
 `vague status` reads across all of `~/.vague/projects/` — recorded repo paths,
 last activity, design docs newer than the last ship event ("in-flight plans"),
-learnings counts — and renders the cross-project dashboard that `/ops-triage`
+learnings counts — and renders the cross-project dashboard that `/triage`
 runs as Step 0.
 
 ---
@@ -197,7 +196,7 @@ All files use YAML frontmatter. Example `learnings.md`:
 ```markdown
 ---
 entries:
-  - skill: dev-review
+  - skill: dev-ship
     type: pitfall
     key: n-plus-one-user-scope
     insight: Always use includes(:user) on list queries — loading users separately causes N+1s.
@@ -226,21 +225,22 @@ entries:
 
 ## Skill Chaining
 
-Skills chain through shared file artifacts. `/ops-triage` is the front door: it writes
+Skills chain through shared file artifacts. `/triage` is the front door: it writes
 no artifact, it reads git state and routes to the skill below that fits.
 
 ```
-/ops-triage         → triage; routes to any skill below (no artifact written)
+/triage         → triage; routes to any skill below (no artifact written)
 
 /plan-ideation      → writes design doc to ~/.vague/projects/{slug}/designs/
-/plan-ceo           → reads that doc, writes CEO plan doc
-/plan-eng           → reads CEO plan + design doc, writes engineering plan
+                       ("think bigger" on an existing doc writes a scope review doc)
+/plan-eng           → reads scope review + design doc, writes engineering plan
 
-/design-diagram     → reads code or notes, writes HTML diagram to ~/.vague/projects/{slug}/diagrams/
+/diagram            → reads code or notes, writes HTML diagram to ~/.vague/projects/{slug}/diagrams/
+/vault export       → copies an artifact into ~/Obsidian/Attachments/, writes a note that embeds it
 
-/dev-ship           → implements, commits, opens PR
-/dev-review         → reads git diff, applies fixes pre-merge
-/ops-retro          → reads timeline.md + git log, writes retro-YYYY-MM-DD.md
+/dev-develop        → implements the plan
+/dev-ship           → runs tests, reviews the diff, commits, opens PR
+/retro              → reads timeline.md + git log, writes retro-YYYY-MM-DD.md
 ```
 
 Each skill that writes a doc announces the output path and suggests the next skill.
@@ -279,10 +279,10 @@ Day 1 — Claude Code session
   │    "insight":"Use Stripe webhooks for async confirmation, not polling"│
   │    "confidence":9,"source":"user-stated"}'                           │
   └──────────────────────────────────────────────────────────────────────┘
-                              │ "Plan locked. Run /dev-ship to implement."
+                              │ "Plan locked. Run /dev-develop to implement."
                               ▼
 
-  ┌─ /dev-ship ──────────────────────────────────────────────────────────┐
+  ┌─ /dev-develop ───────────────────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api", branch: "feat/payments"                        │
   │  → learnings: [{ key: "payments-stripe", confidence: 9, ... }]  ◄── surfaced
@@ -290,25 +290,24 @@ Day 1 — Claude Code session
   │  Agent reads the architecture learning before writing any code.      │
   │  Implements Stripe webhooks (not polling) — learning guided this.    │
   │                                                                      │
-  │  vague commit "feat: add Stripe webhook payment confirmation"        │
-  │  vague timeline-log '{"skill":"dev-ship","event":"completed",...}'   │
+  │  vague timeline-log '{"skill":"dev-develop","event":"completed",...}'│
   └──────────────────────────────────────────────────────────────────────┘
-                              │ "PR opened. Run /dev-review before merging."
+                              │ "Feature implemented. Run /dev-ship to open a PR."
                               ▼
 
-  ┌─ /dev-review ────────────────────────────────────────────────────────┐
+  ┌─ /dev-ship ──────────────────────────────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → learnings: [{ key: "payments-stripe", confidence: 9 }]           │
   │                                                                      │
-  │  Agent reads git diff, checks for N+1s, missing rollbacks, etc.     │
-  │  No issues found. PR approved.                                       │
+  │  Agent runs tests, reviews the diff for N+1s, missing rollbacks.    │
+  │  vague commit "feat: add Stripe webhook payment confirmation"        │
   │                                                                      │
   │  vague learnings-log '{"type":"pattern","key":"webhook-idempotency", │
   │    "insight":"Always check event.id before processing webhooks",...}'│
   └──────────────────────────────────────────────────────────────────────┘
 
   Learnings written: 2
-  Timeline events:   3 (dev-ship started, dev-ship completed, dev-review completed)
+  Timeline events:   3 (dev-develop completed, dev-ship started, dev-ship completed)
 ```
 
 ---
@@ -376,7 +375,7 @@ Day 1 — Claude Code session — investigating a production bug
 
 ─────────────────────────────────────────────────── Day 7 — weekly retro
 
-  ┌─ /ops-retro — Claude Code session ───────────────────────────────────┐
+  ┌─ /retro — Claude Code session ───────────────────────────────────┐
   │  CONTEXT=$(vague init)                                               │
   │  → slug: "acme-api"                                                  │
   │  → learnings: 2 entries (both surfaced — only 2 total)              │

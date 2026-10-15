@@ -174,4 +174,4 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 ## Handoff
 
-> "Root cause confirmed and fixed. Regression test added. Run `/dev-review` before landing, or `/dev-ship` if the fix is small and self-contained."
+> "Root cause confirmed and fixed. Regression test added. Run `/code-review` before landing, or `/dev-ship` if the fix is small and self-contained."

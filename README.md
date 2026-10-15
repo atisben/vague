@@ -1,6 +1,6 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 20 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
@@ -8,7 +8,7 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 
 - **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
-- **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/ops-retro` with zero agent cooperation.
+- **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/retro` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Copilot, Cursor, or Windsurf.
 - **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite.
 
@@ -29,35 +29,33 @@ Then use any slash command in your AI tool.
 ### Entry point
 | Command | When to use |
 |---------|-------------|
-| `/ops-triage` | The front door. Triage what's on your plate and route to the right skill. |
+| `/triage` | The front door. Triage what's on your plate and route to the right skill. |
 
 ### Planning
 | Command | When to use |
 |---------|-------------|
-| `/plan-ideation` | You have an idea. Validates it, challenges it, writes a design doc. |
-| `/plan-ceo` | Pressure-test scope. Expand, hold, or reduce. |
+| `/plan-ideation` | You have an idea. Validates it, challenges it, writes a design doc. Say "think bigger" on an existing plan to expand, hold, or reduce its scope. |
 | `/plan-eng` | Lock in architecture, data model, test strategy. |
 
 ### Design
 | Command | When to use |
 |---------|-------------|
-| `/design-diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
+| `/diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
 
 ### Execution
 | Command | When to use |
 |---------|-------------|
 | `/dev-develop` | Orchestrate a feature across fresh-context subagents. |
-| `/dev-ship` | Implement, test, commit, push, PR. |
-| `/dev-review` | Pre-landing code review before merging. |
+| `/dev-ship` | Test, version, changelog, commit, push, PR. |
 | `/dev-investigate` | Debug systematically — root cause first. |
 
 ### Reflection
 | Command | When to use |
 |---------|-------------|
-| `/ops-learn` | Browse, search, prune, and export project learnings. |
-| `/ops-retro` | Weekly engineering retrospective. |
-| `/ops-meta` | Review observations and improve the skills themselves. |
-| `/ops-vault` | Save and retrieve notes from your Obsidian vault. |
+| `/learn` | Browse, search, prune, and export project learnings. |
+| `/retro` | Weekly engineering retrospective. |
+| `/meta` | Review observations and improve the skills themselves. |
+| `/vault` | Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault. |
 
 ### Management
 | Command | When to use |
@@ -86,22 +84,24 @@ Then use any slash command in your AI tool.
 ## Workflow
 
 ```
-/ops-triage                 → triage + route to any skill below
+/triage                 → triage + route to any skill below
 
 Idea
   └─ /plan-ideation         → design doc
-      ├─ /plan-ceo          → scope decisions
+      ├─ "think bigger"     → scope review (same skill)
       └─ /plan-eng          → architecture locked
 
-      └─ /design-diagram    → architecture overview
+      └─ /diagram           → architecture overview
+          └─ /vault export  → diagram embedded in an Obsidian note
 
-          └─ /dev-ship      → implement + PR
-              └─ /dev-review → pre-landing review
+          └─ /dev-develop   → implement
+              └─ /dev-ship  → tests + PR
+                  └─ /code-review (built-in) → pre-landing review
                                └─ merge
 
                               /dev-investigate   (when bugs happen)
-                              /ops-learn         (anytime)
-                              /ops-retro         (end of week)
+                              /learn         (anytime)
+                              /retro         (end of week)
 ```
 
 ---
@@ -147,32 +147,27 @@ vague install --runtime claude           # every configured Claude profile
 vague install --runtime claude:work      # just that one
 ```
 
-### Shared and per-profile instructions
+### What vague writes into CLAUDE.md
 
-The CLAUDE.md written into each profile is assembled from fragments you own:
+Each instruction file (every Claude profile's `CLAUDE.md`, Copilot's
+`instructions.md`, Cursor's rule) gets the same public block:
 
 ```
-~/.vague/claude.d/
-├── base.md         ← shared by every profile
-├── work.md         ← only ~/.claude-work
-└── personal.md     ← only ~/.claude-personal
+<!-- vague:start -->
+vague/assets/claude/guidelines.md   ← shared guidelines, shipped with the package
+generated skill routing table       ← built from assets/skills/*/SKILL.md
+<!-- vague:end -->
 ```
 
-The profile name comes from the directory: `~/.claude-work` → `work`,
-`~/.claude` → `default`. Rendered output is `base.md`, then the matching
-overlay, then the generated skill routing table.
+Only the region between `<!-- vague:start -->` and `<!-- vague:end -->` is
+ever rewritten. Personal or per-profile content — work conventions, vault
+paths, anything private — goes in that profile's own `CLAUDE.md`, *outside*
+the markers. Install leaves it byte-for-byte untouched, and `vague uninstall`
+removes the marked region without touching the rest of the file.
 
-Seed the fragments from a CLAUDE.md you already have:
-
-```bash
-vague claude-init                        # uses the first profile's CLAUDE.md
-vague claude-init --source ~/.claude-personal/CLAUDE.md
-```
-
-Everything vague writes is wrapped in `<!-- vague:start -->` /
-`<!-- vague:end -->`. Only that region is ever rewritten — anything you type
-outside the markers is left alone, and `vague uninstall` removes the region
-without touching the rest of the file.
+If you used the older `~/.vague/claude.d/` fragments, they are no longer read.
+`vague install` prints a reminder while the directory exists; move its content
+into your `CLAUDE.md` outside the markers, then delete it yourself.
 
 > **Careful where a profile lives.** Claude Code reads `CLAUDE_CONFIG_DIR`,
 > but it *also* scans every parent directory of your project for
@@ -200,7 +195,6 @@ vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract
 vague skill-audit <dir> --strict        # scan for legacy bash patterns
 vague install --runtime claude:work     # install/sync one Claude profile
-vague claude-init                       # seed ~/.vague/claude.d/ from an existing CLAUDE.md
 ```
 
 ---
@@ -229,8 +223,8 @@ vague status              # cross-project dashboard: branches, in-flight plans, 
 vague analytics-show 7d   # skill usage counts (7d | 30d | all)
 ```
 
-`/ops-triage` runs `vague status` automatically as its first step, and
-`/ops-retro` folds the same data into the weekly retrospective.
+`/triage` runs `vague status` automatically as its first step, and
+`/retro` folds the same data into the weekly retrospective.
 
 ### Turning it off
 
@@ -243,7 +237,7 @@ vague config-set telemetry off
 ```
 
 `project.md`, timeline, and learnings are structural state (they power
-`vague status`, `/ops-retro`, and learning recall) and are still written.
+`vague status`, `/retro`, and learning recall) and are still written.
 
 ---
 
