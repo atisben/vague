@@ -255,6 +255,36 @@ document.addEventListener('keydown', (e) => {
 });
 ```
 
+### Saving and Restoring Edits
+
+Never restore saved text by element position. A restyle or an inserted slide shifts positions, and old text lands in the wrong elements.
+
+- Give every editable element a stable, content-derived id at generation time: `data-edit-id="s03-title"`, `data-edit-id="s03-bullet-2"`. The id never changes when the layout changes.
+- Key the storage on the deck name and a version: `slides:<deck-file-name>:<DECK_VERSION>`. Set `DECK_VERSION` once in the deck's script. Bump it on every restyle (Mode D) or structural change, so edits from an older structure are ignored.
+- Save a map of `data-edit-id` → `innerHTML`, and restore only ids that exist in the current deck.
+
+```javascript
+const DECK_VERSION = '1';
+const STORAGE_KEY = `slides:${location.pathname.split('/').pop()}:${DECK_VERSION}`;
+
+function saveEdits() {
+    const edits = {};
+    document.querySelectorAll('[data-edit-id]').forEach(el => {
+        edits[el.dataset.editId] = el.innerHTML;
+    });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(edits)); } catch (e) {}
+}
+
+function restoreEdits() {
+    let edits = {};
+    try { edits = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) {}
+    for (const [id, html] of Object.entries(edits)) {
+        const el = document.querySelector(`[data-edit-id="${id}"]`);
+        if (el) el.innerHTML = html;
+    }
+}
+```
+
 ## Image Pipeline (Skip If No Images)
 
 If user chose "No images" in Phase 1, skip this entirely. If images were provided, process them before generating HTML.
@@ -324,6 +354,23 @@ Save processed images with `_processed` suffix. Never overwrite originals.
 **Placement patterns:** Logo centered on title slide. Screenshots in two-column layouts with text. Full-bleed images as slide backgrounds with text overlay (use sparingly).
 
 ---
+
+## SVG Charts
+
+Draw charts as inline SVG sized in stage pixels. Two rules prevent the most common rendering bugs:
+
+- **Never use `preserveAspectRatio="none"` on an SVG that contains text.** That setting lets the SVG stretch to fill its box, so labels distort. Give the SVG a `viewBox` that matches its rendered width and height, or keep the default `xMidYMid meet`. If only a background shape must stretch, put it in its own SVG and keep the labels in HTML or a separate unstretched SVG.
+- **Set chart transparency with `fill-opacity` / `stroke-opacity`, never `opacity`.** The reveal animations animate `opacity` from 0 to 1, which overrides any static `opacity` on the same element. A forecast band set to `opacity: 0.3` ends up fully opaque after the fade.
+
+```html
+<!-- Range band: transparency on fill-opacity, animation free to use opacity -->
+<svg viewBox="0 0 1600 500" width="1600" height="500">
+  <path class="reveal" d="M0,320 C400,280 800,260 1600,200 L1600,300 C800,360 400,380 0,400 Z"
+        fill="#7AD6E5" fill-opacity="0.35"/>
+  <path d="M0,360 C400,330 800,310 1600,250" fill="none" stroke="#E75D36" stroke-width="4"/>
+  <text x="1590" y="240" text-anchor="end" font-size="22">Plan</text>
+</svg>
+```
 
 ## Code Quality
 

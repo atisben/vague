@@ -39,7 +39,7 @@ against `$SKILL_DIR`. Scripts run from the user's cwd, so always call them as
 `$SKILL_DIR/scripts/...`. The decks and previews this skill writes go in the user's cwd.
 
 Adapted from [zarazhangrui/frontend-slides](https://github.com/zarazhangrui/frontend-slides)
-(MIT, see `LICENSE`). The bold template pack holds 12 of the 34 upstream templates.
+(MIT, see `LICENSE`). The bold template pack holds 12 of the 34 upstream templates, plus the in-house Alma template.
 
 ## Core Principles
 
@@ -105,6 +105,7 @@ Determine what the user wants:
 - **Mode A: New Presentation** — Create from scratch. Go to Phase 1.
 - **Mode B: PPT Conversion** — Convert a .pptx file. Go to Phase 4.
 - **Mode C: Enhancement** — Improve an existing HTML presentation. Read it, understand it, enhance. **Follow Mode C modification rules below.**
+- **Mode D: Restyle** — Apply a different style to an existing deck while keeping its content. **Follow Mode D restyle rules below.**
 
 ### Mode C: Modification Rules
 
@@ -117,6 +118,17 @@ When enhancing existing presentations, fixed-stage fitting is the biggest risk:
 5. **Proactively reorganize:** If modifications will cause overflow, automatically split content and inform the user. Don't wait to be asked
 
 **When adding images to existing slides:** Move image to a new slide or reduce other content first. Never add images without checking if existing content already fills the 1920×1080 slide stage.
+
+### Mode D: Restyle Rules
+
+1. **Back up first.** Copy the deck to `<name>.orig.html` next to it before any change. Never overwrite the backup on a later run.
+2. **Pick the style.** If the user named a preset or bold template, skip Phase 2 and use it. Otherwise run Phase 2 with the deck's real title slide as the preview content.
+3. **Read the design recipe.** For a bold template, read its `design.md`. For a preset, read its `STYLE_PRESETS.md` section.
+4. **Keep every line of content.** Keep all text, numbers, images, speaker notes, and slide order. Change layout and styling only. Each existing slide maps to the closest layout in the new style.
+5. **Split, don't cut.** If content no longer fits a slide in the new style, split it into continuation slides. Never drop or shorten text silently.
+6. **Bump the edit-storage version.** Give the restyled deck a new `DECK_VERSION` (see "Inline Editing Implementation" in `html-template.md`), so edits saved in the browser for the old version are not restored onto the new layout.
+7. **Verify** with rendered screenshots, as in Mode C step 4.
+8. **Report** the backup path, the slides that were split, and any element the new style has no layout for.
 
 ---
 
@@ -175,7 +187,9 @@ If the user already gave a vibe, use it. If they did not, infer the likely mood 
 
 If the user explicitly names a preset or bold template, honor that as one option and generate the remaining preview slots around it.
 
-Read [STYLE_PRESETS.md](STYLE_PRESETS.md) for safe preset candidates. Read [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) too, but do not read any `design.md` files yet. The index lists 12 bold templates: 8-Bit Orbit, Blue Professional, Broadside, Cartesian, Cobalt Grid, Creative Mode, Long Table, Mat, Monochrome, Sakura Chroma, Signal, Studio.
+If the deck is for Alma (the user says so, or the content is Alma work), always use the Alma bold template as one of the three previews.
+
+Read [STYLE_PRESETS.md](STYLE_PRESETS.md) for safe preset candidates. Read [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) too, but do not read any `design.md` files yet. The index lists 13 bold templates: 8-Bit Orbit, Alma, Blue Professional, Broadside, Cartesian, Cobalt Grid, Creative Mode, Long Table, Mat, Monochrome, Sakura Chroma, Signal, Studio.
 
 | Mood                | Suggested Presets                                  |
 | ------------------- | -------------------------------------------------- |
@@ -226,7 +240,11 @@ Open each preview automatically for the user.
 ### Step 2.1: User Picks
 
 Ask with `AskUserQuestion` (header: "Style"):
-Which style preview do you prefer? Options: Style A: [Name] / Style B: [Name] / Style C: [Name] / Mix elements
+Which style preview do you prefer? Options: Style A: [Name] · [Source] / Style B: [Name] · [Source] / Style C: [Name] · [Source] / Mix elements
+
+`[Source]` is where the style comes from: `Safe preset` (from `STYLE_PRESETS.md`), `Bold template` (from the bold template pack), or `Custom design` (made for this deck). Label every option, so the user can tell library styles from custom ones.
+
+Under the question, tell the user they can name any other preset or bold template under "Other". If they do, generate a preview for it, then ask again.
 
 If "Mix elements", ask for specifics.
 
@@ -361,7 +379,7 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 | File                                               | Purpose                                                              | When to Read              |
 | -------------------------------------------------- | -------------------------------------------------------------------- | ------------------------- |
 | [STYLE_PRESETS.md](STYLE_PRESETS.md)               | 12 curated visual presets with colors, fonts, and signature elements | Phase 2 (style selection) |
-| [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) | Compact metadata for the 12 bundled bold templates | Phase 2 (style selection) |
+| [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) | Compact metadata for the 13 bundled bold templates | Phase 2 (style selection) |
 | [bold-template-pack/templates/*/preview.md](bold-template-pack/templates/) | Lightweight style cards for shortlisted bold title previews | Phase 2 after shortlisting |
 | [bold-template-pack/templates/*/design.md](bold-template-pack/templates/) | Detailed design-system docs for the selected bold template only | Phase 3 after user selection |
 | [viewport-base.css](viewport-base.css)             | Mandatory fixed-stage CSS — copy into every presentation             | Phase 3 (generation)      |

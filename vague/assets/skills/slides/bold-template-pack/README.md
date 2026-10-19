@@ -2,7 +2,9 @@
 
 This pack brings 12 of the 34 `beautiful-html-templates` design systems into
 the `slides` skill without making them the default for every deck. The subset
-comes from upstream `zarazhangrui/frontend-slides`. To add a template, copy its
+comes from upstream `zarazhangrui/frontend-slides`. It also holds one in-house
+template, `alma`, derived from `cobalt-grid` and written natively for the
+fixed 1920×1080 stage. To add a template, copy its
 folder into `templates/` and add its entry to `selection-index.json`.
 
 ## What To Read

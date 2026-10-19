@@ -2,7 +2,7 @@
   "schema_version": 1,
   "pack_name": "Beautiful HTML Templates - Bold Design Pack (vague subset)",
   "source_repo": "zarazhangrui/beautiful-html-templates",
-  "template_count": 12,
+  "template_count": 13,
   "usage": {
     "selection": "Read this compact index first to shortlist bold templates from metadata.",
     "previews": "For title-slide previews, read only the preview_md files for the shortlisted bold candidates.",
@@ -40,6 +40,32 @@
       "avoid_for": "Contexts where the dark neon palette would actively work against the message — quiet institutional finance disclosures, healthcare patient-facing materials, traditional luxury.",
       "preview_md": "bold-template-pack/templates/8-bit-orbit/preview.md",
       "design_md": "bold-template-pack/templates/8-bit-orbit/design.md"
+    },
+    {
+      "slug": "alma",
+      "name": "Alma",
+      "tagline": "Alma's house style: DM Serif Display titles with an orange italic accent, Inter text, full-bleed sky or orange title pages, and rounded colour tiles on white.",
+      "mood": [
+        "corporate",
+        "consulting",
+        "clear",
+        "confident",
+        "warm",
+        "structured"
+      ],
+      "tone": [
+        "professional",
+        "direct",
+        "explanatory",
+        "friendly"
+      ],
+      "formality": "high",
+      "density": "medium",
+      "scheme": "light",
+      "best_for": "Any Alma deck: internal reviews, quarterly reviews and deepdives, architecture and roadmap proposals, working sessions, executive updates, and consulting-style recommendations that need a clear takeaway per slide.",
+      "avoid_for": "Decks that must not carry Alma branding (personal talks, other companies), and moody or experimental decks.",
+      "preview_md": "bold-template-pack/templates/alma/preview.md",
+      "design_md": "bold-template-pack/templates/alma/design.md"
     },
     {
       "slug": "blue-professional",
