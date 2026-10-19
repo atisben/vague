@@ -221,21 +221,14 @@ def test_map_branch_boxes_do_not_overlap():
 
 # --- files
 
-EMPTY_COMPRESSED = """---
-
-excalidraw-plugin: parsed
-tags: [excalidraw]
-
----
-==⚠  Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠==
-
-
-## Drawing
-```compressed-json
-{payload}
-```
-%%
-"""
+# Copied from a drawing the Obsidian Excalidraw plugin created (empty, compressed mode).
+EMPTY_COMPRESSED = (
+    "---\n\nexcalidraw-plugin: parsed\ntags: [excalidraw]\n\n---\n"
+    "==⚠  Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠== "
+    "You can decompress Drawing data with the command palette: 'Decompress current Excalidraw file'. "
+    "For more info check in plugin settings under 'Saving'\n\n\n"
+    "## Drawing\n```compressed-json\n{payload}\n```\n%%\n"
+)
 
 
 def _existing(tmp_path, elements):
@@ -254,6 +247,18 @@ def test_write_creates_a_new_compressed_drawing(tmp_path):
     assert "excalidraw-plugin: parsed" in text
     assert "```compressed-json" in text
     assert len(read_drawing(path)["elements"]) == len(doc["elements"])
+
+
+def test_write_creates_a_drawing_with_the_plugin_file_skeleton(tmp_path):
+    # A hand-written skeleton failed to open in the plugin ("Cannot read properties of null");
+    # the same elements open fine inside the skeleton the plugin writes itself.
+    path = tmp_path / "new.excalidraw.md"
+    write_drawing(path, render(parse_spec(FLOW_SPEC)))
+    text = path.read_text(encoding="utf-8")
+    payload_start = text.index("```compressed-json\n") + len("```compressed-json\n")
+    payload_end = text.index("\n```", payload_start)
+    skeleton = text[:payload_start] + "{payload}" + text[payload_end:]
+    assert skeleton == EMPTY_COMPRESSED
 
 
 def test_write_fills_an_empty_drawing_and_keeps_its_header(tmp_path):

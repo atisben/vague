@@ -518,24 +518,15 @@ def render(spec: TimelineSpec | FlowSpec | MapSpec, seed: int = 7) -> dict[str, 
 
 # --- files
 
-NEW_FILE = """---
-
-excalidraw-plugin: parsed
-tags: [excalidraw]
-
----
-==⚠  Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠==
-
-
-# Excalidraw Data
-
-%%
-## Drawing
-```compressed-json
-{payload}
-```
-%%
-"""
+# Exactly what the plugin writes for a new compressed drawing. The previous hand-written skeleton
+# ("# Excalidraw Data" + "%%", no "## Text Elements") failed to open with "Cannot read properties of null".
+NEW_FILE = (
+    "---\n\nexcalidraw-plugin: parsed\ntags: [excalidraw]\n\n---\n"
+    "==⚠  Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠== "
+    "You can decompress Drawing data with the command palette: 'Decompress current Excalidraw file'. "
+    "For more info check in plugin settings under 'Saving'\n\n\n"
+    "## Drawing\n```compressed-json\n{payload}\n```\n%%\n"
+)
 _DRAWING_BLOCK = re.compile(r"```(compressed-json|json)\n(.*?)\n```", re.DOTALL)
 APPEND_GAP = 300
 
