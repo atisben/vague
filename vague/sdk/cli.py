@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import time
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -12,6 +13,7 @@ from vague.installer import cmd_install, cmd_uninstall
 from vague.sdk.commands.analytics import cmd_analytics_log, cmd_analytics_show
 from vague.sdk.commands.commit import cmd_commit
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
+from vague.sdk.commands.excalidraw import cmd_excalidraw_inspect, cmd_excalidraw_render
 from vague.sdk.commands.init import cmd_context, cmd_init
 from vague.sdk.commands.learnings import cmd_learnings_log, cmd_learnings_search
 from vague.sdk.commands.observations import (
@@ -188,6 +190,21 @@ def slug() -> None:
 def timeline_log(json_input: str) -> None:
     """Append a timeline entry (JSON string)."""
     cmd_timeline_log(json_input)
+
+
+@sdk_app.command("excalidraw-render")
+def excalidraw_render(
+    spec_path: Annotated[Path, typer.Argument(help="JSON diagram spec (timeline, flow or map).")],
+    out: Annotated[Path, typer.Option("--out", help="Target .excalidraw.md; created, filled or appended to.")],
+) -> None:
+    """Render a diagram spec into an Obsidian Excalidraw drawing. Outputs JSON."""
+    cmd_excalidraw_render(spec_path, out)
+
+
+@sdk_app.command("excalidraw-inspect")
+def excalidraw_inspect(path: Path) -> None:
+    """Count the live elements in an Excalidraw drawing. Outputs JSON."""
+    cmd_excalidraw_inspect(path)
 
 
 @sdk_app.command("commit")

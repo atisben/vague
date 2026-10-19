@@ -1,6 +1,6 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 20 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 21 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
@@ -41,6 +41,7 @@ Then use any slash command in your AI tool.
 | Command | When to use |
 |---------|-------------|
 | `/diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
+| `/vault-excalidraw` | Draw an editable Excalidraw diagram in your Obsidian vault: a timeline for date windows (filters on the arrows), a flow, or a mind map. |
 
 ### Execution
 | Command | When to use |
@@ -93,6 +94,7 @@ Idea
 
       └─ /diagram           → architecture overview
           └─ /vault export  → diagram embedded in an Obsidian note
+      └─ /vault-excalidraw  → editable Excalidraw drawing in the vault
 
           └─ /dev-develop   → implement
               └─ /dev-ship  → tests + PR
