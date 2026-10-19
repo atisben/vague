@@ -1,0 +1,19 @@
+version: "3"
+
+tasks:
+  install:
+    desc: Install vague as an editable uv tool and link its skills into every detected runtime
+    cmds:
+      # --editable keeps assets resolving to this repo, so skill edits are live without reinstalling
+      - uv tool install --editable . --force
+      - vague install
+
+  sync:
+    desc: Relink skills and regenerate the instruction block (after adding, renaming, or retriggering a skill)
+    cmds:
+      - vague install
+
+  test:
+    desc: Run the full test suite
+    cmds:
+      - uv run pytest

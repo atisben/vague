@@ -16,9 +16,10 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 
 ```bash
 git clone https://github.com/atisben/vague.git && cd vague
-uv tool install . --force --reinstall
-vague install          # auto-detects Claude Code, Cursor, or Windsurf
+task install           # editable uv tool install + vague install (auto-detects Claude Code, Cursor, or Windsurf)
 ```
+
+`task install` installs vague in editable mode, so skills link straight into this repo. Edits to a `SKILL.md` or a template are live at once. Run `task sync` (`vague install`) after adding, renaming, or changing the `Trigger:` line of a skill. Live skills follow the checked-out branch.
 
 Then use any slash command in your AI tool.
 
@@ -297,9 +298,9 @@ agent spawns inherits it. When running `vague` by hand, add
 
 ## Updates
 
-In order to reinstall the latest update of vague, use 
+Pull the latest changes. Skill edits are live with the editable install. Rerun the install only when Python dependencies change or skills were added or renamed:
 ```bash
-uv tool install . --force --reinstall
+task install
 ```
 
 ## Inspirations
