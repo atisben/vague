@@ -1,6 +1,6 @@
 # vague
 
-Personal development workflow toolkit. 20 skills for the full software development lifecycle.
+Personal development workflow toolkit. 21 skills for the full software development lifecycle.
 
 ## Skill Routing
 
@@ -18,6 +18,7 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 | "weekly retro", "what did we ship", "engineering retrospective" | `/retro` |
 | "develop this", "build this feature", "implement this", "orchestrate" | `/dev-develop` |
 | "improve skills", "meta review", "skill improvement", "review observations" | `/meta` |
+| "excalidraw", "draw this in excalidraw", "add this to my excalidraw", "draw the training windows" | `/vault-excalidraw` |
 | "save to vault", "note this down", "save this note", "search the vault", "find in vault", "recall from vault", "export to vault", "send this diagram to obsidian" | `/vault` |
 | "set up my team", "import career ladder", "add a team member", "/mgmt-setup" | `/mgmt-setup` |
 | "log a 1:1", "note feedback for <name>", "capture a win", "/mgmt-log" | `/mgmt-log` |

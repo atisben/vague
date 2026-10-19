@@ -237,6 +237,7 @@ no artifact, it reads git state and routes to the skill below that fits.
 
 /diagram            → reads code or notes, writes HTML diagram to ~/.vague/projects/{slug}/diagrams/
 /vault export       → copies an artifact into ~/Obsidian/Attachments/, writes a note that embeds it
+/vault-excalidraw   → writes a JSON spec, `vague excalidraw-render` lays it out into ~/Obsidian/<plugin folder>/*.excalidraw.md
 
 /dev-develop        → implements the plan
 /dev-ship           → runs tests, reviews the diff, commits, opens PR

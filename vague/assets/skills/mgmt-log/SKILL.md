@@ -124,20 +124,40 @@ fi
 } >> "$LOG"
 ```
 
-Then append the note as bullets. Write one `- ` bullet per line of note text. If a type
-prefix fits the content, use it (`- win: ...`, `- concern: ...`); otherwise a plain bullet.
+Then append the note as four labelled bullets, always in this order. This mirrors the
+manager's feedback journal (Context / Observation / Impact / Next steps), so evidence
+stays comparable across entries and `/mgmt-review` can separate what happened from
+why it mattered and what to do about it.
+
+| Field | What goes in it |
+|---|---|
+| `context` | The situation: meeting, project, incident, request. |
+| `observation` | The concrete behavior seen — facts, not judgement. |
+| `impact` | The effect on the team, stakeholders, the project, or the manager. |
+| `next` | The follow-up or growth action, if any. |
+
+Split the note text into these fields from its wording. **Never ask the user to fill a
+missing field** — write `none` instead. A one-line note becomes `observation`, with
+`none` for the rest unless the wording clearly carries context or impact. Keep the user's
+facts; do not invent context, impact, or next steps.
+
 Only if the user tagged competencies, add a final `- dimensions: [ownership, leadership]`
 line. Use the Write/Bash append tools; keep the `member:` frontmatter and `# Log — <Name>`
 header intact when the file already exists (append only — never rewrite the file).
 
+The heading date is always a full `YYYY-MM-DD`: `/mgmt-progress` detects activity by
+matching `## YYYY-MM-DD`. If a source only gives a month, use the first of the month
+and say so in `context`.
+
 Example resulting entry:
 
 ```markdown
-## 2026-07-10 — 1:1
-- win: shipped the ingestion rework, unblocked two teams
-- blindspot: arrives at scoping already holding the solution — narrows the team's ideation
-- growth: create space for the team to find the answer before offering his own
-- dimensions: [ownership, leadership]
+## 2026-09-01 — win
+- context: Meeting with Risk regarding travel
+- observation: Brought strong arguments for using only the cart table; analysis complete, clean, and documented; owned the communication of results
+- impact: Made decision-making easier for other teams and steered decisions our way
+- next: none
+- dimensions: [ownership, communication]
 ```
 
 ---

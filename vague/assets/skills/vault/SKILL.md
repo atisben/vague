@@ -148,7 +148,7 @@ Confirm: "Saved to `$FOLDER/$TITLE.md`."
 
 ## EXPORT MODE
 
-Turns a file artifact into a vault note that displays it. The artifact goes to `Attachments/`; a note in the usual template embeds it with `![[...]]`.
+Turns a file artifact into a vault note that displays it. For an editable drawing instead of a static artifact, use `/vault-excalidraw`. The artifact goes to `Attachments/`; a note in the usual template embeds it with `![[...]]`.
 
 ### What Obsidian can display
 
