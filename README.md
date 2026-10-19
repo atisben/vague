@@ -1,6 +1,6 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 21 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
@@ -16,9 +16,10 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 
 ```bash
 git clone https://github.com/atisben/vague.git && cd vague
-uv tool install . --force --reinstall
-vague install          # auto-detects Claude Code, Cursor, or Windsurf
+task install           # editable uv tool install + vague install (auto-detects Claude Code, Cursor, or Windsurf)
 ```
+
+`task install` installs vague in editable mode, so skills link straight into this repo. Edits to a `SKILL.md` or a template are live at once. Run `task sync` (`vague install`) after adding, renaming, or changing the `Trigger:` line of a skill. Live skills follow the checked-out branch.
 
 Then use any slash command in your AI tool.
 
@@ -42,6 +43,7 @@ Then use any slash command in your AI tool.
 |---------|-------------|
 | `/diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
 | `/vault-excalidraw` | Draw an editable Excalidraw diagram in your Obsidian vault: a timeline for date windows (filters on the arrows), a flow, or a mind map. |
+| `/slides` | Build an animated HTML slide deck (fixed 16:9 stage) from notes or a .pptx: pick a style from three live previews, then export to PDF. |
 
 ### Execution
 | Command | When to use |
@@ -95,6 +97,7 @@ Idea
       └─ /diagram           → architecture overview
           └─ /vault export  → diagram embedded in an Obsidian note
       └─ /vault-excalidraw  → editable Excalidraw drawing in the vault
+      └─ /slides            → HTML slide deck (PDF optional)
 
           └─ /dev-develop   → implement
               └─ /dev-ship  → tests + PR
@@ -295,9 +298,9 @@ agent spawns inherits it. When running `vague` by hand, add
 
 ## Updates
 
-In order to reinstall the latest update of vague, use 
+Pull the latest changes. Skill edits are live with the editable install. Rerun the install only when Python dependencies change or skills were added or renamed:
 ```bash
-uv tool install . --force --reinstall
+task install
 ```
 
 ## Inspirations
