@@ -2,9 +2,14 @@
 
 This pack brings 12 of the 34 `beautiful-html-templates` design systems into
 the `slides` skill without making them the default for every deck. The subset
-comes from upstream `zarazhangrui/frontend-slides`. It also holds one in-house
-template, `alma`, derived from `cobalt-grid` and written natively for the
-fixed 1920×1080 stage. To add a template, copy its
+comes from upstream `zarazhangrui/frontend-slides`. It also holds two in-house
+templates written natively for the fixed 1920×1080 stage:
+
+- `alma`, derived from `cobalt-grid`.
+- `strategy-report`, derived from the layout of McKinsey's "The State of
+  Organizations 2026" report. It borrows the layout grammar, never the brand.
+
+To add a template, copy its
 folder into `templates/` and add its entry to `selection-index.json`.
 
 ## What To Read

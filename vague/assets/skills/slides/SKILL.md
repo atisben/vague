@@ -39,7 +39,7 @@ against `$SKILL_DIR`. Scripts run from the user's cwd, so always call them as
 `$SKILL_DIR/scripts/...`. The decks and previews this skill writes go in the user's cwd.
 
 Adapted from [zarazhangrui/frontend-slides](https://github.com/zarazhangrui/frontend-slides)
-(MIT, see `LICENSE`). The bold template pack holds 12 of the 34 upstream templates, plus the in-house Alma template.
+(MIT, see `LICENSE`). The bold template pack holds 12 of the 34 upstream templates, plus two in-house templates: Alma and Strategy Report.
 
 ## Core Principles
 
@@ -189,7 +189,7 @@ If the user explicitly names a preset or bold template, honor that as one option
 
 If the deck is for Alma (the user says so, or the content is Alma work), always use the Alma bold template as one of the three previews.
 
-Read [STYLE_PRESETS.md](STYLE_PRESETS.md) for safe preset candidates. Read [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) too, but do not read any `design.md` files yet. The index lists 13 bold templates: 8-Bit Orbit, Alma, Blue Professional, Broadside, Cartesian, Cobalt Grid, Creative Mode, Long Table, Mat, Monochrome, Sakura Chroma, Signal, Studio.
+Read [STYLE_PRESETS.md](STYLE_PRESETS.md) for safe preset candidates. Read [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) too, but do not read any `design.md` files yet. The index lists 14 bold templates: 8-Bit Orbit, Alma, Blue Professional, Broadside, Cartesian, Cobalt Grid, Creative Mode, Long Table, Mat, Monochrome, Sakura Chroma, Signal, Strategy Report, Studio.
 
 | Mood                | Suggested Presets                                  |
 | ------------------- | -------------------------------------------------- |
@@ -379,7 +379,7 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 | File                                               | Purpose                                                              | When to Read              |
 | -------------------------------------------------- | -------------------------------------------------------------------- | ------------------------- |
 | [STYLE_PRESETS.md](STYLE_PRESETS.md)               | 12 curated visual presets with colors, fonts, and signature elements | Phase 2 (style selection) |
-| [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) | Compact metadata for the 13 bundled bold templates | Phase 2 (style selection) |
+| [bold-template-pack/selection-index.json](bold-template-pack/selection-index.json) | Compact metadata for the 14 bundled bold templates | Phase 2 (style selection) |
 | [bold-template-pack/templates/*/preview.md](bold-template-pack/templates/) | Lightweight style cards for shortlisted bold title previews | Phase 2 after shortlisting |
 | [bold-template-pack/templates/*/design.md](bold-template-pack/templates/) | Detailed design-system docs for the selected bold template only | Phase 3 after user selection |
 | [viewport-base.css](viewport-base.css)             | Mandatory fixed-stage CSS — copy into every presentation             | Phase 3 (generation)      |

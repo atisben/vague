@@ -2,7 +2,7 @@
   "schema_version": 1,
   "pack_name": "Beautiful HTML Templates - Bold Design Pack (vague subset)",
   "source_repo": "zarazhangrui/beautiful-html-templates",
-  "template_count": 13,
+  "template_count": 14,
   "usage": {
     "selection": "Read this compact index first to shortlist bold templates from metadata.",
     "previews": "For title-slide previews, read only the preview_md files for the shortlisted bold candidates.",
@@ -316,6 +316,31 @@
       "avoid_for": "Contexts that should feel hot, fast, or intentionally playful — the navy + gold restraint commits to a sober voice.",
       "preview_md": "bold-template-pack/templates/signal/preview.md",
       "design_md": "bold-template-pack/templates/signal/design.md"
+    },
+    {
+      "slug": "strategy-report",
+      "name": "Strategy Report",
+      "tagline": "A strategy-consultancy research report as a 16:9 reading deck: bold serif over light sans, column text, a big Contents page, cobalt section openers, and 'Exhibit N' charts.",
+      "mood": [
+        "authoritative",
+        "editorial",
+        "analytical",
+        "calm",
+        "premium"
+      ],
+      "tone": [
+        "professional",
+        "evidence-led",
+        "considered",
+        "executive"
+      ],
+      "formality": "high",
+      "density": "high",
+      "scheme": "light",
+      "best_for": "Research reports, survey findings, state-of-the-industry reviews, strategy reviews, whitepapers, and executive briefings that are read or sent more than presented. Strong when the content has chapters, real paragraphs, and charts that need a sourced finding as their title.",
+      "avoid_for": "Short talk decks with few words per slide, playful or informal decks, and anything that must feel like a startup pitch.",
+      "preview_md": "bold-template-pack/templates/strategy-report/preview.md",
+      "design_md": "bold-template-pack/templates/strategy-report/design.md"
     },
     {
       "slug": "studio",
