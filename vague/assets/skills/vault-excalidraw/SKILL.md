@@ -1,17 +1,17 @@
 ---
 name: vault-excalidraw
-version: 1.0.0
+version: 2.0.0
 description: |
-  Draw an editable Excalidraw diagram straight into the Obsidian vault, with the shape
-  picked from the content: a timeline for date windows (training data, schedules,
-  validity periods) with filters written on the arrows, a numbered flow for processes,
-  a mind map for the parts of one concept. Creates a new drawing or adds to an existing one.
+  Draw an editable Excalidraw diagram for the Obsidian vault by writing a Mermaid flowchart:
+  an architecture with big zones (subgraphs) holding their real parts, a numbered flow,
+  a mind map, or a timeline, with feedback loops drawn explicitly. Saves a vault note
+  holding the Mermaid block (Obsidian and Notion render it) and copies the block to the
+  clipboard for Excalidraw's Mermaid import, which turns it into editable shapes.
   Trigger: "excalidraw", "draw this in excalidraw", "excalidraw in my vault",
-  "add this to my excalidraw", "draw the training windows", "/vault-excalidraw".
+  "add this to my excalidraw", "draw the architecture in excalidraw",
+  "draw the training windows", "/vault-excalidraw".
 sdk_commands:
   - vague context
-  - vague excalidraw-render
-  - vague excalidraw-inspect
   - vague observations-log
 requires_slug: false
 requires_planning: false
@@ -21,6 +21,7 @@ allowed-tools:
   - Write
   - Grep
   - Glob
+  - Agent
   - AskUserQuestion
 ---
 
@@ -31,160 +32,110 @@ eval "$(vague context --shell --skill vault-excalidraw)"
 VAULT="$HOME/Obsidian"
 PLUGIN="$VAULT/.obsidian/plugins/obsidian-excalidraw-plugin"
 [ -d "$PLUGIN" ] && echo "PLUGIN: on" || echo "PLUGIN: off"
-DRAW_DIR=$(python3 -c "import json;print(json.load(open('$PLUGIN/data.json')).get('folder','Excalidraw'))" 2>/dev/null || echo Excalidraw)
-echo "DRAW_DIR: $VAULT/$DRAW_DIR"
-vague excalidraw-render --help >/dev/null 2>&1 && echo "RENDER: ok" || echo "RENDER: missing"
+command -v pbcopy >/dev/null && echo "CLIPBOARD: pbcopy" || echo "CLIPBOARD: none"
+ls "$VAULT"
 ```
 
-- `PLUGIN: off`: tell the user to enable the **Excalidraw** community plugin, then continue. The file will open once it is on.
-- `RENDER: missing`: the installed `vague` predates this skill. Ask the user to reinstall it (`uv tool install --reinstall <path to the vague repo>`) and stop.
+- `PLUGIN: off`: tell the user to enable the **Excalidraw** community plugin. The note still works without it, because Obsidian renders Mermaid natively.
+- `CLIPBOARD: none`: print the Mermaid block in the final report instead of copying it.
+- The `ls` output gives the real vault folder names. Use them as they are; never create a numbered folder that does not exist.
 
-You never place coordinates by hand. You write a **spec**: what the diagram says. `vague excalidraw-render` owns layout, arrow bindings and the plugin's compressed file format. You cannot see the result, so every label must be short enough to read without a picture of it.
+You never place coordinates. Mermaid lays the diagram out, and Excalidraw's Mermaid import turns it into editable shapes. You cannot see the result, so every label must read correctly without a picture of it.
+
+Write a **flowchart** every time. Excalidraw converts flowcharts into editable shapes; other Mermaid types (`gantt`, `mindmap`, `timeline`) arrive as a flat image.
 
 ---
 
-## Step 1: Pick the Shape from the Content
+## Step 1: Pick the Layout from the Content
 
-The content decides the shape. Pick without asking when the table makes it obvious.
+The content decides the layout. Pick without asking when the table makes it obvious.
 
-| The content is… | Shape | `kind` | Example |
-|---|---|---|---|
-| Date ranges: training windows, backfills, schedules, retention, validity periods | Timeline: one lane per range on a shared date axis, a source box feeding every lane | `timeline` | Bob's two classifier windows and its p-value window |
-| Steps that happen in order, data moving between systems | Numbered flow, left to right, a label on every arrow | `flow` | training table → backtest → monitoring |
-| The parts of one concept, no direction | Mind map: centre, branches, items per branch, a dashed `NOT` branch | `map` | what pre-commit is and is not |
+| The content is… | Layout | Mermaid skeleton |
+|---|---|---|
+| A system: data stores, jobs, services, deployments | **Architecture**: one `subgraph` per zone (warehouse, orchestration, registries, cluster, consumers), the real parts inside, arrows between parts | `flowchart LR` + one `subgraph` per zone |
+| Steps that happen in order | **Flow**: numbered nodes, a label on every arrow | `flowchart LR` |
+| The parts of one concept, no direction | **Map**: a centre node, one branch node per part, items hanging off each branch, a dashed `NOT` branch | `flowchart TB` |
+| Date ranges or schedules (training windows, crons) | **Timeline**: one `subgraph` per moment in time order, the date in its title; the delay written on the arrow between moments | `flowchart LR` |
 
-If two shapes fit, ask once via AskUserQuestion with your recommendation first. Two things that never coexist in time are always a `timeline`.
+If two layouts fit, ask once via AskUserQuestion with your recommendation first. A system with more than one kind of part is always an architecture.
 
 ---
 
 ## Step 2: Gather the Real Content
 
-Read the source of truth (code, config, query results, the conversation) before writing the spec. Every box holds a real name.
+Read the source of truth (code, config, infra repos, query results, the conversation) before writing anything. Every node holds a real name: a table, a job, a service, a path. Delegate to Explore or general-purpose agents when the facts span several repos, and run them in parallel.
 
-### For a timeline
+### For an architecture: trace every dependency, not just the next hop
 
-1. **Anchor on one concrete day.** Pick a real reference day (today, the incident day, the training day) and compute real dates from it. Put the relative form in the caption: `2025-12-24 → 2026-06-24 (D − 9m25d → D − 3m25d)`.
-2. **One lane per range.** Order lanes oldest to newest, top to bottom.
-3. **Filters go on the arrows.** For each lane, `arrow_label` is: the filter's real identifier on line 1, then one `• ` bullet per condition in plain words. Put shared conditions in the same words on every lane so the differences stand out.
-4. **Zoom when scales differ.** If one range spans months and another spans days, use two `segments`: the old range at `px_per_day` 2, the recent one at 15–25 with a `label` like `zoomed ×10: last month`. A one-day detail must end up at least 20 px wide.
-5. **Highlights for what matters.** Mark an anomaly, gap or excluded period inside a lane with a `highlight` (red for problems, grey for "excluded by design") and a one-to-three-line `note`.
-6. **Markers for reference moments.** Add a `marker` for the reference day and for any event that explains the picture (a deploy, a schedule run).
+1. **List the zones** (5–7). Name each with its real platform: `BigQuery tranquil-garage-393215`, `Vertex AI · europe-west1`, `GKE ns ml-customer-risk`.
+2. **List each zone's parts** with what triggers them (cron, event, manual) and what they read and write.
+3. **Follow every output through all of its readers**, then through *their* readers, over at least two cycles (two days for daily jobs). One hop is not enough: the interesting failures cross zones and days.
+4. **Name every loop** that brings an output back to an earlier input, such as a job whose output feeds the next day's build. Confirm each loop in the code (the join, the read) before drawing it.
+5. **Say what is NOT linked** when a link would be expected: two jobs on a clock with no completion check, a service that never calls the store it seems to depend on.
 
-### For a flow
+### For a flow, a map or a timeline
 
-Use 2–7 steps. Each step label is a real name (table, job, function). Each edge label says what moves across it (`writes john_p_value`, `HTTP POST /predict`). Edges between non-neighbouring steps are routed underneath automatically.
-
-### For a map
-
-Use 2–7 branches with real names, up to about 5 short items each. Add `not` items whenever a misconception is likely.
-
-### Text rules (all shapes)
-
-- Keep each line under about 55 characters. Split longer lines with `\n`.
-- Keep the title under 60 characters. Put the source files and the reference day in `subtitle`.
-- Use the colours by meaning: one colour per concept, `red` for problems only, `grey` for "excluded" or "out of scope".
+- **Flow:** 2–9 steps, each a real name; each arrow says what moves across it (`writes john_p_value`, `HTTP POST /predict`).
+- **Map:** 2–7 branches with real names, up to about 5 items each; add `NOT` items whenever a misconception is likely.
+- **Timeline:** anchor on one real reference day and compute real dates from it. Write the relative form next to the date: `2026-06-24 (D − 3m25d)`. Put the filters of each window on the arrow that feeds it.
 
 ---
 
-## Step 3: Pick the Target File
+## Step 3: Write the Mermaid
 
-| The user… | Target |
+Use only the subset below. It renders in Obsidian and Notion and survives the Excalidraw import.
+
+| Element | Syntax | Rule |
+|---|---|---|
+| Direction | `flowchart LR` | `LR` for architectures, flows and timelines; `TB` for maps |
+| Zone | `subgraph dwh["🗄️ Data warehouse · BigQuery"]` … `end`, with `direction TB` inside | At most 2 nesting levels |
+| Part | `train["customer-risk-training<br>06:15 Mon–Sat"]` | Quote every label. Use `<br>` for line breaks, under about 40 characters per line. |
+| Table or store | `training[("dwh_ml.training")]` | Cylinder shape for data |
+| Arrow | `a -->|"reads"| b` | A label on every arrow, saying what flows |
+| Pull or config | `a -.->|"image by env tag"| b` | Dotted for things read at start-up or by reference |
+| Loop | `a ==>|"🔁 LOOP 1 · next day 03:00"| b` | Thick, numbered, and explained under the diagram |
+
+Hard rules:
+
+- **IDs** are short `snake_case` words. Never use `end`, `graph` or `subgraph` as an ID.
+- **No styling**: no `classDef`, `style` or `linkStyle`. The import may drop them, so meaning must sit in the labels.
+- **At most ~40 nodes per diagram.** For a bigger system, write an overview diagram (one node per zone) plus one zoom diagram per zone, each in its own block, with the same names.
+- **Group arrows by purpose** under `%%` comments (`%% Inputs`, `%% Deploy`, `%% Loops`) so the source stays reviewable.
+
+---
+
+## Step 4: Write the Vault Note
+
+The note is the deliverable. Obsidian renders the Mermaid block, and its text stays searchable, unlike the text inside a drawing.
+
+| Content | Folder |
 |---|---|
-| Names or links an existing drawing | That file. An `obsidian://open?vault=…&file=…` link maps to `$VAULT/<file, URL-decoded>.md`. |
-| Names nothing | A new `$VAULT/$DRAW_DIR/<Title>.excalidraw.md` |
+| Architecture, code walkthrough | `7. Code/` if it exists, else `6. Atomic Notes/` |
+| Anything else | `6. Atomic Notes/` |
 
-Before writing to an existing file, check what is in it:
+Use the `/vault` save template exactly: frontmatter with `aliases` and `tags`, `# YYYY-MM-DD - Title` heading, then:
 
-```bash
-vague excalidraw-inspect "<target path>"
-# {"path": "…/credit_scoring_logic.excalidraw.md", "elements": 0}
-```
-
-The renderer never removes anything:
-
-- **New file:** created.
-- **Empty drawing:** filled; the file header is kept.
-- **Drawing with content:** the new diagram is appended **below** the existing content. Say so to the user before writing.
-- **Not a drawing:** refused with an error. Nothing is changed.
+1. One sentence on what the diagram is for.
+2. **Open it in Excalidraw** instructions (Step 5).
+3. The Mermaid block or blocks.
+4. **How to read it**: a table with one row per zone (zone → what it holds → the lesson it carries).
+5. **Loops**: one numbered item per loop, with the file that proves it.
+6. **Not verified**: every fact you could not confirm. Never leave this section out; write "none" if empty.
+7. `# Next Actions` and `# References` (the real source files and repos).
 
 ---
 
-## Step 4: Write the Spec and Render
+## Step 5: Hand the Diagram to Excalidraw
 
-Write the spec to a scratch file, then render:
+Copy the Mermaid source (without the fences) to the clipboard:
 
 ```bash
-SPEC="${VAGUE_HOME:-$HOME/.vague}/tmp/excalidraw-spec.json"
-mkdir -p "$(dirname "$SPEC")"
-# Write the spec with the Write tool to $SPEC, then:
-vague excalidraw-render "$SPEC" --out "<target path>"
+python3 -c "import re,sys;print(re.search(r'\`\`\`mermaid\n(.*?)\`\`\`', open(sys.argv[1]).read(), re.S).group(1), end='')" "<note path>" | pbcopy
 ```
 
-Expected output, one JSON line:
+The user then pastes it into Excalidraw's Mermaid import ("Mermaid to Excalidraw"), which creates editable shapes they can rearrange. In the Excalidraw web app it sits under **More tools**; the menu in the Obsidian plugin may differ, so name the feature, not a menu path you have not seen.
 
-```json
-{"path": "…/Excalidraw/Bob Training Windows.excalidraw.md", "mode": "created", "elements_added": 44, "elements_total": 44, "embed": "![[Excalidraw/Bob Training Windows.excalidraw]]"}
-```
-
-On `Error: …`, fix the spec (the message names the field) and run again. Common causes: a date outside every segment, an edge to an unknown step id, more than 7 lanes, steps or branches.
-
-### Spec reference
-
-Timeline (the shape behind "training data with filters on the arrows"):
-
-```json
-{
-  "kind": "timeline",
-  "title": "Bob (mad_bob) — what data trains it",
-  "subtitle": "Example training day D = Mon 2026-10-19 · source: models/bob/config.py + bob/filters.py",
-  "source": {"label": "dwh_ml.training\n(BigQuery, rebuilt 03:24 UTC)\n\n+ john_p_value from\njohn_backtest_outputs", "color": "blue"},
-  "segments": [
-    {"start": "2025-09-01", "end": "2026-07-01", "px_per_day": 2,
-     "ticks": [{"at": "2025-12-01", "label": "2025-12"}, {"at": "2026-03-01", "label": "2026-03"}]},
-    {"start": "2026-09-14", "end": "2026-10-21", "px_per_day": 20, "label": "zoomed ×10: last month",
-     "ticks": [{"at": "2026-10-16", "label": "Fri 10-16"}]}
-  ],
-  "lanes": [
-    {"label": "Credit classifier · 8 months · target: recovery", "start": "2025-09-19", "end": "2026-05-19",
-     "color": "purple", "caption": "2025-09-19 → 2026-05-19   (D − 13m → D − 5m)",
-     "arrow_label": "credit_fr_no_forced_recovery_ob_scored_filter\n• FR transaction + FR bank account\n• credit: > 4 installments\n• open banking verified"},
-    {"label": "P-value reference · last 1 month", "start": "2026-09-18", "end": "2026-10-18", "color": "yellow",
-     "arrow_label": "rejection_scope_openbanking_john_p_value_not_null\n• FR transaction + FR bank account\n• john_p_value NOT NULL",
-     "highlights": [{"start": "2026-10-16T16:30", "end": "2026-10-18", "color": "red",
-                     "note": "Mondays: Fri 16:30 → Sat john_p_value = NULL\n→ dropped by the NOT NULL filter"}]}
-  ],
-  "markers": [{"at": "2026-10-19", "label": "D = training day\nMon 2026-10-19", "color": "red"}]
-}
-```
-
-Dates are `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM`. Every lane, highlight, tick and marker date must fall inside a segment. `caption` defaults to `start → end`.
-
-Flow:
-
-```json
-{"kind": "flow", "title": "Nightly scoring", "subtitle": "UTC times",
- "steps": [{"id": "train", "label": "dwh_ml.training\n03:24"}, {"id": "bt", "label": "john_backtest\n07:30 Mon–Sat"}],
- "edges": [{"from": "train", "to": "bt", "label": "reads payments"}]}
-```
-
-Map:
-
-```json
-{"kind": "map", "title": "pre-commit", "center": "pre-commit",
- "branches": [{"label": "config", "items": [".pre-commit-config.yaml at the repo root"]},
-              {"label": "when", "items": ["every git commit, after pre-commit install"]}],
- "not": ["does not run on push or in CI by itself"]}
-```
-
-Colours: `blue`, `purple`, `green`, `yellow`, `orange`, `red`, `grey`.
-
----
-
-## Step 5: Wrap It in a Note (Optional)
-
-If the user asked for a note, or the drawing is new and stands alone, offer a wrapper note in `6. Atomic Notes/` using the `/vault` save template. Put the `embed` value from Step 4 at the top, then the key facts as plain text, because Obsidian search does not index text inside drawings.
-
-Skip this when the user targeted an existing drawing: it already lives where they want it.
+With several blocks, copy the overview first and say which block is in the clipboard.
 
 ---
 
@@ -192,11 +143,10 @@ Skip this when the user targeted an existing drawing: it already lives where the
 
 Tell the user, in this order:
 
-1. The path and the mode (`created`, `filled` or `appended below existing content`).
-2. A small ASCII sketch of the layout, so they know what to look for.
-3. That you cannot see the rendering: ask them to open it and say which labels overflow or overlap.
-
-When they ask for adjustments, change the spec and re-render into a **new** file or tell them the old version will stay above the new one. The renderer appends; it does not edit in place.
+1. The note path.
+2. A small ASCII sketch of the zones and loops, so they know what to look for.
+3. What is in the clipboard and how to import it.
+4. That you cannot see the import: ask them which labels break, which arrows lose their style, and whether nested zones flatten. Fix the Mermaid, rewrite the note and copy the block again.
 
 ---
 
@@ -207,7 +157,8 @@ Throughout this skill's execution, watch for:
 - Missing rules the user has to correct
 - Workflow inefficiencies or unnecessary steps
 - Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "put the filters on the arrows", "use the existing drawing")
+- **User corrections**: any time the user tells you to do something the skill should have done automatically (e.g. "show the loop", "put the tables inside the warehouse box")
+- **Import problems**: any Mermaid construct that the Excalidraw import breaks or drops (`<br>` shown literally, flattened zones, lost arrow styles)
 
 When you notice any of these, log an observation:
 
@@ -215,16 +166,16 @@ When you notice any of these, log an observation:
 vague observations-log '{"skill":"vault-excalidraw","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"vault-excalidraw"}'
 ```
 
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement. Layout complaints ("labels overlap", "too wide") are corrections too: they mean the renderer's layout rules need work.
+**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement. Import complaints ("labels show <br>", "the zones are gone") are corrections too: they mean the Step 3 subset needs work.
 
 ```bash
 vague observations-log '{"skill":"vault-excalidraw","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"vault-excalidraw"}'
 ```
 
-Log silently — do not interrupt the user's workflow to announce observations.
+Log silently. Do not interrupt the user's workflow to announce observations.
 
 ---
 
 ## Handoff
 
-> "Drawing written to `<path>` (`<mode>`). Open it and tell me which labels need moving. Next: `/vault save` to wrap it in a note, or `/diagram` for a non-editable HTML version."
+> "Note written to `<path>`; the Mermaid is in your clipboard. Paste it into Excalidraw's Mermaid import, then tell me what breaks. Next: `/vault save` for related notes, or `/diagram` for a non-editable HTML version."

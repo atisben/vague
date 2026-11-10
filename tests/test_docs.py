@@ -17,6 +17,36 @@ def test_readme_lists_every_skill():
     assert not missing, f"README.md skill map is missing: {missing}"
 
 
+def _vague_commands_called_by_skills() -> dict[str, set[str]]:
+    """Map each `vague <command>` written in a skill's code (fenced blocks, inline code) to the skills using it."""
+    import re
+
+    code_pattern = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)
+    # `vague` only counts at the start of a shell command, so prose like "the vague repo" is ignored.
+    command_pattern = re.compile(r"(?:^|\$\(|\||&&|;)\s*vague ([a-z][a-z0-9-]*)", re.MULTILINE)
+    calls: dict[str, set[str]] = {}
+    for skill_md in _get_assets_skills_dir().glob("*/SKILL.md"):
+        text = skill_md.read_text(encoding="utf-8")
+        for code in code_pattern.findall(text):
+            for command in command_pattern.findall(code.strip("`")):
+                calls.setdefault(command, set()).add(skill_md.parent.name)
+    return calls
+
+
+def test_skills_only_call_existing_vague_commands():
+    import typer
+
+    from vague.sdk.cli import sdk_app
+
+    registered = set(typer.main.get_command(sdk_app).commands)
+    unknown = {
+        command: sorted(skills)
+        for command, skills in _vague_commands_called_by_skills().items()
+        if command not in registered
+    }
+    assert not unknown, f"skills call vague commands that do not exist: {unknown}"
+
+
 def test_readme_skill_count_matches():
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
     count = len(_skill_names())
