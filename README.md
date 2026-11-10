@@ -42,7 +42,7 @@ Then use any slash command in your AI tool.
 | Command | When to use |
 |---------|-------------|
 | `/diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
-| `/vault-excalidraw` | Draw an editable Excalidraw diagram in your Obsidian vault: a timeline for date windows (filters on the arrows), a flow, or a mind map. |
+| `/vault-excalidraw` | Draw an architecture, flow, map or timeline as a Mermaid flowchart in a vault note, then import it into Excalidraw as editable shapes. |
 | `/slides` | Build an animated HTML slide deck (fixed 16:9 stage) from notes or a .pptx: pick a style from three live previews, then export to PDF. |
 
 ### Execution
@@ -96,7 +96,7 @@ Idea
 
       └─ /diagram           → architecture overview
           └─ /vault export  → diagram embedded in an Obsidian note
-      └─ /vault-excalidraw  → editable Excalidraw drawing in the vault
+      └─ /vault-excalidraw  → Mermaid note in the vault, imported into Excalidraw
       └─ /slides            → HTML slide deck (PDF optional)
 
           └─ /dev-develop   → implement
