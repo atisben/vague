@@ -9,6 +9,7 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: true
 allowed-tools:
   - Bash
@@ -117,6 +118,11 @@ Every agent brief MUST include:
 3. **Specific files** — exact paths to read/modify (the agent can't discover these efficiently without guidance)
 4. **Success criteria** — how to know the work is done
 5. **Boundaries** — what NOT to do (don't refactor unrelated code, don't add features beyond scope)
+6. **Memory** — a subagent never runs the preamble, so it sees no memory unless you pass it:
+   - Paste the MEMORY lines from your preamble that touch this phase's files into the brief's "Learnings" section.
+   - Tell the subagent to share a finding that sibling agents need with
+     `vague memory-log <key> "<note>" --scratch --skill dev-develop`. Scratch notes are hidden after 7 days and are not a lock.
+   - Run `vague memory-search --scratch` before the next phase to read what the subagents left.
 
 ### Example Delegation
 
@@ -150,7 +156,11 @@ Implement email/password authentication for a Python FastAPI app.
 ## Boundaries
 - Don't modify existing endpoints
 - Don't add email verification (out of scope)
-- Don't install packages without listing them"
+- Don't install packages without listing them
+
+## Memory
+- If you find something sibling agents need (a shared fixture, a file you locked in practice), run:
+  vague memory-log auth-fixture-in-conftest "Auth fixtures live in tests/conftest.py." --scratch --skill dev-develop"
 })
 ```
 
@@ -218,10 +228,7 @@ If the verification agent reports issues, spawn fix agents for each issue. Then 
 
 ## Step 6: Log Learnings
 
-If a phase surfaced a non-obvious pattern or pitfall, log it:
-```bash
-vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill dev-develop
-```
+Promote what matters from the phases. Log a non-obvious pitfall a phase hit, or a scratch note (see Step 3) that will still hold next week. The preamble printed the command.
 
 ---
 

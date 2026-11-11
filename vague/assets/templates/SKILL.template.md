@@ -25,10 +25,7 @@ block, and `--skill` ranks this skill's memories first.
 
 1. Run the preamble above. It sets `$SLUG`, `$BRANCH`, `$PROACTIVE`, `$TELEMETRY` and prints the ranked memories.
 2. Do work...
-3. Log a learning, if one emerged:
-```bash
-vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill vague-my-skill
-```
+3. Log a learning, if one emerged. The preamble printed the command, so name only this skill's trigger here.
 
 ## Observation Protocol
 

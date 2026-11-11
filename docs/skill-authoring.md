@@ -90,7 +90,7 @@ Memories (most relevant first):
 - [n-plus-one] Always eager-load associations on list queries.
 ```
 
-The block holds recent scratch notes, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
+The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/sdk/core/memory.py`. The block holds recent scratch notes, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
 
 `vague context` never fails: missing config returns defaults, a missing git remote falls back to the folder name, and a broken ledger drops the block.
 
@@ -114,11 +114,7 @@ If you would have auto-invoked, say: "I think /my-skill might help — want me t
 
 ## Logging Memories
 
-Skills write memory only through `vague memory-log`. The Memory section of `vague/assets/claude/guidelines.md` tells every agent when to use it, so a skill needs only a one-line example:
-
-```bash
-vague memory-log short-kebab-key "One or two sentences: what was learned and why it matters." --files path/to/file --skill my-skill
-```
+Skills write memory only through `vague memory-log`. Two shared sources already teach the command: the Memory section of `vague/assets/claude/guidelines.md` and the hint line in the preamble block. A skill therefore never repeats the command. Add a one-line step only when the skill has its own trigger, such as "log a pitfall that shipping hit". A skill that spawns subagents must pass memory in each brief, because a subagent never runs the preamble (see `dev-develop` Step 3).
 
 | Need | Flag |
 |---|---|
