@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vague usage</title>
+<style>
+  :root {
+    --bg: #fafaf9; --panel: #ffffff; --line: #e7e5e4; --text: #1c1917; --muted: #78716c;
+    --edge: rgba(120,113,108,.28); --skill: #44403c; --accent: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #131211; --panel: #1c1a19; --line: #2c2927; --text: #f5f5f4; --muted: #a8a29e;
+            --edge: rgba(168,162,158,.26); --skill: #d6d3d1; --accent: #60a5fa; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, sans-serif;
+         display: grid; grid-template-columns: 250px 1fr; grid-template-rows: 48px 1fr; overflow: hidden; }
+  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 14px; padding: 0 16px;
+           border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 14px; margin: 0; font-weight: 650; letter-spacing: .02em; }
+  header .grow { flex: 1; }
+  input[type=search], select { background: var(--bg); color: var(--text); border: 1px solid var(--line);
+         border-radius: 6px; padding: 5px 9px; font: inherit; }
+  input[type=search] { width: 220px; }
+  .toggle { display: flex; gap: 4px; }
+  .toggle button, .btn { background: var(--bg); color: var(--muted); border: 1px solid var(--line); border-radius: 6px;
+         padding: 4px 9px; font: inherit; cursor: pointer; }
+  .toggle button.on { color: var(--text); border-color: var(--muted); }
+  .btn:hover, .toggle button:hover { border-color: var(--muted); color: var(--text); }
+  aside { border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 12px 10px; }
+  aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 14px 6px 6px; font-weight: 600; }
+  aside h2:first-child { margin-top: 2px; }
+  .chip { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; user-select: none; }
+  .chip:hover { background: var(--bg); }
+  .chip.off { opacity: .35; }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .chip .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+  main { position: relative; overflow: hidden; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  canvas.drag { cursor: grabbing; }
+  #detail { position: absolute; top: 12px; right: 12px; bottom: 12px; width: 340px; background: var(--panel);
+            border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-y: auto;
+            box-shadow: 0 6px 24px rgba(0,0,0,.12); transform: translateX(380px); transition: transform .18s ease; }
+  #detail.open { transform: none; }
+  #detail h3 { margin: 0 0 2px; font-size: 15px; word-break: break-all; }
+  #detail .kind { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  #detail .row { margin-top: 12px; }
+  #detail .row b { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 3px; }
+  #detail .path { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; }
+  #detail .text { white-space: pre-wrap; }
+  #detail .actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  #detail .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #detail .btn[disabled] { opacity: .4; cursor: not-allowed; }
+  #detail a.link { display: flex; align-items: center; gap: 7px; padding: 3px 0; cursor: pointer; color: var(--text); }
+  #detail a.link:hover { color: var(--accent); }
+  #detail a.link .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  #close { position: absolute; top: 10px; right: 12px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }
+  #tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+         padding: 4px 8px; font-size: 12px; max-width: 360px; display: none; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+  #empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: var(--muted); text-align: center; }
+  #toast { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+           padding: 6px 12px; border-radius: 6px; display: none; }
+  #legend { position: absolute; left: 12px; bottom: 12px; color: var(--muted); font-size: 11px; display: flex; gap: 12px; }
+  input[type=date] { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: inherit; color-scheme: light dark; }
+  .sep { color: var(--muted); margin: 0 -6px; }
+  aside .sub { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 4px; }
+  #hist { display: flex; align-items: flex-end; gap: 1px; height: 46px; margin: 0 6px; cursor: pointer; }
+  #hist i { flex: 1; min-width: 1px; background: var(--muted); opacity: .25; border-radius: 1px 1px 0 0; }
+  #hist i.in { opacity: .9; background: var(--accent); }
+  #hist-axis { display: flex; justify-content: space-between; margin: 3px 6px 0; color: var(--muted); font-size: 10px; }
+  .vf { display: block; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
+  .vf:hover { background: var(--bg); }
+  .vf .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vf .meta { color: var(--muted); font-size: 11px; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.vault { color: var(--accent); border-color: var(--accent); }
+  .skill { padding: 4px 6px; border-radius: 6px; }
+  .skill:hover { background: var(--bg); }
+  .skill .top { display: flex; justify-content: space-between; gap: 8px; }
+  .skill .top span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .skill .bar { display: flex; height: 6px; margin-top: 3px; border-radius: 3px; overflow: hidden; background: var(--bg); }
+  .skill .bar i { display: block; height: 100%; }
+  .skill .last { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  @media (max-width: 760px) { body { grid-template-columns: 1fr; } aside { display: none; } header { grid-column: 1; } #detail { width: calc(100% - 24px); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>vague usage</h1>
+  <input id="q" type="search" placeholder="Search (press /)" autocomplete="off">
+  <div class="toggle" id="layers"></div>
+  <span class="grow"></span>
+  <select id="preset" title="Date range">
+    <option value="7">Last 7 days</option>
+    <option value="30" selected>Last 30 days</option>
+    <option value="90">Last 90 days</option>
+    <option value="0">All time</option>
+    <option value="custom">Custom</option>
+  </select>
+  <input type="date" id="from" title="From"><span class="sep">→</span><input type="date" id="to" title="To">
+  <button class="btn" id="fit" title="Fit graph to view">Fit</button>
+</header>
+<aside>
+  <h2>Activity</h2><div id="hist" title="Click a day. Shift+click extends the range."></div>
+  <div id="hist-axis"><span id="hist-a"></span><span id="hist-b"></span></div>
+  <h2>Projects</h2><div id="projects"></div>
+  <h2>Written to Obsidian <span class="sub" id="vault-total"></span></h2><div id="vault"></div>
+  <h2>Skills used <span class="sub" id="skills-total"></span></h2><div id="skills"></div>
+</aside>
+<main>
+  <canvas id="c"></canvas>
+  <div id="empty">Nothing in this date range.<br>Widen the range or pick another day.</div>
+  <div id="legend"><span>● project</span><span>▪ file</span><span>◆ Obsidian file</span><span>○ memory</span><span>◐ branch</span><span>— file↔file: named in the same memory</span></div>
+  <div id="tip"></div>
+  <div id="toast"></div>
+  <div id="detail"><button id="close" aria-label="Close">×</button><div id="detail-body"></div></div>
+</main>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const canvas = $("c"), ctx = canvas.getContext("2d");
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// ── state ────────────────────────────────────────────────────────────
+const S = {
+  nodes: [], links: [], byId: new Map(), adj: new Map(),
+  hiddenProjects: new Set(), skills: [], activity: [], range: { from: "", to: "" },
+  layers: { branch: false, memory: false, file: true },
+  query: "", selected: null, hover: null,
+  view: { x: 0, y: 0, k: 1 }, alpha: 1, fitted: false, w: 0, h: 0, dpr: 1,
+};
+const R = { project: 10, branch: 5, memory: 3.5, file: 3.5 };
+const CHARGE = { project: 900, branch: 260, memory: 120, file: 110 };
+const LINK = { has_branch: [70, .06], has_memory: [60, .05], touches: [34, .12], has_file: [80, .02], co_mentioned: [42, .09] };
+const LAYER_LABEL = { branch: "Branches", memory: "Memories", file: "Files" };
+
+// One hue per project, inherited by its branches, memories and files. "global" and skills stay gray.
+const hue = (n) => n.project === "global" ? null : (S.byId.get("project:" + n.project)?.hue ?? null);
+const projectColor = (slug, a = 1) => {
+  const h = slug === "global" ? null : S.byId.get("project:" + slug)?.hue ?? null;
+  return h === null ? `hsla(30,6%,55%,${a})` : `hsla(${h},68%,54%,${a})`;
+};
+const color = (n, a = 1) => {
+  const h = hue(n);
+  return h === null ? `hsla(30,6%,55%,${a})` : `hsla(${h},68%,${n.type === "branch" ? 62 : 54}%,${a})`;
+};
+
+// ── data ─────────────────────────────────────────────────────────────
+async function load(first) {
+  const q = new URLSearchParams();
+  if (S.range.from) q.set("since", S.range.from);
+  if (S.range.to) q.set("until", S.range.to);
+  let data;
+  try { data = await (await fetch(`/api/graph?${q}`)).json(); } catch { return; }
+  S.skills = data.skills; S.activity = data.activity;
+  merge(data);
+  renderSkills(); renderHist(); renderVault();
+  if (first || !S.fitted) { settle(220); fit(); S.fitted = true; }
+}
+
+function merge(data) {
+  const old = S.byId; let changed = data.nodes.length !== old.size;
+  const next = new Map();
+  for (const n of data.nodes) {
+    const prev = old.get(n.id);
+    if (prev) { Object.assign(prev, n); next.set(n.id, prev); continue; }
+    changed = true;
+    const proj = data.nodes.find((m) => m.id === "project:" + n.project);
+    const ang = proj ? ((proj.hue ?? 0) / 180) * Math.PI : Math.random() * 6.28;
+    const rad = !proj ? 30 : 160 + Math.random() * 120;
+    n.x = Math.cos(ang) * rad + (Math.random() - .5) * 90; n.y = Math.sin(ang) * rad + (Math.random() - .5) * 90;
+    n.vx = n.vy = 0; next.set(n.id, n);
+  }
+  if (data.links.length !== S.links.length) changed = true;
+  S.byId = next; S.nodes = [...next.values()];
+  S.links = data.links.map((l) => ({ ...l, s: next.get(l.source), t: next.get(l.target) })).filter((l) => l.s && l.t);
+  S.adj = new Map(S.nodes.map((n) => [n.id, new Set()]));
+  for (const l of S.links) { S.adj.get(l.source).add(l.target); S.adj.get(l.target).add(l.source); }
+  if (S.selected && !next.has(S.selected.id)) select(null); else if (S.selected) S.selected = next.get(S.selected.id);
+  renderSidebar(); renderDetail();
+  if (changed) S.alpha = Math.max(S.alpha, .5);
+  $("empty").style.display = S.nodes.length ? "none" : "flex";
+}
+
+// ── visibility ───────────────────────────────────────────────────────
+function visibleSet() {
+  const vis = new Set();
+  for (const n of S.nodes) {
+    if (n.type !== "project" && !S.layers[n.type]) continue;
+    if (n.project && S.hiddenProjects.has(n.project)) continue;
+    vis.add(n.id);
+  }
+  return vis;
+}
+// With memories shown, a memory already connects its project and files, so the shortcut links would double up.
+// Without them, project→file and file↔file links carry the structure.
+function linkShown(l) {
+  if (!VIS.has(l.source) || !VIS.has(l.target)) return false;
+  if (l.kind === "has_file" || l.kind === "co_mentioned") return !S.layers.memory;
+  return true;
+}
+let VIS = new Set();
+
+// ── force simulation (no dependency, n is a few hundred) ─────────────
+function tick() {
+  const nodes = S.nodes.filter((n) => VIS.has(n.id)), a = S.alpha;
+  for (let i = 0; i < nodes.length; i++) {
+    const p = nodes[i];
+    for (let j = i + 1; j < nodes.length; j++) {
+      const q = nodes[j]; let dx = p.x - q.x, dy = p.y - q.y, d2 = dx * dx + dy * dy;
+      if (d2 > 160000) continue;
+      if (d2 < 1) { dx = Math.random() - .5; dy = Math.random() - .5; d2 = 1; }
+      const d = Math.sqrt(d2), f = ((CHARGE[p.type] + CHARGE[q.type]) / 2) * a / d2;
+      p.vx += dx / d * f; p.vy += dy / d * f; q.vx -= dx / d * f; q.vy -= dy / d * f;
+    }
+  }
+  for (const l of S.links) {
+    if (!linkShown(l)) continue;
+    const [len, k] = LINK[l.kind] || [70, .03];
+    const dx = l.t.x - l.s.x, dy = l.t.y - l.s.y, d = Math.hypot(dx, dy) || 1, f = (d - len) * k * a;
+    l.s.vx += dx / d * f; l.s.vy += dy / d * f; l.t.vx -= dx / d * f; l.t.vy -= dy / d * f;
+  }
+  for (const n of nodes) {
+    n.vx -= n.x * .004 * a; n.vy -= n.y * .004 * a;
+    if (n === S.drag) { n.vx = n.vy = 0; continue; }
+    n.x += n.vx; n.y += n.vy; n.vx *= .6; n.vy *= .6;
+  }
+  S.alpha *= .985; if (S.alpha < .01) S.alpha = 0;
+}
+function settle(n) { VIS = visibleSet(); S.alpha = 1; for (let i = 0; i < n; i++) tick(); S.alpha = .3; }
+
+// ── drawing ──────────────────────────────────────────────────────────
+function focusSet() {
+  const c = S.hover || S.selected, q = S.query.trim().toLowerCase();
+  if (c) return new Set([c.id, ...S.adj.get(c.id)]);
+  if (q) return new Set(S.nodes.filter((n) => matches(n, q)).map((n) => n.id));
+  return null;
+}
+const matches = (n, q) => [n.label, n.project, n.relative, n.text, n.skill].some((v) => v && String(v).toLowerCase().includes(q));
+const radius = (n) => R[n.type] + (n.type === "project" ? Math.min(5, Math.log2(n.count + 1) * 1.1) : n.type === "file" ? Math.min(4, Math.log2(n.count + 1) * 1.2) : 0);
+
+function draw() {
+  const { w, h, dpr, view } = S;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  ctx.translate(view.x, view.y); ctx.scale(view.k, view.k);
+  const focus = focusSet(), dim = (id) => focus && !focus.has(id);
+  ctx.lineCap = "round";
+
+  for (const l of S.links) {
+    if (!linkShown(l)) continue;
+    const lit = focus && focus.has(l.source) && focus.has(l.target) && (S.hover || S.selected) &&
+                (l.source === (S.hover || S.selected).id || l.target === (S.hover || S.selected).id);
+    ctx.strokeStyle = lit ? color(l.s, .9) : dim(l.source) || dim(l.target) ? "rgba(128,128,128,.06)" : css("--edge");
+    ctx.lineWidth = (lit ? 1.8 : .8 + Math.min(2.2, Math.log2(l.weight + 1) * .5)) / Math.sqrt(view.k);
+    ctx.beginPath(); ctx.moveTo(l.s.x, l.s.y); ctx.lineTo(l.t.x, l.t.y); ctx.stroke();
+  }
+
+  for (const n of S.nodes) {
+    if (!VIS.has(n.id)) continue;
+    const r = radius(n), a = dim(n.id) ? .12 : 1;
+    ctx.globalAlpha = a; ctx.fillStyle = color(n); ctx.strokeStyle = color(n);
+    ctx.beginPath();
+    if (n.type === "file" && n.area === "vault") { // diamond: a skill wrote this into Obsidian
+      ctx.fillStyle = color(n, n.exists ? 1 : .45); ctx.moveTo(n.x, n.y - r * 1.5); ctx.lineTo(n.x + r * 1.2, n.y); ctx.lineTo(n.x, n.y + r * 1.5); ctx.lineTo(n.x - r * 1.2, n.y); ctx.closePath(); ctx.fill();
+      ctx.lineWidth = 1.5 / view.k; ctx.strokeStyle = css("--text"); ctx.stroke();
+    } else if (n.type === "file") {
+      const ok = n.exists; ctx.fillStyle = color(n, ok ? 1 : .45); ctx.rect(n.x - r, n.y - r, r * 2, r * 2); ctx.fill();
+      if (n.area === "external") { ctx.lineWidth = 1.5 / view.k; ctx.strokeStyle = css("--text"); ctx.setLineDash([2, 2]); ctx.stroke(); ctx.setLineDash([]); }
+    } else if (n.type === "memory") {
+      ctx.arc(n.x, n.y, r, 0, 6.283);
+      if (n.kind === "observation") { ctx.lineWidth = 1.6; ctx.stroke(); } else ctx.fill();
+    } else if (n.type === "branch") {
+      ctx.arc(n.x, n.y, r, 0, 6.283); ctx.fill(); ctx.fillStyle = css("--panel"); ctx.beginPath(); ctx.arc(n.x, n.y, r * .42, 0, 6.283); ctx.fill();
+    } else { ctx.arc(n.x, n.y, r, 0, 6.283); ctx.fill(); }
+    if (n === S.selected || n === S.hover) { ctx.globalAlpha = 1; ctx.strokeStyle = css("--text"); ctx.lineWidth = 2 / view.k; ctx.beginPath(); ctx.arc(n.x, n.y, r + 4, 0, 6.283); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    const showLabel = n.type === "project" || (focus && focus.has(n.id) && n.type !== "memory") || (n.type === "file" && view.k > 1.3) || (n.type === "branch" && view.k > 1.5) || view.k > 2.6;
+    if (showLabel && !dim(n.id)) {
+      ctx.fillStyle = css("--text"); ctx.font = `${n.type === "project" ? "600 " : ""}${(n.type === "project" ? 13 : 11) / Math.min(1.4, Math.max(.8, view.k))}px system-ui`;
+      ctx.textAlign = "center"; ctx.fillText(n.label.length > 28 ? n.label.slice(0, 27) + "…" : n.label, n.x, n.y + r + 13 / Math.min(1.4, Math.max(.8, view.k)));
+    }
+  }
+}
+
+function frame() {
+  VIS = visibleSet();
+  if (S.alpha > 0) tick();
+  draw(); requestAnimationFrame(frame);
+}
+
+// ── view / input ─────────────────────────────────────────────────────
+function resize() {
+  const r = canvas.getBoundingClientRect(); S.dpr = window.devicePixelRatio || 1; S.w = r.width; S.h = r.height;
+  canvas.width = r.width * S.dpr; canvas.height = r.height * S.dpr;
+}
+function fit() {
+  const ns = S.nodes.filter((n) => VIS.has(n.id)); if (!ns.length) return;
+  const xs = ns.map((n) => n.x), ys = ns.map((n) => n.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const k = Math.min(2, .86 * Math.min(S.w / ((x1 - x0) || 1), S.h / ((y1 - y0) || 1)));
+  S.view = { k, x: S.w / 2 - ((x0 + x1) / 2) * k, y: S.h / 2 - ((y0 + y1) / 2) * k };
+}
+const toWorld = (px, py) => ({ x: (px - S.view.x) / S.view.k, y: (py - S.view.y) / S.view.k });
+function pick(px, py) {
+  const p = toWorld(px, py); let best = null, bd = 1e9;
+  for (const n of S.nodes) {
+    if (!VIS.has(n.id)) continue;
+    const d = Math.hypot(n.x - p.x, n.y - p.y), hit = radius(n) + 5 / S.view.k;
+    if (d < hit && d < bd) { best = n; bd = d; }
+  }
+  return best;
+}
+let down = null;
+canvas.addEventListener("pointerdown", (e) => {
+  const n = pick(e.offsetX, e.offsetY); down = { x: e.offsetX, y: e.offsetY, n, moved: false, vx: S.view.x, vy: S.view.y };
+  canvas.setPointerCapture(e.pointerId); canvas.classList.add("drag"); if (n) S.drag = n;
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (down) {
+    const dx = e.offsetX - down.x, dy = e.offsetY - down.y; if (Math.hypot(dx, dy) > 3) down.moved = true;
+    if (down.n && down.moved) { const p = toWorld(e.offsetX, e.offsetY); down.n.x = p.x; down.n.y = p.y; S.alpha = Math.max(S.alpha, .25); }
+    else if (!down.n) { S.view.x = down.vx + dx; S.view.y = down.vy + dy; }
+    return;
+  }
+  const n = pick(e.offsetX, e.offsetY); S.hover = n; canvas.style.cursor = n ? "pointer" : "grab";
+  const tip = $("tip");
+  if (n) { tip.style.display = "block"; tip.style.left = e.offsetX + 14 + "px"; tip.style.top = e.offsetY + 14 + "px"; tip.textContent = tipText(n); }
+  else tip.style.display = "none";
+});
+canvas.addEventListener("pointerup", (e) => {
+  canvas.classList.remove("drag"); S.drag = null;
+  if (down && !down.moved) select(down.n);
+  down = null;
+});
+canvas.addEventListener("pointerleave", () => { S.hover = null; $("tip").style.display = "none"; });
+canvas.addEventListener("dblclick", (e) => { const n = pick(e.offsetX, e.offsetY); if (n?.type === "file") openFile(n); });
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault(); const f = Math.exp(-e.deltaY * .0015), k = Math.min(4, Math.max(.15, S.view.k * f)), p = toWorld(e.offsetX, e.offsetY);
+  S.view.k = k; S.view.x = e.offsetX - p.x * k; S.view.y = e.offsetY - p.y * k;
+}, { passive: false });
+
+const tipText = (n) => ({
+  project: `${n.label} · ${n.count} events`, branch: `${n.project} @ ${n.label}`,
+  memory: `${n.label}${n.text ? " — " + n.text.slice(0, 120) : ""}`,
+  file: `${n.area === "vault" ? "Obsidian · " : n.area === "external" ? "Outside repo · " : ""}${n.relative || n.label}${n.skill ? " · by " + n.skill : ""}`,
+}[n.type]);
+
+// ── sidebar & detail ─────────────────────────────────────────────────
+function el(tag, props = {}, ...kids) {
+  const e = Object.assign(document.createElement(tag), props);
+  for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
+  return e;
+}
+function chip(label, count, dotColor, off, onClick) {
+  const c = el("div", { className: "chip" + (off ? " off" : ""), title: "Click to show or hide" },
+    el("span", { className: "dot" }), el("span", { className: "name", textContent: label }), el("span", { className: "n", textContent: count }));
+  c.firstChild.style.background = dotColor; c.onclick = onClick; return c;
+}
+function renderSidebar() {
+  const projects = S.nodes.filter((n) => n.type === "project").sort((a, b) => b.count - a.count);
+  $("projects").replaceChildren(...projects.map((p) => chip(p.label, p.count, color(p), S.hiddenProjects.has(p.label), () => {
+    S.hiddenProjects.has(p.label) ? S.hiddenProjects.delete(p.label) : S.hiddenProjects.add(p.label);
+    S.alpha = Math.max(S.alpha, .4); renderSidebar();
+  })));
+}
+// Files a skill wrote into the vault, listed even when the Files layer is off: the user must always see these.
+function renderVault() {
+  const files = S.nodes.filter((n) => n.type === "file" && n.area === "vault").sort((a, b) => (b.last_ts || "").localeCompare(a.last_ts || ""));
+  $("vault-total").textContent = files.length ? `· ${files.length}` : "";
+  $("vault").replaceChildren(...(files.length ? files.map((n) => {
+    const a = el("a", { className: "vf", title: n.relative },
+      el("div", { className: "name", textContent: n.label }),
+      el("div", { className: "meta", textContent: `${n.skill || "a skill"} · ${when(n.last_ts)} · ${n.project}` }));
+    a.onclick = () => { select(n); if (VIS.has(n.id)) center(n); }; return a;
+  }) : [el("div", { className: "meta", style: "padding:4px 6px", textContent: "No skill wrote to the vault in this range." })]));
+}
+// Skills are usage statistics, not graph nodes: a skill touches everything, so as a node it hubs unrelated projects.
+function renderSkills() {
+  const total = S.skills.reduce((t, k) => t + k.count, 0), max = Math.max(1, ...S.skills.map((k) => k.count));
+  $("skills-total").textContent = total ? `· ${total} runs` : "";
+  $("skills").replaceChildren(...(S.skills.length ? S.skills.map((k) => {
+    const bar = el("div", { className: "bar" });
+    bar.style.width = (k.count / max) * 100 + "%";
+    for (const [slug, n] of Object.entries(k.projects)) { const seg = el("i", { title: `${slug}: ${n}` }); seg.style.flex = n; seg.style.background = projectColor(slug); bar.append(seg); }
+    return el("div", { className: "skill", title: Object.entries(k.projects).map(([p, n]) => `${p}: ${n}`).join("\n") },
+      el("div", { className: "top" }, el("span", { textContent: k.skill }), el("span", { textContent: k.count })), bar,
+      el("div", { className: "last", textContent: "last " + new Date(k.last_ts).toLocaleDateString() }));
+  }) : [el("div", { className: "last", style: "padding:4px 6px", textContent: "No skill runs in this range." })]));
+}
+
+// ── date range ───────────────────────────────────────────────────────
+const iso = (d) => d.toISOString().slice(0, 10);
+function setRange(from, to, preset) {
+  S.range = { from, to }; $("from").value = from; $("to").value = to;
+  $("preset").value = preset ?? "custom"; S.fitted = false; load(true);
+}
+function applyPreset(v) {
+  if (v === "custom") return;
+  const days = Number(v), today = new Date();
+  setRange(days ? iso(new Date(today.getTime() - (days - 1) * 864e5)) : "", days ? iso(today) : "", v);
+}
+function renderHist() {
+  const a = S.activity; if (!a.length) { $("hist").replaceChildren(); return; }
+  const counts = new Map(a.map((d) => [d.day, d.count])), start = new Date(a[0].day), end = new Date(a[a.length - 1].day);
+  const days = []; for (let d = start; d <= end; d = new Date(d.getTime() + 864e5)) days.push(iso(d));
+  const max = Math.max(...a.map((d) => d.count));
+  $("hist").replaceChildren(...days.map((day) => {
+    const bar = el("i", { title: `${day}: ${counts.get(day) || 0}`, className: (!S.range.from || day >= S.range.from) && (!S.range.to || day <= S.range.to) ? "in" : "" });
+    bar.style.height = Math.max(counts.has(day) ? 8 : 2, ((counts.get(day) || 0) / max) * 100) + "%"; bar.dataset.day = day; return bar;
+  }));
+  $("hist-a").textContent = days[0]; $("hist-b").textContent = days[days.length - 1];
+}
+$("hist").addEventListener("click", (e) => {
+  const day = e.target.dataset?.day; if (!day) return;
+  if (e.shiftKey && S.range.from) setRange(day < S.range.from ? day : S.range.from, day < S.range.from ? S.range.to || S.range.from : day);
+  else setRange(day, day);
+});
+function renderLayers() {
+  $("layers").replaceChildren(...Object.keys(LAYER_LABEL).map((k) => {
+    const b = el("button", { textContent: LAYER_LABEL[k], className: S.layers[k] ? "on" : "", title: k === "memory" ? "Show the memories that link files" : "" });
+    b.onclick = () => { S.layers[k] = !S.layers[k]; S.alpha = Math.max(S.alpha, .4); renderLayers(); }; return b;
+  }));
+}
+function select(n) { S.selected = n; renderDetail(); }
+function link(n) {
+  const a = el("a", { className: "link" }, el("span", { className: "dot" }), n.type === "file" ? n.relative : n.label);
+  a.firstChild.style.background = color(n);
+  a.onclick = () => { select(n); center(n); }; return a;
+}
+const coFiles = (n) => S.links.filter((l) => l.kind === "co_mentioned" && (l.source === n.id || l.target === n.id))
+  .sort((a, b) => b.weight - a.weight).map((l) => (l.source === n.id ? l.t : l.s));
+const related = (n, type) => [...S.adj.get(n.id)].map((id) => S.byId.get(id)).filter((m) => m.type === type);
+const when = (iso) => iso ? new Date(iso).toLocaleString() : "n/a";
+function row(title, ...kids) { return el("div", { className: "row" }, el("b", { textContent: title }), ...kids); }
+
+function renderDetail() {
+  const n = S.selected, box = $("detail-body"); $("detail").classList.toggle("open", !!n);
+  if (!n) return;
+  const out = [el("div", { className: "kind", textContent: n.type }), el("h3", { textContent: n.label })];
+  if (n.type === "file") {
+    const where = { vault: "Obsidian vault", external: "Outside the repo", repo: "In the repo" }[n.area || "repo"];
+    out.push(row("Where", el("span", { className: "badge" + (n.area === "vault" ? " vault" : ""), textContent: where }),
+      n.skill ? ` · written by ${n.skill}` : ""));
+    out.push(row("Path", el("div", { className: "path", textContent: n.path || n.relative })));
+    if (!n.path) out.push(row("Note", "This repo's checkout was not seen in any event, so the file cannot be opened from here."));
+    else if (!n.exists) out.push(row("Note", "File no longer exists on disk."));
+    const open = el("button", { className: "btn primary", textContent: "Open", disabled: !n.exists, onclick: () => openFile(n) });
+    const reveal = el("button", { className: "btn", textContent: "Reveal", disabled: !n.exists, onclick: () => openFile(n, true) });
+    const copy = el("button", { className: "btn", textContent: "Copy path", onclick: () => navigator.clipboard.writeText(n.path || n.relative).then(() => toast("Copied")) });
+    out.push(el("div", { className: "actions" }, open, reveal, copy));
+    out.push(row("Often named alongside", coFiles(n).map(link)));
+    out.push(row("Memories that mention it", related(n, "memory").map(link)));
+  } else if (n.type === "memory") {
+    out.push(row("Memory", el("div", { className: "text", textContent: n.text || "(no text)" })));
+    out.push(row("Details", `${n.kind} · ${n.status} · ${when(n.last_ts)}`));
+    if (related(n, "project")[0]) out.push(row("Project", link(related(n, "project")[0])));
+    out.push(row("Written by", n.skill || "n/a"), row("Files", related(n, "file").map(link)));
+  } else if (n.type === "project") {
+    out.push(row("Checkout", el("div", { className: "path", textContent: n.root || "not seen in events" })));
+    out.push(row("Last activity", when(n.last_ts)));
+    out.push(row("Files", `${related(n, "file").length}`, related(n, "file").slice(0, 15).map(link)));
+    out.push(row("Branches", related(n, "branch").map(link)), row("Memories", `${related(n, "memory").length}`, related(n, "memory").slice(0, 12).map(link)));
+  } else if (n.type === "branch") {
+    out.push(row("Project", related(n, "project").map(link)), row("Last activity", when(n.last_ts)));
+  }
+  box.replaceChildren(...out);
+}
+function center(n) { S.view.x = S.w / 2 - n.x * S.view.k; S.view.y = S.h / 2 - n.y * S.view.k; }
+async function openFile(n, reveal = false) {
+  if (!n.path || !n.exists) return toast("File cannot be opened");
+  const r = await fetch("/api/open", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: n.path, reveal }) });
+  toast(r.ok ? (reveal ? "Revealed in file manager" : "Opened") : "Refused by server");
+}
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", 1600); }
+
+// ── wiring ───────────────────────────────────────────────────────────
+$("q").addEventListener("input", (e) => { S.query = e.target.value; });
+$("preset").addEventListener("change", (e) => applyPreset(e.target.value));
+for (const id of ["from", "to"]) $(id).addEventListener("change", () => setRange($("from").value, $("to").value));
+$("fit").onclick = fit; $("close").onclick = () => select(null);
+addEventListener("keydown", (e) => {
+  if (e.key === "/" && document.activeElement !== $("q")) { e.preventDefault(); $("q").focus(); }
+  if (e.key === "Escape") { $("q").value = ""; S.query = ""; $("q").blur(); select(null); }
+});
+addEventListener("resize", resize);
+resize(); renderLayers(); applyPreset("30"); requestAnimationFrame(frame);
+setInterval(() => { if (!document.hidden) load(false); }, 10000);
+</script>
+</body>
+</html>

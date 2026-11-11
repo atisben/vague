@@ -258,6 +258,7 @@ vague keeps one memory ledger for every project, `~/.vague/memory.jsonl`. The sk
 | When | Command |
 |---|---|
 | A later session would otherwise rediscover a fact | `vague memory-log <kebab-key> "<one or two sentences>" --files <paths it touches> --skill <current skill>` |
+| The skill wrote a deliverable file, in the repo or not (an Obsidian note, a deck) | `vague memory-log <kebab-key> "Saved <name>." --files "<absolute path>" --skill <current skill>`. Run it from the user's project, and tell the user you logged it. |
 | The fact would hold in a different repo (tools, agents, workflow) | Add `--global` |
 | You have feedback about a skill itself | `vague memory-log <key> "<issue → suggestion>" --about <skill>`. `/meta` reads it. |
 | Other agents on the same project need your working notes | Add `--scratch`. Scratch notes expire after 7 days. They are not a lock. |
@@ -268,3 +269,4 @@ Follow these rules for every memory:
 - Log skill feedback silently, without interrupting the user. A user correction is the most valuable kind: the user had to ask for a step the skill should have done.
 - Re-use an existing key to correct a fact. The latest line for a key wins.
 - Never edit `~/.vague/memory.jsonl` directly.
+- Report only files a vague skill wrote. No hook logs ordinary Write or Edit calls, by design. The usage graph shows a file only when a skill reports it, and flags files under `~/Obsidian` so the user can see every vault write.

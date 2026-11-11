@@ -142,7 +142,23 @@ tags:
 
 Use the Write tool to create `$FOLDER/$TITLE.md`.
 
-Confirm: "Saved to `$FOLDER/$TITLE.md`."
+Confirm: "Saved to `$FOLDER/$TITLE.md`." Then [record the write](#record-the-write). This also applies when you update an existing note.
+
+---
+
+## Record the Write
+
+The usage graph shows which files a vague skill wrote and which project asked for them. It only knows a file when the skill reports it. Telemetry never logs Write or Edit calls, so this step is the only record. After every note, attachment or edit you write, run:
+
+```bash
+vague memory-log vault-<title-slug> "Saved <Title> to <folder>." --files "<absolute path>" --skill vault
+```
+
+- `<title-slug>`: the title in lowercase ASCII with hyphens, for example `vault-perf-review-jane-h1-2026`. Re-using the key for an updated note replaces the earlier line.
+- `<absolute path>`: the full path of the file you wrote. A path with a comma or a space is fine inside the quotes. Pass `--files` once per file for an attachment.
+- Run it from the project the user is working in. That project becomes the note's owner in the graph.
+- Never put note content in the text. Name the file and what you did.
+- Tell the user in the same breath: "Logged the vault write for the usage graph."
 
 ---
 
@@ -208,7 +224,7 @@ Obsidian search does not index text inside an embedded file. Write the key facts
 Source: `<original absolute path>`
 ```
 
-Confirm: "Exported to `$FOLDER/$TITLE.md`, artifact in `Attachments/<Title>.<ext>`."
+Confirm: "Exported to `$FOLDER/$TITLE.md`, artifact in `Attachments/<Title>.<ext>`." Then [record the write](#record-the-write) for the note and for the attachment.
 
 Mention once: the HTML diagram picks light/dark from the OS setting, not the Obsidian theme.
 

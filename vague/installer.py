@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
+import shlex
 import shutil
 from pathlib import Path
 
@@ -342,7 +344,97 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
         typer.echo(f"  {runtime}: agents symlinked → {agents_target}", err=True)
 
     _update_instruction_file(runtime, skills_target)
+    if runtime.split(":")[0] == CLAUDE_RUNTIME:
+        settings = skills_target.parent / "settings.json"
+        if install_hooks(settings_path=settings, command=hook_command()):
+            typer.echo(f"  {runtime}: skill-start hooks added → {settings}", err=True)
     return count
+
+
+HOOK_SUBCOMMAND = "log-event"
+# (hook event, tool matcher). The Skill matcher keeps the hook off every other tool call.
+HOOKS: tuple[tuple[str, str | None], ...] = (("UserPromptSubmit", None), ("PostToolUse", "Skill"))
+
+
+def hook_command() -> str:
+    """`vague log-event`, with an absolute path when known: a hook's PATH may not include `vague`."""
+    found = shutil.which("vague")
+    return f"{shlex.quote(found) if found else 'vague'} {HOOK_SUBCOMMAND}"
+
+
+def _is_vague_hook(entry: object) -> bool:
+    """Match by content, so a hand-added hook with another path to `vague` still counts."""
+    command = entry.get("command") if isinstance(entry, dict) else None
+    return isinstance(command, str) and f"vague {HOOK_SUBCOMMAND}" in command.replace("'", "")
+
+
+def _load_settings(path: Path) -> dict | None:
+    """The settings dict, {} when the file is absent, None when it cannot be trusted."""
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _save_settings(path: Path, settings: dict) -> None:
+    # Write beside the file then rename, so a crash never leaves half a settings file.
+    tmp = path.with_name(path.name + ".vague-tmp")
+    tmp.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def install_hooks(settings_path: Path, command: str) -> bool:
+    """Add the skill-start hooks to a Claude settings.json. True when the file changed.
+
+    Idempotent, keeps every other setting and hook, and refuses to touch a file it cannot parse:
+    a broken settings.json is the user's to fix, not ours to overwrite.
+    """
+    settings = _load_settings(settings_path)
+    if settings is None:
+        typer.echo(f"  Skipped hooks: {settings_path} is not valid JSON.", err=True)
+        return False
+    hooks = settings.setdefault("hooks", {})
+    changed = False
+    for event, matcher in HOOKS:
+        groups = hooks.setdefault(event, [])
+        if any(_is_vague_hook(h) for g in groups if isinstance(g, dict) for h in g.get("hooks", [])):
+            continue
+        group: dict = {"hooks": [{"type": "command", "command": command}]}
+        if matcher:
+            group = {"matcher": matcher, **group}
+        groups.append(group)
+        changed = True
+    if changed:
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        _save_settings(settings_path, settings)
+    return changed
+
+
+def remove_hooks(settings_path: Path) -> bool:
+    """Remove only vague's hooks, and any container left empty. True when the file changed."""
+    settings = _load_settings(settings_path)
+    hooks = settings.get("hooks") if settings else None
+    if not isinstance(hooks, dict):
+        return False
+    changed = False
+    for event in list(hooks):
+        groups = hooks[event] if isinstance(hooks[event], list) else []
+        for group in groups:
+            if isinstance(group, dict):
+                kept = [h for h in group.get("hooks", []) if not _is_vague_hook(h)]
+                changed |= len(kept) != len(group.get("hooks", []))
+                group["hooks"] = kept
+        hooks[event] = [g for g in groups if not (isinstance(g, dict) and g.get("hooks") == [])]
+        if not hooks[event]:
+            del hooks[event]
+    if not hooks:
+        del settings["hooks"]
+    if changed:
+        _save_settings(settings_path, settings)
+    return changed
 
 
 def _warn_legacy_claude_d() -> None:
@@ -496,6 +588,8 @@ def cmd_uninstall(
             _remove_existing(skills_target / name)
             removed += 1
         _remove_instruction_block(rt)
+        if rt.split(":")[0] == CLAUDE_RUNTIME:
+            remove_hooks(settings_path=skills_target.parent / "settings.json")
         typer.echo(f"  {rt}: removed {len(names)} skill(s)", err=True)
 
     typer.echo(f"\nRemoved {removed} skill(s) across {len(to_remove)} runtime(s).", err=True)

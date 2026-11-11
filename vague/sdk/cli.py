@@ -23,6 +23,7 @@ from vague.sdk.commands.skill import (
 )
 from vague.sdk.commands.slug import cmd_slug
 from vague.sdk.commands.status import cmd_status
+from vague.sdk.commands.ui import cmd_ui
 from vague.sdk.core.events import begin_command
 from vague.sdk.core.logging import get_logger
 
@@ -116,7 +117,9 @@ def config_set(key: str, value: str) -> None:
 def memory_log(
     key: str,
     text: Annotated[str | None, typer.Argument(help="The fact, at most 600 characters.")] = None,
-    files: Annotated[str | None, typer.Option("--files", help="Comma-separated repo-relative paths.")] = None,
+    files: Annotated[list[str] | None, typer.Option(
+        "--files", help="A file the memory touches or a skill wrote, in or outside the repo. Repeat it, or use commas.",
+    )] = None,
     use_global: Annotated[bool, typer.Option("--global", help="Holds in every repo: scope global.")] = False,
     about: Annotated[str | None, typer.Option("--about", help="Feedback about this skill (observation).")] = None,
     status: Annotated[str | None, typer.Option("--status", help="active|forgotten|actioned|declined")] = None,
@@ -138,6 +141,15 @@ def memory_search(
 ) -> None:
     """Print memories that contain every word across key, text, files and skill, newest first."""
     cmd_memory_search(words=words or [], scope=scope, kind=kind, scratch=scratch)
+
+
+@sdk_app.command("ui")
+def ui(
+    port: Annotated[int, typer.Option("--port", help="Port on 127.0.0.1.")] = 8765,
+    no_open: Annotated[bool, typer.Option("--no-open", help="Do not open the browser.")] = False,
+) -> None:
+    """Serve the usage graph (projects, branches, skills, memories, files) on localhost."""
+    cmd_ui(port=port, open_browser=not no_open)
 
 
 @sdk_app.command("migrate")

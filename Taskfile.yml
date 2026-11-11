@@ -17,3 +17,8 @@ tasks:
     desc: Run the full test suite
     cmds:
       - uv run pytest
+
+  ui:
+    desc: Open the usage graph (projects, branches, skills, memories, files) in the browser
+    cmds:
+      - uv run vague ui

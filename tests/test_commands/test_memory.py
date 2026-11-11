@@ -364,3 +364,54 @@ def test_eval_preamble_in_real_shell_sets_vars_and_prints_block(home, repo, shel
 
 def test_ledger_path_respects_vague_home(home):
     assert ledger_path() == home / "memory.jsonl"
+
+
+def _files(home: Path) -> list[str]:
+    return _ledger(home)[-1]["files"]
+
+
+def test_memory_log_keeps_an_absolute_path_outside_the_repo(home, repo, tmp_path):
+    note = tmp_path / "vault" / "Note.md"
+    note.parent.mkdir()
+    note.write_text("x")
+
+    assert _log("vault-note", "Saved Note.", "--files", str(note)).exit_code == 0
+
+    assert _files(home) == [str(note)]
+
+
+def test_memory_log_expands_a_home_relative_path(home, repo, monkeypatch, tmp_path):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    (tmp_path / "Obsidian").mkdir()
+    (tmp_path / "Obsidian" / "Note.md").write_text("x")
+
+    _log("vault-note", "Saved Note.", "--files", "~/Obsidian/Note.md")
+
+    assert _files(home) == [str(tmp_path / "Obsidian" / "Note.md")]
+
+
+def test_memory_log_makes_an_absolute_path_inside_the_repo_relative(home, repo):
+    _log("tests-need-docker", "Run it.", "--files", str(repo / "Taskfile.yml"))
+
+    assert _files(home) == ["Taskfile.yml"]
+
+
+def test_memory_log_keeps_a_filename_with_a_comma_whole_when_it_exists(home, repo, tmp_path):
+    note = tmp_path / "Perf Review, H1.md"
+    note.write_text("x")
+
+    _log("vault-note", "Saved.", "--files", str(note))
+
+    assert _files(home) == [str(note)]
+
+
+def test_memory_log_accepts_the_files_option_more_than_once(home, repo):
+    _log("two-files", "Both matter.", "--files", "a.py", "--files", "b.py")
+
+    assert _files(home) == ["a.py", "b.py"]
+
+
+def test_memory_log_drops_duplicate_files(home, repo):
+    _log("dupes", "Once.", "--files", "a.py,a.py", "--files", "a.py")
+
+    assert _files(home) == ["a.py"]

@@ -188,6 +188,7 @@ into your `CLAUDE.md` outside the markers, then delete it yourself.
 ```bash
 vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + the MEMORY block
 vague status                            # cross-project dashboard: branches, in-flight plans
+vague ui                                # usage graph on localhost: projects, branches, skills, memories, files
 vague config-get proactive              # read config value
 vague config-set proactive false        # write config value
 vague memory-log <key> "<text>" --files a,b --skill dev-ship  # log a learning (--global: every repo)

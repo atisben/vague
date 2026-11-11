@@ -122,6 +122,12 @@ Use the `/vault` save template exactly: frontmatter with `aliases` and `tags`, `
 6. **Not verified**: every fact you could not confirm. Never leave this section out; write "none" if empty.
 7. `# Next Actions` and `# References` (the real source files and repos).
 
+After you write the note, record it so the usage graph shows the vault write and its project. Run it from the project the user works in, and tell the user you logged it:
+
+```bash
+vague memory-log excalidraw-<title-slug> "Drew <Title> as a Mermaid note." --files "<absolute note path>" --skill vault-excalidraw
+```
+
 ---
 
 ## Step 5: Hand the Diagram to Excalidraw

@@ -20,7 +20,7 @@ def _fail(message: str) -> NoReturn:
     raise typer.Exit(code=1)
 
 
-def cmd_memory_log(key: str, text: str | None, files: str | None, use_global: bool, about: str | None,
+def cmd_memory_log(key: str, text: str | None, files: list[str] | None, use_global: bool, about: str | None,
                    status: str | None, scratch: bool, skill: str | None) -> None:
     """Append one memory line to the ledger (or the scope's scratchpad) and print `OK scope/key`."""
     if not _KEY_RE.match(key):
@@ -47,7 +47,7 @@ def cmd_memory_log(key: str, text: str | None, files: str | None, use_global: bo
             _fail(f"no memory {scope}/{key} to update. Pass TEXT to create it")
         scope, kind = existing.scope, existing.kind
     memory = mem.Memory(ts=datetime.now(UTC), scope=scope, key=key, kind=kind, text=text, skill=about or skill,
-                        files=[f.strip() for f in (files or "").split(",") if f.strip()], status=status or "active")
+                        files=mem.normalize_files(values=files or []), status=status or "active")
     try:
         mem.append_memory(memory=memory, scratch=scratch)
     except ValueError as e:
