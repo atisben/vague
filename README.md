@@ -127,7 +127,7 @@ All data lives in `~/.vague/`:
 └── interview/                ← iv-* state
 ```
 
-Each memory line has a `scope` (a project slug or `global`) and a `key`. Re-logging a key supersedes it, and `--status forgotten` hides it. Nothing is ever rewritten in place. `vague migrate` moves the old per-project `learnings.md`, `observations.md`, `timeline.md` and `project.md` files into the ledger and the events log, and leaves the originals untouched.
+Each memory line has a `scope` (a project slug or `global`) and a `key`. Re-logging a key supersedes it, and `--status forgotten` hides it. Nothing is ever rewritten in place.
 
 ---
 
@@ -196,7 +196,6 @@ vague memory-log <key> "<issue → fix>" --about dev-ship       # log feedback a
 vague memory-log <key> --status forgotten                     # hide a memory
 vague memory-search [words...]          # memories containing every word (no words: all), newest first
 vague memory-search --scope all         # every scope; also --scope global or --scope <project>
-vague migrate --dry-run                 # preview moving the old stores into the ledger
 vague slug                              # print SLUG= and BRANCH=
 vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract

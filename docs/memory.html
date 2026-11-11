@@ -119,8 +119,6 @@
       <text x="540" y="249" text-anchor="middle">memory-search [words] [--scope]</text>
       <rect x="400" y="296" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
       <text x="540" y="321" text-anchor="middle">status</text>
-      <rect x="400" y="368" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
-      <text x="540" y="393" text-anchor="middle">migrate (one-time)</text>
       <rect x="400" y="440" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
       <text x="540" y="465" text-anchor="middle">log-event</text>
     </g>
@@ -162,7 +160,6 @@
     <line x1="680" y1="168" x2="818" y2="130"/>
     <line x1="680" y1="182" x2="818" y2="232"/>
     <line x1="820" y1="262" x2="702" y2="262"/>
-    <line x1="680" y1="352" x2="818" y2="400"/>
     <line x1="680" y1="460" x2="818" y2="442"/>
   </g>
   <g class="t-lbl">
@@ -177,12 +174,11 @@
     <rect x="698" y="141" width="104" height="16" rx="3" fill="var(--label-bg)"/><text x="750" y="153" text-anchor="middle">appends 1 line</text>
     <rect x="714" y="199" width="72" height="16" rx="3" fill="var(--label-bg)"/><text x="750" y="211" text-anchor="middle">--scratch</text>
     <rect x="706" y="248" width="110" height="30" rx="3" fill="var(--label-bg)"/><text x="761" y="260" text-anchor="middle">read by context</text><text x="761" y="273" text-anchor="middle">+ memory-search</text>
-    <rect x="684" y="368" width="134" height="16" rx="3" fill="var(--label-bg)"/><text x="751" y="380" text-anchor="middle">reads/writes + ids</text>
     <rect x="708" y="443" width="86" height="16" rx="3" fill="var(--label-bg)"/><text x="751" y="455" text-anchor="middle">skill_start</text>
   </g>
 </svg>
 </div>
-<p class="note">Not shown, because it does not exist: no server, no daemon, no database, no embeddings, no lock files. The old stores (<code>learnings.md</code>, <code>timeline.md</code>, <code>observations.md</code>, <code>principles.md</code>, <code>project.md</code>, <code>planning/</code>) are gone. <code>vague migrate</code> moves their content into the files above.</p>
+<p class="note">Not shown, because it does not exist: no server, no daemon, no database, no embeddings, no lock files. The old stores (<code>learnings.md</code>, <code>timeline.md</code>, <code>observations.md</code>, <code>principles.md</code>, <code>project.md</code>, <code>planning/</code>) are gone.</p>
 
 <h2>2. One skill run, step by step</h2>
 <div class="flow">
@@ -226,7 +222,7 @@
 <div class="warn"><b>Gap:</b> no skill body tells agents to use <code>--scratch</code> yet. Only the Memory section in <code>vague/assets/claude/guidelines.md</code> mentions it. That includes <code>/dev-develop</code>, which runs parallel subagents, so the scratchpad works but no skill relies on it.</div>
 
 <h2>5. What the agent actually sees</h2>
-<p>A real MEMORY block from this repo, printed by the preamble. The data is a migrated copy, with lines shortened here:</p>
+<p>A real MEMORY block from this repo, printed by the preamble. Lines are shortened here:</p>
 <pre>vague memory · scope atisben-vague · 11 memories
 Scratch (shared by this scope's agents, last 7 days):
 - [phase-4-status] verification running
@@ -302,7 +298,6 @@ alma-ai_ml/ai-ml-tests-need-docker  [dev-review]  alma/ai_ml tests and mypy run 
   <tr><td>Project identity</td><td><code>vague/sdk/core/slug.py</code> (<code>get_scope</code>)</td><td>git</td><td>scope name</td></tr>
   <tr><td>Events</td><td><code>vague/sdk/core/events.py</code>, <code>commands/events.py</code></td><td><code>events/YYYY-MM.jsonl</code></td><td><code>skill_start</code>, <code>context_read</code>/<code>context_write</code> with <code>ids</code>; <code>read_events</code> for status</td></tr>
   <tr><td>Dashboard</td><td><code>vague/sdk/core/status.py</code></td><td>events, ledger, git</td><td>one row per project</td></tr>
-  <tr><td>Migration</td><td><code>vague/sdk/core/migrate.py</code></td><td>old <code>projects/&lt;slug&gt;/*.md</code></td><td>62 learnings + 54 observations → ledger, 71 events</td></tr>
 </table>
 </div>
 

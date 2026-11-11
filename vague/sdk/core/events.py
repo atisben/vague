@@ -50,7 +50,7 @@ class Event(BaseModel):
     runtime: str
     agent_id: str | None = None
     skill: str | None = None
-    # "migrated": rebuilt by `vague migrate` from timeline.md and project.md.
+    # "migrated" is kept so events written by the removed `vague migrate` still validate when read.
     source: Literal["tool", "slash", "migrated"] | None = None
     path: str | None = None
     command: str | None = None

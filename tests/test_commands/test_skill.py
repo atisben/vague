@@ -53,7 +53,7 @@ source "$(dirname "$0")/../_preamble.sh"
     assert "legacy" in result.output.lower() or "WARNINGS" in result.output
 
 
-def test_skill_audit_clean_on_migrated(tmp_path, vague_home):
+def test_skill_audit_clean_on_current_skill(tmp_path, vague_home):
     skill_dir = tmp_path / "clean-skill"
     skill_dir.mkdir()
     write_md(skill_dir / "SKILL.md", VALID_SKILL_FRONTMATTER, body="""
