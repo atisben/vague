@@ -205,3 +205,18 @@ def test_every_skill_preamble_passes_its_own_name_to_context():
 def test_dev_develop_briefs_hand_memory_to_subagents():
     text = (_get_assets_skills_dir() / "dev-develop" / "SKILL.md").read_text(encoding="utf-8")
     assert "--scratch" in text, "subagents never run the preamble, so their brief must explain the scratchpad"
+
+
+# Skills whose deliverable is a file the user must be able to find later, so the usage graph can show it.
+FILE_WRITING_SKILLS = ("vault", "vault-excalidraw", "slides")
+
+
+def test_file_writing_skills_record_the_files_they_write():
+    for name in FILE_WRITING_SKILLS:
+        text = (_get_assets_skills_dir() / name / "SKILL.md").read_text(encoding="utf-8")
+        assert re.search(r"memory-log .*--files", text), f"{name} must log the files it writes with --files"
+
+
+def test_guidelines_tell_skills_to_record_files_written_outside_the_repo():
+    guidelines = (_get_assets_skills_dir().parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
+    assert "Obsidian" in guidelines.split("\n## Memory\n", 1)[1]

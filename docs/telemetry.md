@@ -66,7 +66,7 @@ Fields that depend on the event:
 
 #### Not logged
 
-- Any project file path: Write, Edit, Read, Grep and Glob calls write nothing.
+- Any project file path from a hook: Write, Edit, Read, Grep and Glob calls write nothing. Only a path a skill passes to `memory-log --files` is stored, in the ledger.
 - File contents and tool output.
 - Bash commands.
 - Prompt text beyond the `/name` of a skill.
@@ -77,7 +77,7 @@ Fields that depend on the event:
 
 #### Wiring the hook
 
-A *hook* is a command Claude Code runs on an event and feeds a JSON payload on stdin. `vague log-event` is that command. `vague install` does **not** add the hooks yet, so add them by hand to `settings.json` in your Claude config dir (for example `~/.claude-personal/settings.json`):
+A *hook* is a command Claude Code runs on an event and feeds a JSON payload on stdin. `vague log-event` is that command. `vague install` adds these hooks to `settings.json` in every Claude config dir it installs into (for example `~/.claude-personal/settings.json`). It is idempotent, keeps your other settings and hooks, and skips a file that is not valid JSON. `vague uninstall` removes only vague's hooks. The entry it writes:
 
 ```json
 {
@@ -88,12 +88,12 @@ A *hook* is a command Claude Code runs on an event and feeds a JSON payload on s
 }
 ```
 
-The `PostToolUse` matcher limits the hook to Skill tool calls. If `vague` is not on the hook's `PATH`, use the absolute path, for example `~/.local/bin/vague log-event`.
+The `PostToolUse` matcher limits the hook to Skill tool calls. The installer writes the absolute path of `vague` when it finds one, because a hook's `PATH` may not include it. A hook you added by hand is recognised, so nothing is duplicated.
 
 #### Known limits
 
 - **No skill-end signal.** No hook fires when a skill finishes. A reader infers the end: a run lasts until its last vague event or the next skill start.
-- **Files a skill writes with Claude's own tools are not logged,** by design. Only vague's own state files appear.
+- **Files a skill writes with Claude's own tools are not logged by any hook,** by design. A skill reports a file it wrote by passing `--files` to `vague memory-log`, and only then does the file reach the usage graph. The path may be inside the repo (stored repo-relative) or outside it (stored absolute, for example an Obsidian note). `vague ui` flags files under `~/Obsidian` (override with `VAGUE_VAULT`) and lists them in "Written to Obsidian". Only skills that choose to report appear.
 
 ---
 
@@ -114,7 +114,7 @@ When `telemetry` is `"off"`:
 ## What Is Never Logged
 
 - File contents, Bash commands, tool output
-- Any project file path (only vague's own state and memory keys appear, as `context_read` / `context_write`)
+- Any project file path, unless a vague skill reports it with `memory-log --files` (events carry only vague's own state and memory keys, as `context_read` / `context_write`)
 - Grep and Glob patterns, and any search query
 - Prompt text, except the skill name of a leading `/name`
 - Code content

@@ -124,6 +124,35 @@ def load_scratch(scope: str, now: datetime | None = None) -> list[Memory]:
     return sorted(notes, key=lambda m: m.ts, reverse=True)
 
 
+def normalize_files(values: list[str], cwd: Path | None = None) -> list[str]:
+    """Turn `--files` values into the paths a memory stores.
+
+    A skill may report any file it wrote, inside the repo or not (an Obsidian note, say). Inside the repo
+    a path is stored repo-relative, so one file is one graph node however it was spelled. Outside it, the
+    path is stored absolute. A value that exists on disk stays whole, which keeps a filename with a comma
+    intact. Any other value is split on commas.
+    """
+    base = cwd or Path.cwd()
+    git = get_git_context(cwd=base)
+    root = Path(os.path.realpath(git.root)) if git.in_repo else None
+    found: list[str] = []
+    for value in values:
+        whole = Path(value).expanduser()
+        exists = whole.exists() or (base / whole).exists()
+        parts = [value] if exists else value.split(",")
+        for part in (p.strip() for p in parts):
+            if not part:
+                continue
+            path = Path(part).expanduser()
+            if path.is_absolute() and root:
+                try:
+                    path = Path(os.path.realpath(path)).relative_to(root)
+                except ValueError:
+                    pass
+            found.append(os.path.normpath(path))
+    return list(dict.fromkeys(found))
+
+
 def changed_files(cwd: Path | None = None) -> list[str]:
     """Repo-relative paths changed since HEAD plus untracked ones. Empty outside a repo or on git failure."""
     git = get_git_context(cwd=cwd)
