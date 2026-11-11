@@ -93,8 +93,7 @@ Ranking is deterministic: shared files with the uncommitted changes first, then 
 │   ├── diagrams/             ← /diagram output
 │   └── retros/               ← retro-YYYY-MM-DD.md
 ├── team/                     ← mgmt-* state
-├── interview/                ← iv-* state
-└── archive/<date>/           ← old stores, after `vague migrate --archive`
+└── interview/                ← iv-* state
 ```
 
 Every write to `memory.jsonl`, `scratch/` and `events/` is one `os.write` on an `O_APPEND` file descriptor. No lock is taken. A torn last line is skipped with a warning.

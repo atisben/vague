@@ -14,7 +14,6 @@ from vague.sdk.commands.config import cmd_config_get, cmd_config_set
 from vague.sdk.commands.events import cmd_log_event
 from vague.sdk.commands.init import cmd_context
 from vague.sdk.commands.memory import cmd_memory_log, cmd_memory_search
-from vague.sdk.commands.migrate import cmd_migrate
 from vague.sdk.commands.skill import (
     cmd_skill_add,
     cmd_skill_audit,
@@ -150,15 +149,6 @@ def ui(
 ) -> None:
     """Serve the usage graph (projects, branches, skills, memories, files) on localhost."""
     cmd_ui(port=port, open_browser=not no_open)
-
-
-@sdk_app.command("migrate")
-def migrate(
-    dry_run: Annotated[bool, typer.Option("--dry-run", help="Print counts and mappings, write nothing.")] = False,
-    archive: Annotated[bool, typer.Option("--archive", help="Move the old stores to archive/<date>/.")] = False,
-) -> None:
-    """Move old per-project learnings, observations, timeline and project.md into the ledger and events."""
-    cmd_migrate(dry_run=dry_run, do_archive=archive)
 
 
 @sdk_app.command("slug")

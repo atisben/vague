@@ -70,11 +70,10 @@ def one_line(text: str | None) -> str:
     return " ".join((text or "").split())
 
 
-def append_memory(memory: Memory, scratch: bool = False, max_text: int | None = MAX_TEXT) -> Path:
+def append_memory(memory: Memory, scratch: bool = False) -> Path:
     """Append one line in a single O_APPEND write, without a lock, the same guarantee events.py relies on."""
-    # `max_text=None` is for `vague migrate`: old learnings run to 666 characters, and truncating loses facts.
-    if memory.text is not None and max_text is not None and len(memory.text) > max_text:
-        raise ValueError(f"text is {len(memory.text)} characters, the limit is {max_text}")
+    if memory.text is not None and len(memory.text) > MAX_TEXT:
+        raise ValueError(f"text is {len(memory.text)} characters, the limit is {MAX_TEXT}")
     path = scratch_path(scope=memory.scope) if scratch else ledger_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
