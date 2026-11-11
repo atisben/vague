@@ -12,20 +12,9 @@ from vague.installer import cmd_install, cmd_uninstall
 from vague.sdk.commands.commit import cmd_commit
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
 from vague.sdk.commands.events import cmd_log_event
-from vague.sdk.commands.init import cmd_context, cmd_init
-from vague.sdk.commands.learnings import cmd_learnings_log, cmd_learnings_search
-from vague.sdk.commands.observations import (
-    cmd_observations_list,
-    cmd_observations_log,
-    cmd_observations_update,
-)
-from vague.sdk.commands.plan import (
-    cmd_plan_complete,
-    cmd_plan_list,
-    cmd_plan_status,
-    cmd_state_get,
-    cmd_state_set,
-)
+from vague.sdk.commands.init import cmd_context
+from vague.sdk.commands.memory import cmd_memory_log, cmd_memory_search
+from vague.sdk.commands.migrate import cmd_migrate
 from vague.sdk.commands.skill import (
     cmd_skill_add,
     cmd_skill_audit,
@@ -34,7 +23,6 @@ from vague.sdk.commands.skill import (
 )
 from vague.sdk.commands.slug import cmd_slug
 from vague.sdk.commands.status import cmd_status
-from vague.sdk.commands.timeline import cmd_timeline_log
 from vague.sdk.core.events import begin_command
 from vague.sdk.core.logging import get_logger
 
@@ -97,7 +85,7 @@ def context(
         bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")
     ] = False,  # noqa: E501
     skill: Annotated[
-        str | None, typer.Option("--skill", help="Log a usage event for this skill (mechanical telemetry).")
+        str | None, typer.Option("--skill", help="Rank the memory block for this skill.")
     ] = None,  # noqa: E501
 ) -> None:
     """Print project context for skill preambles. JSON by default, shell vars with --shell."""
@@ -108,14 +96,8 @@ def context(
 def status(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Cross-project dashboard: branches, in-flight plans, last activity."""
+    """Cross-project dashboard: branches, in-flight designs, last activity."""
     cmd_status(as_json=as_json)
-
-
-@sdk_app.command("init")
-def init() -> None:
-    """Initialize vague context. Outputs JSON."""
-    cmd_init()
 
 
 @sdk_app.command("config-get")
@@ -130,41 +112,41 @@ def config_set(key: str, value: str) -> None:
     cmd_config_set(key, value)
 
 
-@sdk_app.command("learnings-log")
-def learnings_log(json_input: str) -> None:
-    """Append a learning entry (JSON string)."""
-    cmd_learnings_log(json_input)
-
-
-@sdk_app.command("learnings-search")
-def learnings_search(
-    type: Annotated[str | None, typer.Option("--type", "-t")] = None,
-    min_confidence: Annotated[int, typer.Option("--min-confidence")] = 0,
-    as_json: Annotated[bool, typer.Option("--json")] = False,
+@sdk_app.command("memory-log")
+def memory_log(
+    key: str,
+    text: Annotated[str | None, typer.Argument(help="The fact, at most 600 characters.")] = None,
+    files: Annotated[str | None, typer.Option("--files", help="Comma-separated repo-relative paths.")] = None,
+    use_global: Annotated[bool, typer.Option("--global", help="Holds in every repo: scope global.")] = False,
+    about: Annotated[str | None, typer.Option("--about", help="Feedback about this skill (observation).")] = None,
+    status: Annotated[str | None, typer.Option("--status", help="active|forgotten|actioned|declined")] = None,
+    scratch: Annotated[bool, typer.Option("--scratch", help="Write to the scope's shared scratchpad.")] = False,
+    skill: Annotated[str | None, typer.Option("--skill", help="The skill writing this learning.")] = None,
 ) -> None:
-    """Search learnings. Outputs JSON array (--json accepted for compatibility)."""
-    cmd_learnings_search(type_filter=type, min_confidence=min_confidence)
+    """Log a memory to the global ledger. Re-using a key supersedes it."""
+    cmd_memory_log(key=key, text=text, files=files, use_global=use_global, about=about, status=status,
+                   scratch=scratch, skill=skill)
 
 
-@sdk_app.command("observations-log")
-def observations_log(json_input: str) -> None:
-    """Append an observation entry (JSON string)."""
-    cmd_observations_log(json_input)
-
-
-@sdk_app.command("observations-list")
-def observations_list(
-    status: Annotated[str | None, typer.Option("--status", "-s")] = None,
-    as_json: Annotated[bool, typer.Option("--json")] = False,
+@sdk_app.command("memory-search")
+def memory_search(
+    words: Annotated[list[str] | None, typer.Argument(help="Words to match; none lists every memory.")] = None,
+    scope: Annotated[str | None, typer.Option(
+        "--scope", help="A project scope, global, or all. Default: this scope plus global.")] = None,
+    kind: Annotated[str | None, typer.Option("--kind", help="learning|observation")] = None,
+    scratch: Annotated[bool, typer.Option("--scratch", help="Search scratchpads instead of the ledger.")] = False,
 ) -> None:
-    """List observations. Outputs JSON array."""
-    cmd_observations_list(status_filter=status, as_json=as_json)
+    """Print memories that contain every word across key, text, files and skill, newest first."""
+    cmd_memory_search(words=words or [], scope=scope, kind=kind, scratch=scratch)
 
 
-@sdk_app.command("observations-update")
-def observations_update(obs_id: int, status: str) -> None:
-    """Update an observation's status (open|actioned|declined)."""
-    cmd_observations_update(obs_id, status)
+@sdk_app.command("migrate")
+def migrate(
+    dry_run: Annotated[bool, typer.Option("--dry-run", help="Print counts and mappings, write nothing.")] = False,
+    archive: Annotated[bool, typer.Option("--archive", help="Move the old stores to archive/<date>/.")] = False,
+) -> None:
+    """Move old per-project learnings, observations, timeline and project.md into the ledger and events."""
+    cmd_migrate(dry_run=dry_run, do_archive=archive)
 
 
 @sdk_app.command("slug")
@@ -179,12 +161,6 @@ def log_event() -> None:
     cmd_log_event()
 
 
-@sdk_app.command("timeline-log")
-def timeline_log(json_input: str) -> None:
-    """Append a timeline entry (JSON string)."""
-    cmd_timeline_log(json_input)
-
-
 @sdk_app.command("commit")
 def commit(
     message: str,
@@ -192,36 +168,6 @@ def commit(
 ) -> None:
     """Stage and commit files. Outputs SHA or 'nothing-to-commit'."""
     cmd_commit(message, files)
-
-
-@sdk_app.command("plan-list")
-def plan_list(phase: str) -> None:
-    """List plans in a phase. Outputs JSON array."""
-    cmd_plan_list(phase)
-
-
-@sdk_app.command("plan-status")
-def plan_status(plan_id: str) -> None:
-    """Get plan status. Outputs JSON."""
-    cmd_plan_status(plan_id)
-
-
-@sdk_app.command("plan-complete")
-def plan_complete(plan_id: str) -> None:
-    """Mark plan as completed."""
-    cmd_plan_complete(plan_id)
-
-
-@sdk_app.command("state-get")
-def state_get(key: str) -> None:
-    """Get state value."""
-    cmd_state_get(key)
-
-
-@sdk_app.command("state-set")
-def state_set(key: str, value: str) -> None:
-    """Set state value."""
-    cmd_state_set(key, value)
 
 
 @sdk_app.command("skill-list")

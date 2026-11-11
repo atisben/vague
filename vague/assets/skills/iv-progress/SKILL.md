@@ -9,9 +9,8 @@ description: |
   "interview status", "am I ready", "/iv-progress".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -240,19 +239,14 @@ Write the updated file back.
 
 ## Observation Protocol
 
-Throughout, watch for:
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-progress` (see the Memory guideline).
 
+Watch especially for:
 - Score patterns that the current tier system doesn't capture well
 - Storybank coverage metrics that miss important competency areas
 - Calibration patterns that need more nuanced classification
 - Company pipeline states not covered by current status options
 - Readiness criteria that feel too strict or too lenient given the data
-
-Log silently — do not interrupt the report:
-
-```bash
-vague observations-log '{"skill":"iv-progress","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"iv-progress"}'
-```
 
 ---
 

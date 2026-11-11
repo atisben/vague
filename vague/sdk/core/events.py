@@ -12,6 +12,7 @@ the machine.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from datetime import UTC, datetime
@@ -26,11 +27,6 @@ from vague.sdk.core.logging import get_logger
 from vague.sdk.core.slug import GitContext, get_git_context, get_repo_slug
 
 _SLASH_RE = re.compile(r"^/([a-z0-9][a-z0-9:_-]*)")
-
-# `vague status` reads several files per project. Without a cap, a machine with
-# many projects would write hundreds of lines for one dashboard call.
-MAX_STATUS_READS = 50
-
 
 def _normalize_path(path: str, cwd: str) -> str:
     """Absolute, symlink-resolved path.
@@ -54,9 +50,12 @@ class Event(BaseModel):
     runtime: str
     agent_id: str | None = None
     skill: str | None = None
-    source: Literal["tool", "slash"] | None = None
+    # "migrated": rebuilt by `vague migrate` from timeline.md and project.md.
+    source: Literal["tool", "slash", "migrated"] | None = None
     path: str | None = None
     command: str | None = None
+    # `scope/key` names of the memories served or written. Names, never memory text.
+    ids: list[str] | None = None
 
 
 def events_path(now: datetime | None = None) -> Path:
@@ -143,15 +142,13 @@ def append_event(event: Event) -> None:
 _current_command: str | None = None
 _git_cache: tuple[GitContext, str] | None = None
 _logged: set[tuple[str, str]] = set()
-_status_reads = 0
 
 
 def begin_command(command: str | None) -> None:
     """Name the running vague subcommand and reset per-command state."""
-    global _current_command, _git_cache, _status_reads
+    global _current_command, _git_cache
     _current_command = command
     _git_cache = None
-    _status_reads = 0
     _logged.clear()
 
 
@@ -178,17 +175,27 @@ def _git_for_cwd() -> tuple[GitContext, str]:
     return _git_cache
 
 
-def log_context_access(kind: Literal["read", "write"], path: Path, command: str | None = None) -> None:
+def _memory_name(resolved: str) -> str | None:
+    """`memory.jsonl` or `scratch/<scope>.jsonl` for a memory store, so the event names the store, not the machine."""
+    home = os.path.realpath(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
+    name = os.path.relpath(resolved, home)
+    is_scratch = os.path.dirname(name) == "scratch" and name.endswith(".jsonl")
+    return name if name == "memory.jsonl" or is_scratch else None
+
+
+def log_context_access(
+    kind: Literal["read", "write"], path: Path, command: str | None = None, ids: list[str] | None = None
+) -> None:
     """Record that a vague command read or wrote a state file. Never raises, never prints.
 
-    Logs nothing outside Claude Code (no session id): a manual terminal run is
-    not skill activity. `log-event` is excluded so the hook never logs itself.
+    Outside Claude Code (no session id) the session is "unknown": other agents
+    and terminal runs still use memory, and the usage graph needs those reads too.
+    `log-event` is excluded so the hook never logs itself.
     """
-    global _status_reads
     try:
-        session = os.environ.get("CLAUDE_CODE_SESSION_ID")
+        session = os.environ.get("CLAUDE_CODE_SESSION_ID") or "unknown"
         command = command or _current_command
-        if not session or not command or command == "log-event":
+        if not command or command == "log-event":
             return
         cwd = os.getcwd()
         resolved = _normalize_path(str(path), cwd)
@@ -200,10 +207,6 @@ def log_context_access(kind: Literal["read", "write"], path: Path, command: str 
         key = (kind, resolved)
         if key in _logged:
             return
-        if kind == "read" and command == "status":
-            if _status_reads >= MAX_STATUS_READS:
-                return
-            _status_reads += 1
         _logged.add(key)
         git, repo = _git_for_cwd()
         append_event(Event(
@@ -217,8 +220,29 @@ def log_context_access(kind: Literal["read", "write"], path: Path, command: str 
             main_root=str(git.main_root),
             is_worktree=git.is_worktree,
             runtime=_runtime(),
-            path=resolved,
+            path=_memory_name(resolved=resolved) or resolved,
             command=command,
+            ids=ids,
         ))
     except Exception as e:
         get_logger().warning("context event failed: %s", e)
+
+
+def read_events() -> list[dict]:
+    """Every parseable event row across the monthly files, oldest file first."""
+    rows = []
+    for path in sorted(events_path().parent.glob("*.jsonl")):
+        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                rows.append(json.loads(line))
+            except ValueError:
+                continue
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def event_ts(value: object) -> datetime | None:
+    try:
+        moment = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=UTC)

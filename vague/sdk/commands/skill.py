@@ -23,6 +23,12 @@ BS_PATTERNS = [
     r"\bbs-timeline-log\b",
     r"\bbs-analytics\b",
     r'source\s+["\']?.*_preamble\.sh',
+    # Removed by the memory ledger redesign.
+    r"\bvague learnings-log\b",
+    r"\bvague learnings-search\b",
+    r"\bvague observations-log\b",
+    r"\bvague timeline-log\b",
+    r"\bvague init\b",
 ]
 
 
@@ -135,7 +141,6 @@ def _validate_skill(skill_dir: Path) -> tuple[bool, list[str]]:
         "description",
         "sdk_commands",
         "requires_slug",
-        "requires_planning",
         "allowed-tools",
     ]
     for field in required_fields:

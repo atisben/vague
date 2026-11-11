@@ -1,87 +1,30 @@
-"""vague init command."""
+"""vague context command."""
 
 from __future__ import annotations
 
+import json
 import shlex
 import sys
 
 import typer
 
-from vague.models import ConfigModel, VagueInitResult
+from vague.models import ConfigModel
 from vague.sdk.core.config import get_config
-from vague.sdk.core.learnings import get_top_learnings
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.logging import get_logger
-from vague.sdk.core.projects import upsert_project_meta
-from vague.sdk.core.slug import get_branch, get_repo_root, get_slug
+from vague.sdk.core.memory import changed_files, ledger_path, render_block, scratch_path
+from vague.sdk.core.slug import get_branch, get_scope, get_slug
 
-
-def cmd_init() -> None:
-    """Initialize vague context for the current project. Outputs JSON."""
-    try:
-        slug = get_slug()
-        branch = get_branch()
-        config = get_config()
-
-        try:
-            learnings = get_top_learnings(slug)
-        except Exception:
-            learnings = []
-
-        result = VagueInitResult(
-            slug=slug,
-            branch=branch,
-            proactive=config.proactive,
-            telemetry=config.telemetry,
-            learnings=learnings,
-        )
-        typer.echo(result.model_dump_json())
-    except Exception as e:
-        print(f"Warning: vague init error: {e}", file=sys.stderr)
-        # Never fail — return defaults
-        fallback = VagueInitResult(
-            slug="unknown",
-            branch="unknown",
-            proactive=True,
-            telemetry="local",
-            learnings=[],
-        )
-        typer.echo(fallback.model_dump_json())
-
-
-
-def _record_project_path(slug: str) -> None:
-    """Record the repo path for `vague status`, best-effort.
-
-    Must never propagate — a skill preamble that fails to record must still get
-    its context output (the keystone property of context/init).
-
-    project.md is structural (it powers `vague status`, like timeline.md), so it
-    is written regardless of the telemetry setting.
-    """
-    try:
-        upsert_project_meta(slug=slug, path=get_repo_root())
-    except Exception as e:
-        get_logger().warning("project meta upsert failed for %s: %s", slug, e)
+_DELIMITER = "VAGUE_MEMORY"
 
 
 def cmd_context(shell: bool = False, skill: str | None = None) -> None:
     """Print project context for skill preambles.
 
     With --shell, emit eval-able assignments so a skill can do
-    `eval "$(vague context --shell --skill <name>)"` instead of spawning
-    python3 three times. Without --shell, behaves like `vague init` (JSON).
-    With --skill, records the repo path as a best-effort side effect
-    before printing.
+    `eval "$(vague context --shell --skill <name>)"`. Without --shell, print the
+    same fields as one JSON object. --skill only ranks the memory block.
     """
-    if not shell:
-        if skill is not None:
-            try:
-                _record_project_path(get_slug())
-            except Exception as e:
-                get_logger().warning("project path capture failed: %s", e)
-        cmd_init()
-        return
-
     try:
         slug = get_slug()
         branch = get_branch()
@@ -91,8 +34,17 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
         slug, branch = "unknown", "unknown"
         config = ConfigModel()
 
-    if skill is not None:
-        _record_project_path(slug)
+    memory = _memory_lines(skill=skill)
+
+    if not shell:
+        typer.echo(json.dumps({
+            "slug": slug,
+            "branch": branch,
+            "proactive": config.proactive,
+            "telemetry": config.telemetry,
+            "memory": "\n".join(memory or []),
+        }))
+        return
 
     lines = [
         f"SLUG={shlex.quote(slug)}",
@@ -100,4 +52,22 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
         f"PROACTIVE={shlex.quote(str(config.proactive))}",
         f"TELEMETRY={shlex.quote(str(config.telemetry))}",
     ]
-    typer.echo("\n".join(lines))
+    # The quoted heredoc delimiter stops the shell from expanding `$` or backticks in memory text.
+    heredoc = [f"cat <<'{_DELIMITER}'", *memory, _DELIMITER] if memory is not None else []
+    typer.echo("\n".join(lines + heredoc))
+
+
+def _memory_lines(skill: str | None) -> list[str] | None:
+    """The memory block lines for this scope, or None on any error so the preamble still prints."""
+    try:
+        scope = get_scope()
+        block = render_block(scope=scope, skill=skill, changed_files=changed_files())
+        content = [line for line in block.text.splitlines() if line != _DELIMITER]
+        if block.ids:
+            log_context_access(kind="read", path=ledger_path(), ids=block.ids)
+        if block.scratch_ids and scope:
+            log_context_access(kind="read", path=scratch_path(scope=scope), ids=block.scratch_ids)
+        return content
+    except Exception as e:
+        get_logger().warning("memory block failed: %s", e)
+        return None

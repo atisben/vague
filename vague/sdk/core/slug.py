@@ -24,20 +24,11 @@ def _remote_slug(work_dir: str | None) -> str:
 
 
 def get_slug(cwd: Path | None = None) -> str:
-    """Derive owner-repo slug from git remote. Fallback: basename of cwd."""
-    work_dir = str(cwd) if cwd else None
-    slug = _remote_slug(work_dir)
-    if slug:
-        return slug
+    """Owner-repo slug from the git remote, else the main checkout's folder name, else cwd's.
 
-    # Fallback: basename of the repo root (not cwd — a subdir would split the
-    # project's state across slugs), then basename of cwd outside any repo.
-    try:
-        base = get_repo_root(Path(work_dir) if work_dir else None).name
-        return base or "unknown"
-    except Exception as e:
-        get_logger().debug("get_slug: repo root basename failed, using 'unknown': %s", e)
-        return "unknown"
+    Same rule as get_scope, so a remote-less worktree shares its main checkout's slug.
+    """
+    return get_repo_slug(context=get_git_context(cwd=cwd))
 
 
 class GitContext(NamedTuple):
@@ -86,27 +77,26 @@ def get_git_context(cwd: Path | None = None) -> GitContext:
 
 
 def get_repo_slug(context: GitContext) -> str:
-    """Same result as get_slug, reusing a context so the repo root costs no extra git call."""
+    """Slug from the remote, else the main checkout's folder name, so every worktree of a repo shares it."""
     if context.in_repo:
         slug = _remote_slug(str(context.root))
         if slug:
             return slug
-    return context.root.name or "unknown"
+    return context.main_root.name or "unknown"
 
 
-def get_repo_root(cwd: Path | None = None) -> Path:
-    """Repo toplevel for the current dir. Fallback: cwd itself."""
-    work_dir = str(cwd) if cwd else None
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, cwd=work_dir, timeout=5
-        )
-        if result.returncode == 0 and result.stdout.strip():
-            return Path(result.stdout.strip())
-    except Exception as e:
-        get_logger().debug("get_repo_root: git rev-parse failed, falling back to cwd: %s", e)
-    return cwd if cwd else Path.cwd()
+def get_scope(cwd: Path | None = None, use_global: bool = False) -> str | None:
+    """Memory scope for a directory, or None in $HOME or `/`.
+
+    A memory logged from the home folder or the filesystem root would land in a
+    scope named after the user or nothing, so the caller refuses instead.
+    """
+    if use_global:
+        return "global"
+    start = (cwd or Path.cwd()).resolve()
+    if start in (Path.home().resolve(), Path("/")):
+        return None
+    return get_repo_slug(context=get_git_context(cwd=start))
 
 
 def get_branch(cwd: Path | None = None) -> str:

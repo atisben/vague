@@ -6,42 +6,16 @@ vague telemetry is **100% local**. Nothing is sent to any server.
 
 ## What Is Logged
 
-### project.md
-Written to `~/.vague/projects/{slug}/project.md` by `vague context --skill`.
-Records the repo's **absolute path on your machine** and a `last_seen`
-timestamp — this is what lets `vague status` run git checks across projects.
-Structural state (like timeline), so it is written even when `telemetry` is
-`"off"`. Delete the file to forget a project's location.
+### memory.jsonl
+Written to `~/.vague/memory.jsonl` by `vague memory-log`. It is not telemetry: it holds what the model chose to remember. Each line is one memory with 8 fields: `ts`, `scope` (a project slug or `global`), `key`, `kind` (`learning` or `observation`), `text`, `files`, `skill` and `status`. Lines are only appended. A reader keeps the latest line per `scope` and `key`.
 
-### timeline.md
-Written to `~/.vague/projects/{slug}/timeline.md` by skills via `vague timeline-log`.
+The preamble prints at most 1,500 tokens of it, for this scope plus `global`. Observations never load in the preamble. Only `/meta` reads them. It never leaves your machine.
 
-```yaml
----
-entries:
-  - skill: dev-ship
-    event: started
-    branch: feat/auth
-    session: "12345-1712566800"
-    ts: "2025-04-08T09:00:00Z"
-  - skill: dev-ship
-    event: completed
-    branch: feat/auth
-    session: "12345-1712566800"
-    outcome: success
-    ts: "2025-04-08T09:25:00Z"
----
-```
-
-Timeline data is used locally by `/retro` to track session history and skill usage patterns. It never leaves your machine.
-
-### learnings.md
-Written to `~/.vague/projects/{slug}/learnings.md` when a skill calls `vague learnings-log`.
-
-Contains your project's accumulated engineering insights. Surfaced automatically by `vague init` at the start of every skill invocation. Never leaves your machine.
+### scratch/<scope>.jsonl
+Written to `~/.vague/scratch/<scope>.jsonl` by `vague memory-log --scratch`. It uses the same record and the same fold as the ledger. Agents on one project share it, and notes older than 7 days are hidden from the preamble and from search.
 
 ### events/YYYY-MM.jsonl
-Written to `~/.vague/events/YYYY-MM.jsonl` (one file per month, one JSON line per event). It records vague usage only: which skill started, and which vague state file a `vague` command read or wrote.
+Written to `~/.vague/events/YYYY-MM.jsonl` (one file per month, one JSON line per event). It records vague usage only: which skill started, and which memories a `vague` command served or wrote.
 
 Skill starts come from `vague log-event`, which a Claude Code hook runs with the hook payload on stdin. Context events come from `vague` itself.
 
@@ -51,10 +25,10 @@ A skill started in a worktree:
 {"ts":"2026-11-11T11:37:37Z","session":"s1","event":"skill_start","cwd":"/Users/me/repo-wt","repo":"me-repo","branch":"feat/x","root":"/Users/me/repo-wt","main_root":"/Users/me/repo","is_worktree":true,"runtime":".claude-personal","skill":"dev-ship","source":"slash"}
 ```
 
-A state file read by `vague learnings-search`:
+Two memories served by `vague memory-search`:
 
 ```json
-{"ts":"2026-11-11T11:38:02Z","session":"s1","event":"context_read","cwd":"/Users/me/repo-wt","repo":"me-repo","branch":"feat/x","root":"/Users/me/repo-wt","main_root":"/Users/me/repo","is_worktree":true,"runtime":".claude-personal","path":"/Users/me/.vague/projects/me-repo/learnings.md","command":"learnings-search"}
+{"ts":"2026-11-11T11:38:02Z","session":"s1","event":"context_read","cwd":"/Users/me/repo-wt","repo":"me-repo","branch":"feat/x","root":"/Users/me/repo-wt","main_root":"/Users/me/repo","is_worktree":true,"runtime":".claude-personal","path":"memory.jsonl","command":"memory-search","ids":["me-repo/tests-need-docker","global/verify-subagent-claims"]}
 ```
 
 Fields on every event:
@@ -77,16 +51,17 @@ Fields that depend on the event:
 | `event` | Written by | Extra fields |
 |---|---|---|
 | `skill_start` | Hook: PostToolUse on the Skill tool, or a prompt starting with `/name` | `skill`, `source` (`tool` or `slash`), `agent_id` when a subagent made the call |
-| `context_read` | `vague` itself, not a hook | `path`, `command` |
-| `context_write` | `vague` itself, not a hook | `path`, `command` |
+| `context_read` | `vague` itself, not a hook | `path`, `command`, optional `ids` |
+| `context_write` | `vague` itself, not a hook | `path`, `command`, optional `ids` |
 
 `root` is the checkout or worktree path and `main_root` is the main checkout, so a worktree event links to its repo by `main_root` while `root` tells the worktrees apart. Outside a repo, or on a bare repo, both paths are `cwd`. Git resolves symlinks in these paths, so they may differ from `cwd` (`/private/var` vs `/var` on macOS). Use `main_root` for identity, not `repo`.
 
-`context_read` and `context_write` record which state file a `vague` subcommand read or wrote (`learnings.md`, `observations.md`, `timeline.md`, `project.md`, `config.md`, planning files, and the assets directory for `skill-add`). `path` is absolute and symlink-resolved. `command` is the subcommand name, for example `learnings-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
+`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl`, a `scratch/<scope>.jsonl`, `config.md`, or the assets directory for `skill-add`. For the ledger and scratchpads, `path` is the constant relative name (`memory.jsonl` or `scratch/<scope>.jsonl`). For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
 
 - **No hook needed for context events.** Do not add one.
-- **Outside Claude Code nothing is logged.** The `session` value comes from `$CLAUDE_CODE_SESSION_ID`, which Claude Code sets for its Bash tool and which equals the hook payload's `session_id`. A command run in a plain terminal writes no line.
-- **Reads of a missing file are skipped,** and the same file is logged once per command and kind. `vague status` logs at most 50 reads per call.
+- **Outside Claude Code the session is `unknown`.** The `session` value comes from `$CLAUDE_CODE_SESSION_ID`, which Claude Code sets for its Bash tool and which equals the hook payload's `session_id`. A command run in a plain terminal or by another agent still writes its line, with `session: "unknown"`, so the usage graph stays complete.
+- **`ids` names the memories.** The `memory-*` commands and the preamble add `ids`, a list of `scope/key` names of the memories served or written. Keys are names chosen by the model, never memory text or the memory's `files`.
+- **Reads of a missing file are skipped,** and the same file is logged once per command and kind. `vague status` logs no reads: it serves no memory text.
 - `telemetry: off` disables all events, and a failure to write one never changes a command's output or exit code.
 
 #### Not logged
@@ -131,7 +106,7 @@ vague config-get telemetry         # check current value
 ```
 
 When `telemetry` is `"off"`:
-- Timeline, learnings, and project.md are still written (they're structural, not telemetry)
+- `memory.jsonl` and the scratchpad are still written (they're structural, not telemetry)
 - `vague log-event` writes nothing to `events/`
 
 ---
@@ -139,7 +114,7 @@ When `telemetry` is `"off"`:
 ## What Is Never Logged
 
 - File contents, Bash commands, tool output
-- Any project file path (only vague's own state files appear, as `context_read` / `context_write`)
+- Any project file path (only vague's own state and memory keys appear, as `context_read` / `context_write`)
 - Grep and Glob patterns, and any search query
 - Prompt text, except the skill name of a leading `/name`
 - Code content

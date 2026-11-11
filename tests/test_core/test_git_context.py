@@ -207,3 +207,42 @@ def test_event_spawns_at_most_two_git_processes(tmp_path, monkeypatch, in_git, e
     monkeypatch.setattr(slug_module.subprocess, "run", counting)
     _event(target)
     assert len(calls) == expected_calls
+
+
+def test_scope_global_flag_wins_everywhere(tmp_path):
+    assert slug_module.get_scope(cwd=tmp_path, use_global=True) == "global"
+
+
+def test_scope_repo_with_origin_is_owner_repo(tmp_path):
+    repo = _make_repo(tmp_path)
+    _git(repo, "remote", "add", "origin", "git@github.com:o/r.git")
+    assert slug_module.get_scope(cwd=repo) == "o-r"
+
+
+def test_scope_remoteless_worktree_uses_main_checkout_name(tmp_path):
+    repo = _make_repo(tmp_path, name="mainproj")
+    wt = tmp_path / "mainproj-feature"
+    _git(repo, "worktree", "add", "-b", "feature", str(wt))
+    assert slug_module.get_scope(cwd=wt) == slug_module.get_scope(cwd=repo) == "mainproj"
+    assert slug_module.get_repo_slug(context=get_git_context(cwd=wt)) == "mainproj"
+
+
+def test_scope_outside_repo_is_cwd_basename(tmp_path):
+    folder = tmp_path / "Obsidian"
+    folder.mkdir()
+    assert slug_module.get_scope(cwd=folder) == "Obsidian"
+
+
+def test_scope_in_home_or_root_is_none(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert slug_module.get_scope(cwd=tmp_path) is None
+    assert slug_module.get_scope(cwd=Path("/")) is None
+    assert slug_module.get_scope(cwd=tmp_path, use_global=True) == "global"
+
+
+def test_get_slug_remoteless_worktree_uses_main_checkout_name(tmp_path):
+    repo = _make_repo(tmp_path, name="main-checkout")
+    wt = tmp_path / "wt-elsewhere"
+    _git(repo, "worktree", "add", "-b", "feature", str(wt))
+    assert slug_module.get_slug(cwd=wt) == "main-checkout"
+    assert slug_module.get_slug(cwd=repo) == "main-checkout"

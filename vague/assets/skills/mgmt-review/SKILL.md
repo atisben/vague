@@ -13,10 +13,8 @@ description: |
   "growth review", "write a review", "/mgmt-review".
 sdk_commands:
   - vague context
-  - vague observations-log
-  - vague learnings-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -364,7 +362,7 @@ If a notable, reusable pattern emerged (a recurring coaching theme, a blind spot
 shows up across the team, a bias you had to correct hard), log it:
 
 ```bash
-vague learnings-log '{"skill":"mgmt-review","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague memory-log <kebab-key> "<one or two sentences>" --skill mgmt-review
 ```
 
 Only log genuine, generalisable patterns — not routine review outcomes.
@@ -395,27 +393,7 @@ Only log genuine, generalisable patterns — not routine review outcomes.
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should
-  have done automatically (e.g. "pull earlier evidence too", "that's halo bias",
-  "don't skip the blind spots", "don't overwrite that snapshot")
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-review` (see the Memory guideline).
 
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"mgmt-review","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-review"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step
-that should be part of this skill's workflow, log it immediately as a `type:
-correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"mgmt-review","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-review"}'
-```
-
-Log silently — do not interrupt the manager's workflow to announce observations.
+Watch especially for:
+- Bias the user had to point out (recency, halo, leniency) or blind spots that were skipped

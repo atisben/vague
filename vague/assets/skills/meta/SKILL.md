@@ -4,18 +4,15 @@ version: 1.0.0
 description: |
   Meta-skill for improving all other skills. Reviews observations logged during
   normal skill usage, applies improvements to existing skills, creates new skills,
-  and enforces cross-cutting principles. Trigger: "improve skills", "meta review",
+  and curates the memory ledger. Trigger: "improve skills", "meta review",
   "skill improvement", "what needs fixing in our skills", "review observations".
 sdk_commands:
-  - vague init
-  - vague observations-list
-  - vague observations-update
-  - vague observations-log
-  - vague learnings-log
+  - vague context
   - vague skill-validate
   - vague skill-list
+  - vague memory-log
+  - vague memory-search
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -25,13 +22,12 @@ allowed-tools:
   - Grep
   - AskUserQuestion
 benefits-from:
-  - ship
-  - investigate
-  - plan-eng-review
-  - office-hours
+  - dev-ship
+  - dev-investigate
+  - plan-eng
+  - plan-ideation
   - diagram
   - retro
-  - learn
   - vault
 ---
 
@@ -48,26 +44,29 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 
 ## Step 0: Load Context
 
-```bash
-eval "$(vague context --shell --skill meta)"
-VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-# Load open observations
-vague observations-list --status open
+Every project shares one global store, so this reads the observations logged from every repo:
 
-# Load principles
-cat "$VAGUE_HOME/projects/$SLUG/principles.md" 2>/dev/null || echo "NO_PRINCIPLES"
+```bash
+# All active observations (they live in the global scope, no words lists them all)
+vague memory-search --kind observation
+
+# Every active memory of every scope, newest first, for Step 4
+vague memory-search --scope all
 
 # List all skills
 vague skill-list
 ```
 
-If there are no open observations and no pending principle propagation, report:
+When `--scope all` prints more than you can read in one pass, read one scope at a time with `vague memory-search --scope <project>` or `vague memory-search --scope global`.
+
+Each line prints as `global/<key>  [<skill>]  <issue → suggestion>`, where `<skill>` is the skill the observation is about. Actioned and declined observations no longer appear.
+
+If there are no open observations and Step 4 finds nothing to curate, report:
 
 > "No open observations. All skills are current. If you want to log an observation manually, describe what you noticed and I'll record it."
 
 Then offer to:
 - **Log a new observation** based on something the user describes
-- **Review principles** to check if any need updating
 - **Audit skills** for simplification opportunities
 
 If there are open observations, proceed to Step 1.
@@ -76,21 +75,20 @@ If there are open observations, proceed to Step 1.
 
 ## Step 1: Triage Observations
 
-Group all OPEN observations by target skill. Present a summary:
+Group the observations by the `[<skill>]` tag on each line. To list one skill's observations, search for its name: `vague memory-search --kind observation <skill>`. Keys starting with `new-skill-` are new-skill candidates. Present a summary:
 
 ```
 ## Open Observations
 
-### ship (3 observations)
-- #12: Missing test step before commit — "Ship skill doesn't verify tests pass"
-- #15: Changelog format inconsistent — "Uses different date formats"
-- #18: No branch protection check — "Pushes without checking CI status"
+### dev-ship (2 observations)
+- ship-no-test-step: Missing test step before commit → add a test step
+- ship-changelog-dates: Changelog uses mixed date formats → use ISO dates
 
-### investigate (1 observation)
-- #14: No git bisect suggestion — "Could suggest bisect for regression bugs"
+### dev-investigate (1 observation)
+- investigate-no-bisect: No git bisect suggestion → suggest bisect for regressions
 
 ### New skill candidates (1)
-- #16: "new:dependency-audit" — "Recurring need to check outdated dependencies"
+- new-skill-dependency-audit: Recurring need to check outdated dependencies
 ```
 
 Ask the user via AskUserQuestion:
@@ -121,10 +119,11 @@ For each approved observation targeting an existing skill:
 
 4. **Write the updated SKILL.md** back to the same location
 
-5. **Mark the observation as ACTIONED:**
+5. **Mark the observation as actioned:**
    ```bash
-   vague observations-update <id> actioned
+   vague memory-log <key> --status actioned
    ```
+   Mark a declined one with `--status declined`.
 
 After each skill edit, run validation:
 ```bash
@@ -135,7 +134,7 @@ vague skill-validate vague/assets/skills/{name}/
 
 ## Step 3: Handle New Skill Candidates
 
-For observations with `skill: "new:working-name"`:
+For observations whose key starts with `new-skill-`:
 
 1. **Present the proposal** to the user with scope, purpose, and suggested trigger phrases
 
@@ -146,9 +145,9 @@ For observations with `skill: "new:working-name"`:
 
 3. **Write SKILL.md** following the standard template from `docs/skill-authoring.md`:
    - Frontmatter with all required fields
-   - Preamble with `vague init`
+   - Preamble with `eval "$(vague context --shell --skill <name>)"`
    - Step-by-step instructions
-   - Observation protocol section
+   - Observation Protocol line
    - Handoff section
 
 4. **Validate the new skill:**
@@ -156,28 +155,25 @@ For observations with `skill: "new:working-name"`:
    vague skill-validate vague/assets/skills/{name}/
    ```
 
-5. Mark the observation as ACTIONED
+5. Mark the observation as actioned (`--status actioned`)
 
 ---
 
-## Step 4: Propagate Cross-Cutting Principles
+## Step 4: Curate Memories
 
-Read the principles file:
-```bash
-eval "$(vague context --shell --skill meta)"
-VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-cat "$VAGUE_HOME/projects/$SLUG/principles.md" 2>/dev/null
-```
+Read the `vague memory-search --scope all` output from Step 0 yourself and look for three things. Each line prints as `scope/key  [skill]  text  (files: …)`, without the parts that are empty. Nothing is deleted: every change is a new line in the ledger.
 
-For each active principle:
-1. Read every skill's SKILL.md
-2. Check if the skill already complies with the principle
-3. If not, apply the principle and note which skills were updated
+| You find | Action |
+|---|---|
+| A duplicate: the same fact under two keys in one project | Rewrite one: `vague memory-log <keep-key> "<merged text>"`. Forget the other: `vague memory-log <drop-key> --status forgotten` |
+| A cross-project fact: the same fact in two projects | Re-log it: `vague memory-log <key> "<text>" --global`. Forget each original with `--status forgotten` |
+| A dead path: a memory whose `files` no longer exist in its repo | Re-log with corrected `--files`, or forget it |
 
-If the user identifies a new cross-cutting principle during this session, add it:
-```bash
-# The skill will write to principles.md directly via the frontmatter pattern
-```
+A memory with files ends with `(files: a, b)` in the search output. Check each path in that project's repo.
+
+Run each command from the repo of the memory's scope, or add `--global` for a `global/` memory. Ask the user before you forget anything.
+
+A cross-cutting principle the user names during the session belongs in `vague/assets/claude/guidelines.md`, the block every runtime gets. Apply it to the skills it affects, and note which ones changed.
 
 ---
 
@@ -185,8 +181,8 @@ If the user identifies a new cross-cutting principle during this session, add it
 
 Before finishing, re-read every modified SKILL.md and verify:
 
-1. **Structure intact** — frontmatter fields present, preamble calls `vague init`, handoff section exists
-2. **Observation protocol present** — every skill should have the standard observation protocol section
+1. **Structure intact** — frontmatter fields present, preamble is `eval "$(vague context --shell --skill <name>)"`, handoff section exists
+2. **Observation Protocol present** — every skill keeps its one-line `--about <skill>` feedback section
 3. **Changes are native** — improvements read as if they were always part of the skill, not appended
 4. **No regressions** — no existing rules or steps were accidentally removed
 5. **Validation passes:**
@@ -206,22 +202,23 @@ Present a summary:
 ## /meta Review Complete
 
 ### Skills Updated
-- **ship**: Added test verification step before commit (#12), fixed changelog date format (#15)
-- **investigate**: Added git bisect suggestion for regression bugs (#14)
+- **dev-ship**: Added test verification step before commit (ship-no-test-step)
+- **dev-investigate**: Added git bisect suggestion for regression bugs (investigate-no-bisect)
 
 ### New Skills Created
 - **dependency-audit**: Checks for outdated/vulnerable dependencies
 
-### Observations Actioned: #12, #14, #15, #16
-### Observations Declined: #18 (user decided branch protection is out of scope)
+### Observations Actioned: ship-no-test-step, investigate-no-bisect, new-skill-dependency-audit
+### Observations Declined: ship-changelog-dates (user prefers the current format)
 
-### Principles Propagated
-- "Pre-flight verification" applied to: diagram, dev-ship
+### Memories Curated
+- Merged: tests-need-docker ← docker-pytest (forgotten)
+- Promoted to global: concat-empty-list
 ```
 
 Log a learning if any non-obvious insight emerged:
 ```bash
-vague learnings-log '{"skill":"meta","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill meta
 ```
 
 > "Skills updated. Next steps:
@@ -233,23 +230,4 @@ vague learnings-log '{"skill":"meta","type":"pattern","key":"SHORT_KEY","insight
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"meta","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"meta"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"meta","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"meta"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about meta` (see the Memory guideline).

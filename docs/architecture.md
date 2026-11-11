@@ -23,81 +23,30 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         LLM CONTEXT WINDOW                              │
 │                                                                         │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │ 1. CLAUDE.md / .cursor/rules/vague.mdc                           │   │
-│  │    (project-level, always present)                               │   │
-│  │                                                                  │   │
-│  │    - Skill routing table (which /command maps to which skill)    │   │
-│  │    - Project description and stack                               │   │
-│  │    - Testing framework and commands                              │   │
-│  │    ~ 1–3 KB                                                      │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
+│  1. CLAUDE.md / .cursor/rules/vague.mdc          (always present)       │
+│     guidelines.md (incl. the Memory section) + skill routing table      │
 │                              │                                          │
 │                              ▼                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │ 2. SKILL.md  (the invoked skill's full instruction set)          │   │
-│  │                                                                  │   │
-│  │    - Frontmatter (name, version, sdk_commands, allowed-tools)    │   │
-│  │    - `vague init` call  ◄── agent executes this first            │   │
-│  │    - Step-by-step instructions for the skill                     │   │
-│  │    - AskUserQuestion patterns, decision trees                    │   │
-│  │    - Handoff block                                               │   │
-│  │    ~ 3–8 KB per skill                                            │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
+│  2. SKILL.md                 (the invoked skill's instructions)         │
+│     frontmatter, preamble, steps, Observation Protocol, Handoff         │
 │                              │                                          │
-│              Agent runs `CONTEXT=$(vague init)`                         │
+│      agent runs eval "$(vague context --shell --skill dev-ship)"        │
+│                              ▼                                          │
+│  3. Preamble output          (tool output, ≤ 1,500 tokens of memory)    │
+│     SLUG=acme-api  BRANCH=feat/payments  PROACTIVE=True  TELEMETRY=local│
+│     vague memory · scope acme-api · 2 memories                          │
+│     Memories (most relevant first):                                     │
+│     - [payments-stripe] Use Stripe webhooks for async confirmation.     │
+│     - [global/verify-subagent-claims] Re-run tests after subagents.     │
 │                              │                                          │
 │                              ▼                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │ 3. vague init OUTPUT  (runtime context, injected as tool output) │   │
-│  │                                                                  │   │
-│  │    {                                                             │   │
-│  │      "slug":      "bastien-myrepo",                              │   │
-│  │      "branch":    "feat/payments",                               │   │
-│  │      "proactive": true,                                          │   │
-│  │      "telemetry": "local",                                       │   │
-│  │      "learnings": [                                              │   │
-│  │        {                                                         │   │
-│  │          "type": "pitfall", "key": "n-plus-one-user-scope",      │   │
-│  │          "insight": "Always use includes(:user) on list queries.",│   │
-│  │          "confidence": 8, "source": "observed"                   │   │
-│  │        },                                                        │   │
-│  │        { "type": "pattern", "key": "slug-derivation", ... }      │   │
-│  │      ]                                                           │   │
-│  │    }                                                             │   │
-│  │                                                                  │   │
-│  │    ~ 0.5–2 KB depending on learnings count                       │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                              │                                          │
-│            Agent then reads additional files per skill logic            │
+│  4. On-demand reads          (skill-specific tool outputs)              │
+│     /triage → vague status, git · /dev-ship → git diff, tests           │
+│     /dev-investigate → vague memory-search, stack trace, git log        │
+│     /retro → git log, events log · /meta → memory-search --scope all    │
 │                              │                                          │
 │                              ▼                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │ 4. ON-DEMAND READS  (skill-specific, injected as tool outputs)   │   │
-│  │                                                                  │   │
-│  │    /triage            → git status, git log, git diff --stat     │   │
-│  │    /plan-ideation     → prior design docs (scope review: latest) │   │
-│  │    /plan-eng          → design doc + scope review doc            │   │
-│  │    /diagram           → source tree, entry points, design doc    │   │
-│  │    /vault             → artifact file, existing vault notes      │   │
-│  │    /dev-ship          → git diff, git log, test output           │   │
-│  │    /dev-investigate   → stack trace, git log, error logs         │   │
-│  │    /retro             → git log --stat, prior retro doc          │   │
-│  │                                                                  │   │
-│  │    ~ 1–50 KB depending on diff/log size                          │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                              │                                          │
-│                              ▼                                          │
-│  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │ 5. CONVERSATION HISTORY  (accumulated during the session)        │   │
-│  │                                                                  │   │
-│  │    - User messages and AskUserQuestion responses                 │   │
-│  │    - Tool call outputs (bash, read, write, edit)                 │   │
-│  │    - Agent's own prior responses in this session                 │   │
-│  │                                                                  │   │
-│  │    ~ grows throughout the session                                │   │
-│  └──────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
+│  5. Conversation history     (grows throughout the session)             │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -105,18 +54,29 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 
 | Layer | Typical size | Notes |
 |-------|-------------|-------|
-| CLAUDE.md | ~500–1,000 tokens | Grows if you add project context |
+| CLAUDE.md | ~4,000–5,000 tokens | Guidelines plus the routing table |
 | SKILL.md | ~1,500–4,000 tokens | Varies by skill complexity |
-| `vague init` output | ~100–500 tokens | Grows with learnings surfaced |
+| Preamble MEMORY block | ≤ 1,500 tokens | Hard cap of 6,000 characters, whatever the ledger size |
 | On-demand reads | ~500–15,000 tokens | Git diffs are the biggest variable |
 | Conversation history | ~500–10,000 tokens | Grows across multi-turn sessions |
-| **Total at invocation** | **~3,000–30,000 tokens** | Well within 200K context window |
+| **Total at invocation** | **~8,000–35,000 tokens** | Well within the context window |
+
+The MEMORY block fills its budget in this order:
+
+| Part | Content | Cap |
+|---|---|---|
+| Scratch | Notes from this scope's agents, last 7 days | 300 tokens |
+| Full lines | `- [key] text` for this scope plus `global`, ranked | 1,200 tokens, global at most a third |
+| Index lines | `- [key]` only, for the next memories in rank order | 300 tokens |
+| Pointer | `+N more: vague memory-search <words>` | 1 line |
+
+Ranking is deterministic: shared files with the uncommitted changes first, then the running skill's own memories, then the newest.
 
 ### What Is NOT Injected
 
-- Full `learnings.md` (only top 3 by confidence, surfaced by `vague init`)
-- Full `timeline.md` (write-only from skills — read by `/retro` only)
-- Other projects' data (scoped strictly to the current slug)
+- Observations (feedback about skills). Only `/meta` reads them.
+- Memories past the budget. `vague memory-search <words>` finds them on demand.
+- Other projects' memories, unless they are `global` or searched with `--scope all` or `--scope <project>`.
 
 ---
 
@@ -124,27 +84,34 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 
 ```
 ~/.vague/
-├── config.md                           ← frontmatter: proactive, telemetry (created on first config-set)
-└── projects/
-    └── {owner-repo}/                   ← one dir per git repo
-        ├── project.md                  ← repo path + last_seen, upserted by `vague context --skill`
-        ├── learnings.md                ← frontmatter list of LearningEntry (max 500)
-        ├── timeline.md                 ← frontmatter list of TimelineEntry
-        ├── retros/
-        │   └── retro-YYYY-MM-DD.md    ← weekly retro archives
-        └── designs/
-            └── *.md / *.html          ← design docs, shotgun variants, HTML output
+├── config.md                 ← frontmatter: proactive, telemetry
+├── memory.jsonl              ← every learning and observation, all projects (append-only)
+├── scratch/<scope>.jsonl     ← shared working notes per project, hidden after 7 days
+├── events/YYYY-MM.jsonl      ← skill starts, memory reads/writes with `ids`
+├── projects/<owner-repo>/    ← documents, not memory
+│   ├── designs/              ← design docs, eng plans, HTML output
+│   ├── diagrams/             ← /diagram output
+│   └── retros/               ← retro-YYYY-MM-DD.md
+├── team/                     ← mgmt-* state
+├── interview/                ← iv-* state
+└── archive/<date>/           ← old stores, after `vague migrate --archive`
 ```
 
-All state files use YAML frontmatter. `vague` reads and writes them atomically with `fcntl` file locking — safe for concurrent skill invocations.
+Every write to `memory.jsonl`, `scratch/` and `events/` is one `os.write` on an `O_APPEND` file descriptor. No lock is taken. A torn last line is skipped with a warning.
 
-### Project Slug
+### Project Scope
 
-Derived from `git remote get-url origin` → `owner-repo`. Falls back to `basename $PWD` if no remote. Never raises.
+The `scope` of a memory is the project slug:
+
+| Where the command runs | `scope` |
+|---|---|
+| A git repo with an `origin` remote | `owner-repo` from the remote URL |
+| A git repo without a remote | Folder name of the main checkout, so all worktrees share it |
+| Outside a repo | Folder name of the current directory |
+| `$HOME` or `/` | None: `memory-log` refuses unless `--global` is passed |
 
 ```bash
 vague slug         # prints SLUG=owner-repo and BRANCH=main
-CONTEXT=$(vague init)   # full JSON context including slug and branch
 ```
 
 ---
@@ -154,68 +121,53 @@ CONTEXT=$(vague init)   # full JSON context including slug and branch
 Every skill follows this pattern:
 
 ```
+0. hook: vague log-event
+   └── appends a skill_start event to ~/.vague/events/YYYY-MM.jsonl
+
 1. eval "$(vague context --shell --skill {name})"
-   └── emits SLUG/BRANCH/PROACTIVE/TELEMETRY for the preamble
-   └── side effect (best-effort, never fails the output):
-       └── upserts projects/{slug}/project.md (repo path, last_seen)
+   └── sets SLUG/BRANCH/PROACTIVE/TELEMETRY
+   └── prints the MEMORY block, logs a context_read event with the served ids
 
 2. [skill does its work — reads files, writes code, asks questions]
 
-3. vague learnings-log '{"skill":"...", "type":"pitfall", "key":"...", ...}'
-   └── appended to ~/.vague/projects/{slug}/learnings.md
-
-4. vague timeline-log '{"skill":"...", "event":"completed", ...}'
-   └── appended to ~/.vague/projects/{slug}/timeline.md
+3. vague memory-log <key> "<text>" --files <paths> --skill {name}   (when a fact is worth keeping)
+   └── appends one line to ~/.vague/memory.jsonl, logs context_write with the id
 ```
 
-Step 1 is **mechanical telemetry**: skill starts are captured by the preamble
-every skill must run anyway, not by an optional logging step the agent may
-skip. Completion events (step 4) remain discretionary.
+Step 0 is **mechanical telemetry**: a Claude Code hook records each skill start, so no agent can skip it. Step 3 stays discretionary. The Memory section of `guidelines.md` tells the agent when to use it.
 
-`vague context`/`vague init` is the **keystone**: it never fails. If config is
-missing, it returns defaults. If there's no git remote, it falls back to
-directory name. If telemetry capture fails (read-only disk, lock contention),
-the error is swallowed and the context output still prints. Skills always get
-a valid context.
+`vague context` is the **keystone**: it never fails. Missing config returns defaults. A missing git remote falls back to the folder name. A broken ledger drops the MEMORY block, and the variables still print.
 
-`vague status` reads across all of `~/.vague/projects/` — recorded repo paths,
-last activity, design docs newer than the last ship event ("in-flight plans"),
-learnings counts — and renders the cross-project dashboard that `/triage`
+`vague status` reads the events log and the memory ledger: one row per `repo`
+seen in events, its latest `main_root` path, last activity, design docs newer
+than the last `dev-ship` start ("in-flight plans"), active memory counts — and renders the cross-project dashboard that `/triage`
 runs as Step 0.
 
 ---
 
 ## Data Model
 
-All files use YAML frontmatter. Example `learnings.md`:
+`memory.jsonl` holds one record type, `Memory`, with 8 fields:
 
-```markdown
----
-entries:
-  - skill: dev-ship
-    type: pitfall
-    key: n-plus-one-user-scope
-    insight: Always use includes(:user) on list queries — loading users separately causes N+1s.
-    confidence: 8
-    source: observed
-    files:
-      - app/controllers/posts_controller.rb
-    ts: "2025-04-08T09:00:00Z"
-  - skill: dev-ship
-    type: pattern
-    key: migration-always-reversible
-    insight: Every migration must have a down() method. Irreversible migrations blocked deploys twice.
-    confidence: 9
-    source: observed
-    ts: "2025-04-15T14:22:00Z"
----
+```json
+{"ts":"2026-10-05T14:01:29Z","scope":"acme-api","key":"tests-need-docker","kind":"learning","text":"Tests and mypy run only inside the train container; the host .venv has no pytest.","files":["Taskfile.yml"],"skill":"dev-ship","status":"active"}
+{"ts":"2026-11-11T12:46:09Z","scope":"global","key":"ship-no-test-step","kind":"observation","text":"dev-ship committed before running tests → add a test step before commit","skill":"dev-ship","status":"active"}
 ```
 
-**Learning types:** `pattern` · `pitfall` · `preference` · `architecture` · `tool` · `operational`
-**Sources:** `observed` · `user-stated` · `inferred`
-**Confidence:** 1–10. Observed: 7–9. Inferred: 4–6. User-stated: 10.
-**Dedup rule:** Latest entry per `(key, type)` pair wins — resolved at read time, not write time.
-**Pruning:** When entries exceed 500, lowest-confidence entries are evicted on write.
+| Field | Meaning |
+|---|---|
+| `ts` | UTC time of the write, set by the CLI |
+| `scope` | A project slug, or `global` |
+| `key` | Kebab-case name, unique within its scope |
+| `kind` | `learning`, or `observation` when written with `--about` |
+| `text` | The fact, at most 600 characters |
+| `files` | Repo-relative paths the fact touches, used for ranking |
+| `skill` | For a learning, the skill that wrote it. For an observation, the skill it is about |
+| `status` | `active`, `forgotten`, `actioned` or `declined` |
+
+**Fold rule:** a reader merges lines per (`scope`, `key`) in file order, and the latest non-empty value of each field wins. Re-logging a key supersedes it. A status-only line forgets it. History stays in the file.
+
+**Curation:** `/meta` reads every memory with `vague memory-search --scope all` and the model judges what to fix: duplicates within a project, the same fact in two projects (re-logged once with `--global`), and memories whose `files` no longer exist. It acts with `memory-log` and asks before forgetting anything. Nothing is deleted automatically.
 
 ---
 
@@ -238,7 +190,7 @@ no artifact, it reads git state and routes to the skill below that fits.
 
 /dev-develop        → implements the plan
 /dev-ship           → runs tests, reviews the diff, commits, opens PR
-/retro              → reads timeline.md + git log, writes retro-YYYY-MM-DD.md
+/retro              → reads events + git log, writes retro-YYYY-MM-DD.md
 ```
 
 Each skill that writes a doc announces the output path and suggests the next skill.
@@ -247,156 +199,34 @@ Each skill that writes a doc announces the output path and suggests the next ski
 
 ## Workflow Examples
 
-### Classic: Feature from Idea to PR
+### Memory Across Sessions and Agents
 
-A complete feature development cycle using four skills in sequence.
-
-```
-Day 1 — Claude Code session
-
-  User: "I have an idea for a payments feature"
-
-  ┌─ /plan-ideation ─────────────────────────────────────────────────────┐
-  │  CONTEXT=$(vague init)                                               │
-  │  → slug: "acme-api", branch: "main", learnings: []                  │
-  │                                                                      │
-  │  Agent: challenges the idea, validates demand, scope                 │
-  │  Output: ~/.vague/projects/acme-api/designs/payments-20260430.md    │
-  └──────────────────────────────────────────────────────────────────────┘
-                              │ "Design saved. Run /plan-eng next."
-                              ▼
-
-  ┌─ /plan-eng ──────────────────────────────────────────────────────────┐
-  │  CONTEXT=$(vague init)                                               │
-  │  → slug: "acme-api", branch: "main", learnings: []                  │
-  │                                                                      │
-  │  Agent: reads design doc, locks architecture, data model, tests      │
-  │  Output: ~/.vague/projects/acme-api/designs/acme-api-eng-20260430.md │
-  │                                                                      │
-  │  vague learnings-log '{"type":"architecture","key":"payments-stripe",│
-  │    "insight":"Use Stripe webhooks for async confirmation, not polling"│
-  │    "confidence":9,"source":"user-stated"}'                           │
-  └──────────────────────────────────────────────────────────────────────┘
-                              │ "Plan locked. Run /dev-develop to implement."
-                              ▼
-
-  ┌─ /dev-develop ───────────────────────────────────────────────────────┐
-  │  CONTEXT=$(vague init)                                               │
-  │  → slug: "acme-api", branch: "feat/payments"                        │
-  │  → learnings: [{ key: "payments-stripe", confidence: 9, ... }]  ◄── surfaced
-  │                                                                      │
-  │  Agent reads the architecture learning before writing any code.      │
-  │  Implements Stripe webhooks (not polling) — learning guided this.    │
-  │                                                                      │
-  │  vague timeline-log '{"skill":"dev-develop","event":"completed",...}'│
-  └──────────────────────────────────────────────────────────────────────┘
-                              │ "Feature implemented. Run /dev-ship to open a PR."
-                              ▼
-
-  ┌─ /dev-ship ──────────────────────────────────────────────────────────┐
-  │  CONTEXT=$(vague init)                                               │
-  │  → learnings: [{ key: "payments-stripe", confidence: 9 }]           │
-  │                                                                      │
-  │  Agent runs tests, reviews the diff for N+1s, missing rollbacks.    │
-  │  vague commit "feat: add Stripe webhook payment confirmation"        │
-  │                                                                      │
-  │  vague learnings-log '{"type":"pattern","key":"webhook-idempotency", │
-  │    "insight":"Always check event.id before processing webhooks",...}'│
-  └──────────────────────────────────────────────────────────────────────┘
-
-  Learnings written: 2
-  Timeline events:   3 (dev-develop completed, dev-ship started, dev-ship completed)
-```
-
----
-
-### Complex: Persistent Memory Across Sessions and Agents
-
-`~/.vague/` is agent-agnostic. Learnings written by Claude Code are read by Cursor (and vice versa). Memory persists indefinitely across sessions.
+`~/.vague/` is agent-agnostic. A memory written by Claude Code reaches Cursor's next preamble, and the reverse.
 
 ```
-Day 1 — Claude Code session — investigating a production bug
+Day 1 — Claude Code — /dev-investigate on acme-api
+  preamble    → MEMORY block: 0 memories
+  agent       → traces a slow checkout to an N+1 on Order.line_items
+  memory-log  → vague memory-log order-lineitems-n-plus-one \
+                  "Order.line_items is never eager-loaded. Fix: includes(:line_items)." \
+                  --files app/models/order.rb --skill dev-investigate
+              → memory.jsonl +1 line, events +1 context_write (ids: acme-api/order-lineitems-n-plus-one)
 
-  ┌─ /dev-investigate ───────────────────────────────────────────────────┐
-  │  CONTEXT=$(vague init)                                               │
-  │  → slug: "acme-api", branch: "fix/slow-checkout", learnings: []     │
-  │                                                                      │
-  │  Agent traces the slow checkout to an N+1 on Order.line_items       │
-  │                                                                      │
-  │  vague learnings-log '{                                              │
-  │    "skill": "dev-investigate",                                           │
-  │    "type": "pitfall",                                                │
-  │    "key": "order-lineitems-n-plus-one",                              │
-  │    "insight": "Order.line_items is never eager-loaded. Every         │
-  │      checkout page triggers N queries. Fix: includes(:line_items).", │
-  │    "confidence": 9,                                                  │
-  │    "source": "observed",                                             │
-  │    "files": ["app/models/order.rb", "app/views/checkout/show.html"] │
-  │  }'                                                                  │
-  │                                                                      │
-  │  Session ends. The fix is too large for today.                       │
-  └──────────────────────────────────────────────────────────────────────┘
+─────────────────────────────────────────────── Day 3 — Cursor — /dev-ship
+  preamble    → git diff touches app/models/order.rb, so the memory ranks first:
+                - [order-lineitems-n-plus-one] Order.line_items is never eager-loaded...
+  agent       → applies the fix, writes a regression test, commits
+  memory-log  → vague memory-log eager-load-in-controller \
+                  "Add includes() in the controller scope, not the view." --skill dev-ship
 
-  Written to disk: ~/.vague/projects/acme-api/learnings.md
-                                      ↑
-                              persists between sessions,
-                              agents, and tools
+─────────────────────────────────────────────── Day 4 — any repo — /dev-develop
+  memory-log  → vague memory-log verify-subagent-claims \
+                  "Re-run tests yourself after subagents report success." --global
+              → scope global: every repo's preamble can show it
 
-─────────────────────────────────────────────────────── Day 3 — new session
-
-  ┌─ /dev-ship — Cursor session ─────────────────────────────────────────┐
-  │  CONTEXT=$(vague init)                                               │
-  │  → slug: "acme-api", branch: "fix/slow-checkout"                    │
-  │  → learnings: [                                                      │
-  │      {                                                               │
-  │        "key": "order-lineitems-n-plus-one",   ◄── from Day 1        │
-  │        "type": "pitfall",                                            │
-  │        "insight": "Order.line_items is never eager-loaded...",       │
-  │        "confidence": 9                                               │
-  │      }                                                               │
-  │    ]                                                                 │
-  │                                                                      │
-  │  A completely different agent, different tool, different session —   │
-  │  but it opens with full knowledge of what was found on Day 1.        │
-  │                                                                      │
-  │  Agent applies the fix: adds includes(:line_items) in the right      │
-  │  places, writes a regression test, commits.                          │
-  │                                                                      │
-  │  vague learnings-log '{                                              │
-  │    "type": "pattern",                                                │
-  │    "key": "eager-load-associations",                                 │
-  │    "insight": "Add includes() in the controller scope, not the view. │
-  │      View-level fixes get lost on refactors.",                       │
-  │    "confidence": 8, "source": "observed"                             │
-  │  }'                                                                  │
-  └──────────────────────────────────────────────────────────────────────┘
-
-─────────────────────────────────────────────────── Day 7 — weekly retro
-
-  ┌─ /retro — Claude Code session ───────────────────────────────────┐
-  │  CONTEXT=$(vague init)                                               │
-  │  → slug: "acme-api"                                                  │
-  │  → learnings: 2 entries (both surfaced — only 2 total)              │
-  │                                                                      │
-  │  Agent reads:                                                        │
-  │    - timeline.md  → 4 events across 2 sessions (dev-investigate+dev-ship) │
-  │    - git log      → 3 commits on fix/slow-checkout this week        │
-  │    - prior retros → none yet                                         │
-  │                                                                      │
-  │  Output: ~/.vague/projects/acme-api/retros/retro-2026-05-07.md      │
-  │                                                                      │
-  │  Retro excerpt:                                                       │
-  │  > "Resolved N+1 on checkout (detected Day 1, fixed Day 3).         │
-  │  > Lesson: N+1s in order associations are a recurring pattern here.  │
-  │  > Consider adding a linter rule."                                   │
-  └──────────────────────────────────────────────────────────────────────┘
-
-State at end of week:
-  ~/.vague/projects/acme-api/
-    ├── learnings.md     ← 2 entries (pitfall + pattern)
-    ├── timeline.md      ← 4 events across 2 agents, 2 tools
-    └── retros/
-        └── retro-2026-05-07.md
+─────────────────────────────────────────────── Day 7 — /retro, then /meta
+  /retro      → events: 3 skill runs on acme-api, 2 memories written this week
+  /meta       → memory-search --scope all: no duplicates, 1 dead path → forget it
 ```
 
 **Key properties of this model:**
@@ -404,8 +234,9 @@ State at end of week:
 | Property | Behaviour |
 |----------|-----------|
 | Agent-agnostic | Claude Code and Cursor read and write the same `~/.vague/` |
-| Session-persistent | Learnings survive session restarts, computer reboots |
-| Slug-scoped | Each repo has isolated memory — `acme-api` and `acme-frontend` never mix |
-| Deduplicating | Logging the same `(key, type)` twice keeps only the latest insight |
-| Self-pruning | Capped at 500 entries; lowest-confidence entries evicted automatically |
+| Session-persistent | Memories survive session restarts and reboots |
+| Scoped, with a global layer | Each repo has its own scope. `--global` memories reach every repo |
+| Bounded | The preamble never prints more than 1,500 tokens of memory |
+| Superseding | Re-logging a key keeps only the latest text, and history stays in the file |
+| Measurable | Events carry the `ids` served and written, so unused memories show up |
 | No sync required | Fully local — nothing to push, pull, or configure |

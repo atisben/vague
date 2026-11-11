@@ -10,9 +10,8 @@ description: |
   "prepare for interviews", "/iv-kickoff".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -223,17 +222,13 @@ After writing all files, confirm what was created and show a brief summary of th
 
 ## Observation Protocol
 
-Throughout, watch for:
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-kickoff` (see the Memory guideline).
+
+Watch especially for:
 - Questions that confused the user or needed rephrasing
 - Resume formats that were hard to parse
 - Missing information that should have been asked earlier
 - Transition types not covered by the current framework
-
-Log silently — do not interrupt the conversation:
-
-```bash
-vague observations-log '{"skill":"iv-kickoff","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"iv-kickoff"}'
-```
 
 ---
 

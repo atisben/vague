@@ -1,54 +1,64 @@
-"""Cross-project status collection for `vague status`."""
+"""Cross-project status for `vague status`, derived from the events log and the memory ledger.
+
+A project is any `repo` that appears in an event, or any ledger scope except `global`.
+Its path is the latest non-empty `main_root`, so a project that moved shows where it lives now.
+"""
 
 from __future__ import annotations
 
 import subprocess
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
-from vague.sdk.core.events import log_context_access
+from vague.sdk.core.events import event_ts, read_events
 from vague.sdk.core.logging import get_logger
-from vague.sdk.core.projects import get_vague_home, list_project_slugs, read_project_meta
+from vague.sdk.core.memory import load_ledger, vague_home
 
 GIT_TIMEOUT_S = 2
-
-# Timeline skill names that count as "shipped" for in-flight design detection.
+# "ship" is the pre-rename name, still present in events logged before the rename.
 SHIP_SKILLS = {"ship", "dev-ship"}
 
 
 def collect_status() -> list[dict]:
-    """One row per project, most recently seen first.
+    """One row per project, most recently active first.
 
-    Row: {slug, path, path_state, branch, dirty, last_seen, last_event,
-          inflight_designs, learnings}
+    Row: {slug, path, path_state, branch, dirty, last_seen, last_event, inflight_designs, memories}
     path_state: live | stale | unknown
     """
-    rows = [_project_row(slug) for slug in list_project_slugs()]
+    by_repo: dict[str, list[tuple[datetime, dict]]] = {}
+    for event in read_events():
+        moment = event_ts(value=event.get("ts"))
+        if event.get("repo") and moment:
+            by_repo.setdefault(str(event["repo"]), []).append((moment, event))
+    memories = Counter(m.scope for m in load_ledger() if m.status == "active" and m.text)
+    for scope in memories.keys() - by_repo.keys() - {"global"}:
+        by_repo[scope] = []
+    rows = [_project_row(slug=slug, events=sorted(events, key=lambda pair: pair[0]), memories=memories[slug])
+            for slug, events in by_repo.items()]
+    # A scope with memories but no events has no last_seen and sorts last.
     rows.sort(key=lambda r: r["last_seen"] or "", reverse=True)
     return rows
 
 
-def _project_row(slug: str) -> dict:
-    project_dir = get_vague_home() / "projects" / slug
-    meta = read_project_meta(slug)
-    path = meta.get("path")
-    # YAML may resolve an unquoted timestamp to datetime; rows expect strings
-    last_seen = meta.get("last_seen")
-    if last_seen is not None:
-        last_seen = str(last_seen)
-
+def _project_row(slug: str, events: list[tuple[datetime, dict]], memories: int) -> dict:
+    path = next((str(e["main_root"]) for _, e in reversed(events) if e.get("main_root")), None)
+    starts = [(ts, e) for ts, e in events if e.get("event") == "skill_start" and e.get("skill")]
+    last_start = starts[-1] if starts else None
+    last_ship = max((ts for ts, e in starts if e["skill"] in SHIP_SKILLS), default=None)
     row: dict = {
         "slug": slug,
         "path": path,
         "path_state": "unknown",
         "branch": None,
         "dirty": None,
-        "last_seen": last_seen,
-        "last_event": _last_timeline_event(project_dir),
-        "inflight_designs": _count_inflight_designs(project_dir),
-        "learnings": _count_entries(project_dir / "learnings.md"),
+        "last_seen": events[-1][0].isoformat() if events else None,
+        "last_event": {"skill": last_start[1]["skill"], "event": "skill_start", "ts": last_start[0].isoformat()}
+        if last_start else None,
+        "inflight_designs": _count_inflight_designs(designs=vague_home() / "projects" / slug / "designs",
+                                                    last_ship=last_ship),
+        "memories": memories,
     }
-
     if path:
         repo = Path(path)
         if repo.is_dir():
@@ -74,58 +84,9 @@ def _git(repo: Path, *args: str) -> str | None:
     return None
 
 
-def _read_frontmatter_entries(path: Path) -> list[dict]:
-    log_context_access(kind="read", path=path)
-    if not path.exists():
-        return []
-    try:
-        import frontmatter
-        post = frontmatter.load(str(path))
-        entries = post.metadata.get("entries", [])
-        return entries if isinstance(entries, list) else []
-    except Exception as e:
-        get_logger().warning("status: failed to read %s: %s", path, e)
-        return []
-
-
-def _count_entries(path: Path) -> int:
-    return len(_read_frontmatter_entries(path))
-
-
-def _last_timeline_event(project_dir: Path) -> dict | None:
-    entries = _read_frontmatter_entries(project_dir / "timeline.md")
-    if not entries:
-        return None
-    last = entries[-1]
-    return {"skill": last.get("skill"), "event": last.get("event"), "ts": str(last.get("ts", ""))}
-
-
-def _last_ship_ts(project_dir: Path) -> datetime | None:
-    entries = _read_frontmatter_entries(project_dir / "timeline.md")
-    ship_ts = None
-    for e in entries:
-        if e.get("skill") in SHIP_SKILLS and e.get("event") == "completed":
-            try:
-                ship_ts = datetime.fromisoformat(str(e["ts"]))
-            except (KeyError, ValueError):
-                continue
-    if ship_ts is not None and ship_ts.tzinfo is None:
-        ship_ts = ship_ts.replace(tzinfo=UTC)
-    return ship_ts
-
-
-def _count_inflight_designs(project_dir: Path) -> int:
-    """Design docs newer than the last ship event — plans not yet implemented."""
-    designs_dir = project_dir / "designs"
-    if not designs_dir.is_dir():
+def _count_inflight_designs(designs: Path, last_ship: datetime | None) -> int:
+    """Design docs modified after the last dev-ship start: plans not yet shipped."""
+    if not designs.is_dir():
         return 0
-    ship_ts = _last_ship_ts(project_dir)
-    count = 0
-    for doc in designs_dir.glob("*.md"):
-        if ship_ts is None:
-            count += 1
-            continue
-        doc_ts = datetime.fromtimestamp(doc.stat().st_mtime, tz=UTC)
-        if doc_ts > ship_ts:
-            count += 1
-    return count
+    return sum(1 for doc in designs.glob("*.md")
+               if last_ship is None or datetime.fromtimestamp(doc.stat().st_mtime, tz=UTC) > last_ship)

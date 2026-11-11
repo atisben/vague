@@ -6,11 +6,10 @@ description: |
   Iron Law: no fixes without root cause.
   Trigger: "debug this", "fix this bug", "why is this broken", "root cause analysis".
 sdk_commands:
-  - vague init
-  - vague learnings-log
-  - vague observations-log
+  - vague context
+  - vague memory-log
+  - vague memory-search
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -40,9 +39,11 @@ eval "$(vague context --shell --skill dev-investigate)"
 
 Gather all available evidence before forming any hypothesis.
 
+The preamble already printed the ranked memories for this project. Search for more with 2-3 words from the error or the affected module:
+
 ```bash
 # Check if we've seen this before
-vague learnings-search --type pitfall 2>/dev/null || true
+vague memory-search <words from the error or module> 2>/dev/null || true
 # Recent changes
 git log --oneline -10 2>/dev/null
 git diff HEAD~5..HEAD --stat 2>/dev/null || true
@@ -54,7 +55,7 @@ echo "PYTHON: $(python3 --version 2>/dev/null || echo N/A)"
 tail -50 log/development.log 2>/dev/null || true
 ```
 
-If prior learnings match the error or affected area, surface them: "We've seen something related before: [insight]. This may inform the investigation."
+If prior memories match the error or affected area, surface them: "We've seen something related before: [insight]. This may inform the investigation."
 
 Ask the user:
 1. "What exactly happens? (Paste the full error message / stack trace)"
@@ -140,35 +141,14 @@ Run tests to confirm the fix works and nothing else broke:
 Always log what was found:
 
 ```bash
-vague learnings-log "{\"skill\":\"investigate\",\"type\":\"pitfall\",\"key\":\"SHORT-KEBAB-KEY\",\"insight\":\"Root cause: [mechanism]. Fix: [what was changed]. Watch for: [where else this can appear].\",\"confidence\":9,\"source\":\"observed\",\"files\":[\"path/to/file\"]}"
+vague memory-log <kebab-key> "Root cause: [mechanism]. Fix: [what changed]. Watch for: [where else it can appear]." --files <path/to/file> --skill dev-investigate
 ```
-
----
 
 ---
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"dev-investigate","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-investigate"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"dev-investigate","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-investigate"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about dev-investigate` (see the Memory guideline).
 
 ---
 

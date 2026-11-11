@@ -9,11 +9,9 @@ description: |
   Trigger: "I have an idea", "help me think through this", "is this worth building",
   "think bigger", "expand scope", "strategy review", "is this ambitious enough".
 sdk_commands:
-  - vague init
-  - vague learnings-log
-  - vague observations-log
+  - vague context
+  - vague memory-log
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -483,7 +481,7 @@ Show the doc to the user and ask for approval. Support revision loops. Save fina
 
 Log learnings if any non-obvious insight about the problem space emerged:
 ```bash
-vague learnings-log '{"skill":"plan-ideation","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":7,"source":"inferred"}'
+vague memory-log <kebab-key> "<one or two sentences>" --skill plan-ideation
 ```
 
 ---
@@ -530,23 +528,4 @@ Close with 2-3 curated resources (essays, repos, tools) specifically relevant to
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"plan-ideation","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-ideation"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"plan-ideation","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-ideation"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about plan-ideation` (see the Memory guideline).

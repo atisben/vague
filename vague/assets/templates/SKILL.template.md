@@ -4,9 +4,8 @@ version: 1.0.0
 description: One-line description of what this skill does.
 sdk_commands:
   - vague context
-  - vague learnings-log
+  - vague memory-log
 requires_slug: true
-requires_planning: false
 ---
 
 # My Skill
@@ -19,18 +18,18 @@ requires_planning: false
 eval "$(vague context --shell --skill vague-my-skill)"
 ```
 
-Always pass `--skill <name>` — it records the repo path that feeds
-`vague status`.
+Always pass `--skill <name>`. The preamble prints this project's MEMORY
+block, and `--skill` ranks this skill's memories first.
 
 ## Steps
 
-1. Run the preamble above — it sets `$SLUG`, `$BRANCH`, `$PROACTIVE`, `$TELEMETRY`.
+1. Run the preamble above. It sets `$SLUG`, `$BRANCH`, `$PROACTIVE`, `$TELEMETRY` and prints the ranked memories.
 2. Do work...
-3. Log learning:
+3. Log a learning, if one emerged:
 ```bash
-vague learnings-log '{"skill":"my-skill","type":"pitfall","key":"...","insight":"...","confidence":7,"source":"observed","ts":"2024-01-01T00:00:00"}'
+vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill vague-my-skill
 ```
-4. Log timeline:
-```bash
-vague timeline-log '{"skill":"my-skill","event":"completed","branch":"'"$BRANCH"'","session":"'"$SESSION_ID"'"}'
-```
+
+## Observation Protocol
+
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about vague-my-skill` (see the Memory guideline).

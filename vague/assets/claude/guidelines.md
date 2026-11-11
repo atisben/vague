@@ -1,6 +1,6 @@
 # Working Guidelines
 
-These guidelines tell Claude Code how to work across all projects. They have two parts: how to communicate and how to work on code.
+These guidelines tell Claude Code how to work across all projects. They have three parts: how to communicate, how to work on code, and how to use memory.
 
 ## How to Communicate
 
@@ -250,3 +250,21 @@ A change is done only when all four conditions hold:
 2. `uv run pytest` passes on the full suite.
 3. `pre-commit run --all-files` passes.
 4. You re-read the diff for unrelated edits and dead code.
+
+## Memory
+
+vague keeps one memory ledger for every project, `~/.vague/memory.jsonl`. The skill preamble prints the ranked memories for the current project as a MEMORY block. These commands read and write it:
+
+| When | Command |
+|---|---|
+| A later session would otherwise rediscover a fact | `vague memory-log <kebab-key> "<one or two sentences>" --files <paths it touches> --skill <current skill>` |
+| The fact would hold in a different repo (tools, agents, workflow) | Add `--global` |
+| You have feedback about a skill itself | `vague memory-log <key> "<issue → suggestion>" --about <skill>`. `/meta` reads it. |
+| Other agents on the same project need your working notes | Add `--scratch`. Scratch notes expire after 7 days. They are not a lock. |
+| You need a memory the MEMORY block did not show | `vague memory-search <words>`. Add `--scope global` for global only, `--scope <project>` for one project, or `--scope all` for every project |
+
+Follow these rules for every memory:
+
+- Log skill feedback silently, without interrupting the user. A user correction is the most valuable kind: the user had to ask for a step the skill should have done.
+- Re-use an existing key to correct a fact. The latest line for a key wins.
+- Never edit `~/.vague/memory.jsonl` directly.
