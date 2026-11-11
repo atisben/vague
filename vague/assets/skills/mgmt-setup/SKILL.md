@@ -9,9 +9,8 @@ description: |
   "onboard a report", "/mgmt-setup".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -388,23 +387,4 @@ After setup, tell the manager what to do next:
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "back up first", "check the ladder levels", "don't commit that")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"mgmt-setup","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-setup"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"mgmt-setup","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-setup"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-setup` (see the Memory guideline).

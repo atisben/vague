@@ -12,9 +12,8 @@ description: |
   "draw the training windows", "/vault-excalidraw".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -152,27 +151,10 @@ Tell the user, in this order:
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections**: any time the user tells you to do something the skill should have done automatically (e.g. "show the loop", "put the tables inside the warehouse box")
-- **Import problems**: any Mermaid construct that the Excalidraw import breaks or drops (`<br>` shown literally, flattened zones, lost arrow styles)
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about vault-excalidraw` (see the Memory guideline).
 
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"vault-excalidraw","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"vault-excalidraw"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement. Import complaints ("labels show <br>", "the zones are gone") are corrections too: they mean the Step 3 subset needs work.
-
-```bash
-vague observations-log '{"skill":"vault-excalidraw","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"vault-excalidraw"}'
-```
-
-Log silently. Do not interrupt the user's workflow to announce observations.
+Watch especially for:
+- Any Mermaid construct that the Excalidraw import breaks or drops (`<br>` shown literally, flattened zones, lost arrow styles). Such a complaint means the Step 3 subset needs work.
 
 ---
 

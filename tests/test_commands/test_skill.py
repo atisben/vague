@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app
@@ -13,9 +14,8 @@ VALID_SKILL_FRONTMATTER = {
     "name": "test-skill",
     "version": "1.0.0",
     "description": "A test skill",
-    "sdk_commands": ["vague init"],
+    "sdk_commands": ["vague context"],
     "requires_slug": True,
-    "requires_planning": False,
     "allowed-tools": ["Bash"],
 }
 
@@ -59,13 +59,33 @@ def test_skill_audit_clean_on_migrated(tmp_path, vague_home):
     write_md(skill_dir / "SKILL.md", VALID_SKILL_FRONTMATTER, body="""
 ## Preamble
 ```bash
-CONTEXT=$(vague init)
-SLUG=$(echo "$CONTEXT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['slug'])")
+eval "$(vague context --shell --skill clean-skill)"
+vague memory-log some-key "a fact"
 ```
 """)
     result = runner.invoke(sdk_app, ["skill-audit", str(skill_dir)])
     assert result.exit_code == 0
     assert "OK" in result.output
+
+
+@pytest.mark.parametrize("command", [
+    "vague learnings-log '{}'", "vague learnings-search docker", "vague observations-log '{}'",
+    "vague timeline-log '{}'", "CONTEXT=$(vague init)",
+])
+def test_skill_audit_flags_removed_vague_commands(tmp_path, vague_home, command):
+    skill_dir = tmp_path / "old-vague-skill"
+    skill_dir.mkdir()
+    write_md(skill_dir / "SKILL.md", VALID_SKILL_FRONTMATTER, body=f"```bash\n{command}\n```\n")
+    result = runner.invoke(sdk_app, ["skill-audit", str(skill_dir)])
+    assert "WARNINGS: 1" in result.output
+
+
+def test_bundled_skills_have_no_requires_planning():
+    from vague.sdk.commands.skill import _get_assets_skills_dir
+
+    template = _get_assets_skills_dir().parent / "templates" / "SKILL.template.md"
+    for skill_md in [*_get_assets_skills_dir().glob("*/SKILL.md"), template]:
+        assert "requires_planning" not in skill_md.read_text(encoding="utf-8"), skill_md
 
 
 def test_skill_audit_flags_preamble_without_skill_flag(tmp_path, vague_home):

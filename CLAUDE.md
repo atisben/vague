@@ -1,6 +1,6 @@
 # vague
 
-Personal development workflow toolkit. 22 skills for the full software development lifecycle.
+Personal development workflow toolkit. 21 skills for the full software development lifecycle.
 
 ## Skill Routing
 
@@ -14,7 +14,6 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 | "mind map", "map this out", "architecture overview", "diagram this", "visualize the system" | `/diagram` |
 | "ship", "deploy", "push to main", "create a PR", code is ready | `/dev-ship` |
 | "debug this", "fix this bug", "why is this broken", error / stack trace | `/dev-investigate` |
-| "what have we learned", "show learnings", "prune learnings" | `/learn` |
 | "weekly retro", "what did we ship", "engineering retrospective" | `/retro` |
 | "develop this", "build this feature", "implement this", "orchestrate" | `/dev-develop` |
 | "improve skills", "meta review", "skill improvement", "review observations" | `/meta` |

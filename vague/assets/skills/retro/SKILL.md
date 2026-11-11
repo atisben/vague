@@ -6,12 +6,11 @@ description: |
   metrics. Saves history for trend tracking.
   Trigger: "weekly retro", "what did we ship", "engineering retrospective".
 sdk_commands:
-  - vague init
-  - vague timeline-log
-  - vague learnings-search
-  - vague observations-log
+  - vague context
+  - vague memory-log
+  - vague status
+  - vague memory-search
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -23,7 +22,6 @@ allowed-tools:
 
 ```bash
 eval "$(vague context --shell --skill retro)"
-SESSION_ID="$$-$(date +%s)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 
@@ -96,7 +94,7 @@ git log --since="$SINCE" --oneline 2>/dev/null | grep -iE '^[a-f0-9]+ test' | wc
 ## Step 5: Load Prior Retro (for trend comparison)
 
 ```bash
-eval "$(vague context --shell --skill retro)"
+eval "$(vague context --shell --skill retro)" >/dev/null
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ls -t "$VAGUE_HOME/projects/$SLUG/retros/"*.md 2>/dev/null | head -1 || echo "NO_PRIOR_RETRO"
 ```
@@ -105,13 +103,28 @@ If a prior retro exists, read its summary table for trend comparison.
 
 ---
 
-## Step 6: Load Learnings
+## Step 6: Load Skill Activity and Memories
+
+The events log records each skill start and each memory written. Count both for this repo in the window:
 
 ```bash
-vague learnings-search 2>/dev/null || true
+python3 - "$VAGUE_HOME" "$SLUG" "$SINCE" <<'PY'
+import collections, glob, json, sys
+home, slug, since = sys.argv[1:]
+runs, written = collections.Counter(), set()
+for path in glob.glob(f"{home}/events/*.jsonl"):
+    for line in open(path):
+        try: e = json.loads(line)
+        except ValueError: continue
+        if e.get("repo") != slug or e.get("ts", "")[:10] < since: continue
+        if e.get("event") == "skill_start": runs[e.get("skill")] += 1
+        if e.get("command") == "memory-log": written.update(e.get("ids", []))
+print("skill runs:", dict(runs.most_common()))
+print("memories written:", sorted(written))
+PY
 ```
 
-Summarize learnings logged since the last retro (if any).
+Read a written memory with `vague memory-search <words from its key>`. The preamble's MEMORY block already lists the project's top memories. `vague status` shows the last activity per project.
 
 ---
 
@@ -158,8 +171,8 @@ Then:
 ### 3 Habits for Next Week
 [Small, < 5-minute habits. At least one engineering quality habit.]
 
-### Learnings Logged This Period
-[From vague learnings-search]
+### Skills Run and Memories Logged This Period
+[From Step 6: skill run counts, and each memory key with its one-line text]
 ```
 
 ---
@@ -167,7 +180,7 @@ Then:
 ## Step 8: Save the Retro
 
 ```bash
-eval "$(vague context --shell --skill retro)"
+eval "$(vague context --shell --skill retro)" >/dev/null
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 mkdir -p "$VAGUE_HOME/projects/$SLUG/retros"
 RETRO_FILE="$VAGUE_HOME/projects/$SLUG/retros/retro-$(date +%Y-%m-%d).md"
@@ -176,32 +189,8 @@ RETRO_FILE="$VAGUE_HOME/projects/$SLUG/retros/retro-$(date +%Y-%m-%d).md"
 
 Tell the user: "Retro saved to `$RETRO_FILE`."
 
-Log telemetry:
-```bash
-vague timeline-log "{\"skill\":\"retro\",\"event\":\"completed\",\"branch\":\"$(git branch --show-current 2>/dev/null)\",\"session\":\"$SESSION_ID\"}"
-```
-
 ---
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"retro","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"retro"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"retro","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"retro"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about retro` (see the Memory guideline).

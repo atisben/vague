@@ -10,9 +10,8 @@ description: |
   "run a mock", "/iv-practice".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -259,18 +258,14 @@ sessions:
 
 ## Observation Protocol
 
-Throughout, watch for:
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-practice` (see the Memory guideline).
+
+Watch especially for:
 - Questions that consistently trip up the candidate (pattern across sessions)
-- Scoring dimensions that plateau — may indicate a ceiling without new approach
-- Self-assessment accuracy trends — improving calibration is a meta-skill
+- Scoring dimensions that plateau, which may indicate a ceiling without a new approach
+- Self-assessment accuracy trends
 - Drill types that produce the most improvement
 - Stories that work well under pressure vs. ones that fall apart
-
-Log silently — do not interrupt the conversation:
-
-```bash
-vague observations-log '{"skill":"iv-practice","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"iv-practice"}'
-```
 
 ---
 

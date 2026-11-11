@@ -32,20 +32,22 @@ def cmd_status(as_json: bool = False) -> None:
 
     table = Table(title="vague status")
     table.add_column("Project", style="cyan")
+    table.add_column("Path")
     table.add_column("Branch")
     table.add_column("Git")
     table.add_column("Last activity")
-    table.add_column("In-flight plans", justify="right")
-    table.add_column("Learnings", justify="right")
+    table.add_column("In-flight designs", justify="right")
+    table.add_column("Memories", justify="right")
 
     for row in rows:
         table.add_row(
             row["slug"],
+            row["path"] or "-",
             row["branch"] or "—",
             _git_cell(row),
             _activity_cell(row),
             str(row["inflight_designs"]) if row["inflight_designs"] else "—",
-            str(row["learnings"]) if row["learnings"] else "—",
+            str(row["memories"]) if row["memories"] else "—",
         )
 
     console.print(table)
@@ -53,14 +55,14 @@ def cmd_status(as_json: bool = False) -> None:
     inflight = [r for r in rows if r["inflight_designs"]]
     if inflight:
         names = ", ".join(r["slug"] for r in inflight)
-        console.print(f"[yellow]{len(inflight)} project(s) with unshipped plans:[/yellow] {names}")
+        console.print(f"[yellow]{len(inflight)} project(s) with unshipped designs:[/yellow] {names}")
 
 
 def _git_cell(row: dict) -> str:
     if row["path_state"] == "stale":
         return "[red]path stale[/red]"
     if row["path_state"] == "unknown":
-        return "[dim]unknown (run a skill here once)[/dim]"
+        return "[dim]path unknown (run a skill there once)[/dim]"
     if row["dirty"] is None:
         return "[dim]git unavailable[/dim]"
     return "[yellow]dirty[/yellow]" if row["dirty"] else "[green]clean[/green]"

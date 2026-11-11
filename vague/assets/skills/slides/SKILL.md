@@ -9,10 +9,9 @@ description: |
   Trigger: "make slides", "build a deck", "create a presentation", "slide deck",
   "convert this pptx", "turn this into slides", "/slides".
 sdk_commands:
-  - vague init
-  - vague observations-log
+  - vague context
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -394,26 +393,7 @@ All paths in this table are relative to `$SKILL_DIR`.
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "the text overflows", "the preview shows the template name", "split that slide")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"slides","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"slides"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"slides","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"slides"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about slides` (see the Memory guideline).
 
 ---
 

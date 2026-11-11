@@ -1,7 +1,5 @@
 """Pydantic models for vague."""
 
-from datetime import datetime
-
 from pydantic import BaseModel
 
 
@@ -10,61 +8,9 @@ class ConfigModel(BaseModel):
     telemetry: str = "local"  # "local" | "off"
 
 
-class LearningEntry(BaseModel):
-    skill: str
-    type: str  # pitfall | pattern | preference | architecture | tool | operational
-    key: str
-    insight: str
-    confidence: int  # 1-10
-    source: str  # observed | user-stated | inferred
-    files: list[str] = []
-    ts: datetime
-
-
-class TimelineEntry(BaseModel):
-    skill: str
-    event: str  # started | completed
-    branch: str
-    session: str
-    outcome: str | None = None
-    ts: datetime
-
-
-class VagueInitResult(BaseModel):
-    slug: str
-    branch: str
-    proactive: bool
-    telemetry: str
-    learnings: list[LearningEntry]  # top 3 by confidence if >5 entries, else all
-
-
-class ObservationEntry(BaseModel):
-    id: int
-    skill: str  # target skill name, or "new:working-name" for new skill candidates
-    type: str  # improvement | new-skill | simplification | cross-cutting
-    issue: str
-    suggestion: str
-    principle: str
-    status: str = "open"  # open | actioned | declined
-    source_skill: str
-    session: str = ""
-    ts: datetime
-
-
-class PrincipleEntry(BaseModel):
-    id: int
-    title: str
-    requirement: str
-    applies_to: str = "all"  # all | specific skill names
-    propagation: str = "opportunistic"  # immediate | opportunistic
-    status: str = "active"  # active | retired
-    added: str  # YYYY-MM-DD
-
-
 class SkillManifest(BaseModel):
     name: str
     version: str
     description: str
     sdk_commands: list[str] = []
     requires_slug: bool = True
-    requires_planning: bool = False

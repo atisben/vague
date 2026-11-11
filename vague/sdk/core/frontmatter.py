@@ -1,11 +1,9 @@
-"""Atomic frontmatter read/write with file locking."""
+"""Frontmatter read/write for config.md and SKILL.md."""
 
 from __future__ import annotations
 
-import contextlib
 import os
-import sys
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from pathlib import Path
 
 import frontmatter
@@ -15,80 +13,34 @@ class FrontmatterError(Exception):
     pass
 
 
-@contextlib.contextmanager
-def file_lock(path: Path) -> Iterator[None]:
-    """Hold an exclusive advisory lock around a read-modify-write of `path`.
-
-    Lets concurrent processes (e.g. parallel subagents appending learnings)
-    serialize their updates instead of clobbering each other. The lock file is
-    intentionally NOT unlinked on release: removing it would let two processes
-    lock different inodes and defeat the lock entirely.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    lock_path = Path(str(path) + ".lock")
-    lock_fd = open(lock_path, "w")
-    try:
-        _flock(lock_fd, exclusive=True)
-        yield
-    finally:
-        _flock(lock_fd, exclusive=False)
-        lock_fd.close()
-
-
 def _atomic_write(path: Path, content: str) -> None:
-    """Write `content` to `path` atomically via a per-process temp file."""
+    """Write via a per-process temp file and rename, so a reader never sees a half-written file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_suffix(f".{os.getpid()}.tmp")
     tmp_path.write_text(content, encoding="utf-8")
     tmp_path.replace(path)
+
+
+def _load(path: Path) -> frontmatter.Post:
+    try:
+        return frontmatter.load(str(path))
+    except Exception as e:
+        raise FrontmatterError(f"Failed to parse frontmatter in {path}: {e}") from e
 
 
 def read_md(path: Path) -> dict:
     """Read frontmatter from a .md file. Returns {} if file doesn't exist."""
     if not path.exists():
         return {}
-    try:
-        post = frontmatter.load(str(path))
-        return dict(post.metadata)
-    except Exception as e:
-        raise FrontmatterError(f"Failed to parse frontmatter in {path}: {e}") from e
+    return dict(_load(path).metadata)
 
 
 def write_md(path: Path, data: dict, body: str = "") -> None:
     """Write frontmatter + body atomically. Creates parent dirs."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    post = frontmatter.Post(body, **data)
-    content = frontmatter.dumps(post)
-    with file_lock(path):
-        _atomic_write(path, content)
+    _atomic_write(path, frontmatter.dumps(frontmatter.Post(body, **data)))
 
 
 def update_md(path: Path, updater: Callable[[dict], dict]) -> None:
-    """Read-modify-write with lock held throughout."""
-    with file_lock(path):
-        if path.exists():
-            try:
-                post = frontmatter.load(str(path))
-                existing = dict(post.metadata)
-                body = post.content
-            except Exception as e:
-                raise FrontmatterError(f"Failed to parse frontmatter in {path}: {e}") from e
-        else:
-            existing = {}
-            body = ""
-
-        updated = updater(existing)
-        new_post = frontmatter.Post(body, **updated)
-        content = frontmatter.dumps(new_post)
-        _atomic_write(path, content)
-
-
-def _flock(fd, exclusive: bool) -> None:
-    """Advisory file lock. No-op on Windows."""
-    if sys.platform == "win32":
-        return
-    try:
-        import fcntl
-        flag = fcntl.LOCK_EX if exclusive else fcntl.LOCK_UN
-        fcntl.flock(fd.fileno(), flag)
-    except (ImportError, OSError):
-        pass
+    """Read-modify-write the frontmatter, keeping the body."""
+    post = _load(path) if path.exists() else frontmatter.Post("")
+    _atomic_write(path, frontmatter.dumps(frontmatter.Post(post.content, **updater(dict(post.metadata)))))

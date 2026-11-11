@@ -13,11 +13,9 @@ version: 1.0.0
 description: |
   One paragraph. What it does, when to use it, proactive trigger phrases.
 sdk_commands:
-  - vague init
-  - vague learnings-log
-  - vague observations-log
+  - vague context
+  - vague memory-log
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -28,8 +26,7 @@ allowed-tools:
 ## Preamble
 
 ```bash
-eval "$(vague context --shell)"
-SESSION_ID="$$-$(date +%s)"
+eval "$(vague context --shell --skill my-skill)"
 ```
 
 ---
@@ -43,6 +40,12 @@ SESSION_ID="$$-$(date +%s)"
 ## Step 2: [Second action]
 
 [Instructions for the agent]
+
+---
+
+## Observation Protocol
+
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about my-skill` (see the Memory guideline).
 
 ---
 
@@ -62,7 +65,6 @@ SESSION_ID="$$-$(date +%s)"
 | `description` | Yes | Shown in the AI tool's skill picker. |
 | `sdk_commands` | Yes | List of `vague` commands this skill calls. |
 | `requires_slug` | Yes | `true` for most skills. `false` for global tools like `/vault`. |
-| `requires_planning` | Yes | `true` activates the optional planning layer (`state.md`, `roadmap.md`). |
 | `allowed-tools` | Yes | List only tools the skill actually uses. |
 | `benefits-from` | No | Array of skill names this one reads outputs from. |
 
@@ -70,37 +72,27 @@ SESSION_ID="$$-$(date +%s)"
 
 ## Preamble Convention
 
-Every skill must start by loading project context. Use `vague context --shell`,
-which emits eval-able shell variables in a single process (no `python3` JSON
-parsing):
+Every skill starts by loading project context in one process:
 
 ```bash
-eval "$(vague context --shell)"   # sets SLUG, BRANCH, PROACTIVE, TELEMETRY
-SESSION_ID="$$-$(date +%s)"
+eval "$(vague context --shell --skill my-skill)"   # sets SLUG, BRANCH, PROACTIVE, TELEMETRY
 ```
 
-When a skill also needs the surfaced `learnings` array, call `vague init` (or
-`vague context` without `--shell`), which returns the full JSON object:
+The command also prints a MEMORY block, at most 1,500 tokens. `eval` runs a `cat` heredoc, so the block lands in the tool output, where the agent reads it before doing any work:
 
-```json
-{
-  "slug": "owner-repo",
-  "branch": "feat/my-feature",
-  "proactive": true,
-  "telemetry": "local",
-  "learnings": [
-    {
-      "skill": "review", "type": "pitfall", "key": "n-plus-one",
-      "insight": "Always eager-load associations on list queries.",
-      "confidence": 8, "source": "observed"
-    }
-  ]
-}
+```
+vague memory · scope owner-repo · 4 memories
+Scratch (shared by this scope's agents, last 7 days):
+- [docs-rewrite-in-progress] Agent B is rewriting docs/; leave them alone until it lands.
+Memories (most relevant first):
+- [tests-need-docker] Tests and mypy run only inside the train container; the host .venv has no pytest.
+- [global/verify-subagent-claims] Re-run tests yourself after subagents report success.
+- [n-plus-one] Always eager-load associations on list queries.
 ```
 
-The `learnings` array contains the top 3 entries by confidence if more than 5 exist, otherwise all entries. **The agent reads this before doing any work** — this is how cross-session and cross-agent memory reaches the LLM context.
+The block holds recent scratch notes, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
 
-`vague context` and `vague init` never fail: missing config returns defaults, missing git remote falls back to `basename $PWD`.
+`vague context` never fails: missing config returns defaults, a missing git remote falls back to the folder name, and a broken ledger drops the block.
 
 ---
 
@@ -120,64 +112,27 @@ If you would have auto-invoked, say: "I think /my-skill might help — want me t
 
 ---
 
-## Logging Learnings
+## Logging Memories
 
-When your skill discovers a non-obvious insight about the codebase:
-
-```bash
-vague learnings-log '{
-  "skill": "my-skill",
-  "type": "pitfall",
-  "key": "short-kebab-key",
-  "insight": "One sentence explaining what was learned and why it matters.",
-  "confidence": 8,
-  "source": "observed",
-  "files": ["path/to/relevant/file"]
-}'
-```
-
-**Only log genuine discoveries.** Skip obvious things. A good test: would this save time in a future session?
-
-**Types:** `pattern` · `pitfall` · `preference` · `architecture` · `tool` · `operational`
-**Confidence:** 7–9 for observed patterns, 4–6 for inferences, 10 for user-stated facts.
-
-Learnings are written to `~/.vague/projects/{slug}/learnings.md` and surfaced automatically by `vague init` in future sessions — including sessions by different agents and different AI tools.
-
----
-
-## Logging Observations
-
-When your skill encounters friction, gaps, or improvement opportunities — either in itself or in another skill — log an observation for the `/meta` skill to review later:
+Skills write memory only through `vague memory-log`. The Memory section of `vague/assets/claude/guidelines.md` tells every agent when to use it, so a skill needs only a one-line example:
 
 ```bash
-vague observations-log '{
-  "skill": "target-skill-name",
-  "type": "improvement",
-  "issue": "What happened or was observed.",
-  "suggestion": "Concrete change proposal.",
-  "principle": "Generalisable takeaway.",
-  "source_skill": "my-skill"
-}'
+vague memory-log short-kebab-key "One or two sentences: what was learned and why it matters." --files path/to/file --skill my-skill
 ```
 
-**Types:** `improvement` (existing skill) · `new-skill` (gap suggesting a new skill) · `simplification` (remove dead weight) · `cross-cutting` (applies to all skills) · `correction` (the user had to manually ask for a step the skill should have done — the highest-signal observations)
+| Need | Flag |
+|---|---|
+| The fact holds in every repo | `--global` |
+| Feedback about a skill, read by `/meta` | `--about <skill>` (always global) |
+| A working note for other agents on this project, hidden after 7 days | `--scratch` |
+| Correct a fact | Re-use its key |
+| Retire a memory | `--status forgotten`, or `actioned` / `declined` for an observation |
 
-For new skill candidates, use `"skill": "new:working-name"` as the target.
+**Only log genuine discoveries.** A good test: would this save time in a future session?
 
-Observations are written to `~/.vague/projects/{slug}/observations.md` and reviewed by running `/meta`.
+Every skill ends with a one-line **Observation Protocol** section before its Handoff. It points at `--about <skill>` and lists only the skill-specific things worth watching for.
 
-Every skill should include a standard **Observation Protocol** section before its Handoff. See the template below or any existing skill for the pattern.
-
----
-
-## Timeline Events
-
-Fire timeline events so `/retro` can track skill usage:
-
-```bash
-# At skill end (do this explicitly — vague init does NOT auto-log):
-vague timeline-log "{\"skill\":\"my-skill\",\"event\":\"completed\",\"branch\":\"$BRANCH\",\"outcome\":\"success\",\"session\":\"$SESSION_ID\"}"
-```
+Skills do not log their own start or end. The `vague log-event` hook records each skill start in `~/.vague/events/`, and `/retro` reads it from there.
 
 ---
 
@@ -239,7 +194,7 @@ vague skill-audit ./my-skill/        # scans for legacy bs-* bash patterns
 ```
 
 A skill passes validation when:
-- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `requires_slug`, `requires_planning`)
+- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `requires_slug`)
 - No legacy `bs-*` or `source _preamble.sh` patterns remain
 
 ---
@@ -247,6 +202,6 @@ A skill passes validation when:
 ## Testing a Skill
 
 1. Create a test git repo: `mkdir /tmp/test-vague && cd /tmp/test-vague && git init`
-2. Run `vague-install` to copy bundled skills to the right directory
+2. Run `vague install` to link bundled skills to the right directory
 3. Open your AI tool in the test repo
 4. Type the slash command and verify behavior

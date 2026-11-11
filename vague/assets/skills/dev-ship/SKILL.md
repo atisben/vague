@@ -6,12 +6,9 @@ description: |
   commit, push, create PR. Never push directly — always creates a PR.
   Trigger: "ship", "deploy", "push to main", "create a PR", "merge and push".
 sdk_commands:
-  - vague init
-  - vague timeline-log
-  - vague learnings-log
-  - vague observations-log
+  - vague context
+  - vague memory-log
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -24,7 +21,6 @@ allowed-tools:
 
 ```bash
 eval "$(vague context --shell --skill dev-ship)"
-SESSION_ID="$$-$(date +%s)"
 ```
 
 **Proactive invocation:** When the user says code is ready, asks about deploying, wants to push, or asks to create a PR — invoke this skill rather than doing it ad-hoc.
@@ -212,44 +208,18 @@ If `$PLAN_FILE` exists, update it:
 
 ---
 
-## Step 10: Log Completion
+## Step 10: Log Learnings
 
+If shipping hit a non-obvious pitfall, log it:
 ```bash
-vague timeline-log "{\"skill\":\"ship\",\"event\":\"completed\",\"branch\":\"$BRANCH\",\"outcome\":\"success\",\"session\":\"$SESSION_ID\"}"
+vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill dev-ship
 ```
-
-Log any learnings discovered during implementation:
-```bash
-# If a non-obvious pattern or pitfall was encountered:
-vague learnings-log '{"skill":"dev-ship","type":"pitfall","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
-```
-
----
 
 ---
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"dev-ship","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-ship"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"dev-ship","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-ship"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about dev-ship` (see the Memory guideline).
 
 ---
 

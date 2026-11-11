@@ -10,9 +10,8 @@ description: |
   "how is my team doing", "/mgmt-progress".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -273,28 +272,10 @@ Run `/mgmt-log Sam Ortiz` to refresh evidence, then `/mgmt-review Sam Ortiz` to 
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-progress` (see the Memory guideline).
 
+Watch especially for:
 - Staleness thresholds that feel too strict or too lenient for real teams
 - Review-snapshot fields the rollup doesn't capture but managers ask about
 - Trajectory patterns the `below/meets/exceeds` model can't express
-- Roster or ladder states not covered by the current schema
 - Readiness buckets that need finer gradation than not-yet/approaching/ready
-- **User corrections** — any time the user tells you to do something the skill should
-  have done automatically (e.g. "also flag no-shows", "the current cycle is H2").
-
-When you notice any of these, log an observation silently — do not interrupt the report:
-
-```bash
-vague observations-log '{"skill":"mgmt-progress","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-progress"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step
-that should be part of this skill's workflow, log it immediately as a `type: correction`
-observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"mgmt-progress","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-progress"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.

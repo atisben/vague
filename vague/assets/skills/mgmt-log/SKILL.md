@@ -10,9 +10,8 @@ description: |
   "jot down a concern about <name>", "note a blind spot", "/mgmt-log".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -176,27 +175,7 @@ If nothing else was requested, you are done.
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps (especially: prompting the user when the
-  note was already fully specified in the arguments)
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have
-  done automatically (e.g. "just log it", "don't ask", "you had the name already")
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-log` (see the Memory guideline).
 
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"mgmt-log","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-log"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that
-should be part of this skill's workflow, log it immediately as a `type: correction`
-observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"mgmt-log","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"mgmt-log"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Watch especially for:
+- Prompting the user when the note was already fully specified in the arguments

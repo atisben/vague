@@ -10,9 +10,8 @@ description: |
   "add a story", "/iv-stories".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -251,11 +250,11 @@ After the round, present a summary:
 Stories used:
   - "Led model serving migration" — used 3 times (over-relied)
   - "Resolved team conflict on API design" — used 1 time
-  
+
 Never deployed:
   - "Built hiring pipeline from scratch"
   - "Navigated ambiguous product requirements"
-  
+
 Questions with no good match:
   - "Tell me about a customer-facing crisis" — GAP: no customer_focus stories
 ```
@@ -312,17 +311,13 @@ Append to `$IV_HOME/session-log.yaml`:
 
 ## Observation Protocol
 
-Throughout, watch for:
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-stories` (see the Memory guideline).
+
+Watch especially for:
 - Story patterns the user struggles with (action vs. situation heavy, missing results)
 - Competency areas where the user has no experiences to draw from
-- Earned secrets that took many prompts to extract (the extraction technique needs work)
+- Earned secrets that took many prompts to extract
 - Questions during retrieval drills that consistently stump the user
-
-Log silently — do not interrupt the conversation:
-
-```bash
-vague observations-log '{"skill":"iv-stories","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"iv-stories"}'
-```
 
 ---
 

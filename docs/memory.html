@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vague memory</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1f23; --muted: #5d6470; --line: #c9ccd2;
+    --cli: #e8eefc; --cli-ink: #1f3f9a; --store: #fdf1e3; --store-ink: #8a4b07;
+    --skill: #e7f5ee; --skill-ink: #1d6b45; --hook: #f1ecfb; --hook-ink: #5b3a9e;
+    --arrow: #6b7280; --label-bg: #f7f7f5; --code-bg: #f0f1f3; --warn: #fff6d6; --warn-ink: #7a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c; --panel: #1e2126; --ink: #e8e9ec; --muted: #a0a6b1; --line: #3a3f47;
+      --cli: #1c2747; --cli-ink: #a9c1ff; --store: #3a2a17; --store-ink: #f5c48a;
+      --skill: #15342a; --skill-ink: #8fe0b6; --hook: #2a2142; --hook-ink: #c9b4ff;
+      --arrow: #9aa1ad; --label-bg: #16181c; --code-bg: #262a31; --warn: #3a3214; --warn-ink: #f2d37a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 44px 0 10px; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre { background: var(--code-bg); padding: 14px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+  .remember { background: var(--panel); border-left: 4px solid var(--cli-ink); padding: 12px 16px;
+              border-radius: 6px; margin: 16px 0 8px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  svg { width: 100%; height: auto; display: block; }
+  svg text { fill: currentColor; }
+  .t-title { font-weight: 700; font-size: 14px; }
+  .t-sub { font-size: 12px; }
+  .t-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .t-lbl { font-size: 11px; }
+  .note { color: var(--muted); font-size: 13px; margin: 8px 2px 0; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; background: var(--panel); font-size: 14px; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); }
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; }
+  .flow { flex-wrap: nowrap; }
+  .step { flex: 1 1 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+          padding: 12px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .step b.n { display: inline-block; width: 22px; height: 22px; border-radius: 11px; text-align: center;
+              background: var(--cli-ink); color: var(--panel); font-size: 13px; line-height: 22px; margin-right: 6px; }
+  .step .who { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .link { flex: 0 0 62px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+          color: var(--muted); font-size: 11px; text-align: center; padding: 0 4px; }
+  .link span.a { font-size: 20px; line-height: 1; }
+  @media (max-width: 760px) {
+    .flow { flex-direction: column; }
+    .link { flex: 0 0 auto; padding: 6px 0; }
+    .link span.a { transform: rotate(90deg); }
+  }
+  .warn { background: var(--warn); color: var(--warn-ink); padding: 10px 14px; border-radius: 8px; margin-top: 12px; }
+  .yes { color: var(--skill-ink); font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>vague memory</h1>
+<p class="lead">How skills remember things across sessions and agents, and the CLI commands that make it happen. Branch <code>feat/memory-ledger</code>, 2026-11-11.</p>
+
+<div class="remember"><b>The one thing to remember:</b> skills never touch memory files. They call the <code>vague</code> CLI, which appends one line to a file. The CLI also logs which memories each session used.</div>
+
+<h2>1. The big picture</h2>
+<div class="panel">
+<svg viewBox="0 0 1100 520" role="img" aria-label="Skills and hooks call the vague CLI, which reads and writes three files under ~/.vague">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--arrow)"/>
+    </marker>
+  </defs>
+
+  <!-- column headings -->
+  <text x="150" y="30" text-anchor="middle" class="t-sub" style="fill:var(--muted)">WHO ASKS</text>
+  <text x="540" y="22" text-anchor="middle" class="t-sub" style="fill:var(--muted)">THE ONLY WAY IN</text>
+  <text x="950" y="30" text-anchor="middle" class="t-sub" style="fill:var(--muted)">WHERE IT LIVES (~/.vague/)</text>
+
+  <!-- left: skills, meta, hooks -->
+  <g style="color:var(--skill-ink)">
+    <rect x="20" y="60" width="260" height="130" rx="10" fill="var(--skill)" stroke="var(--skill-ink)"/>
+    <text x="150" y="88" text-anchor="middle" class="t-title">21 skills</text>
+    <text x="150" y="110" text-anchor="middle" class="t-mono">vague/assets/skills/*/SKILL.md</text>
+    <text x="150" y="134" text-anchor="middle" class="t-sub">dev-develop, dev-ship, plan-eng,</text>
+    <text x="150" y="152" text-anchor="middle" class="t-sub">dev-investigate, slides, iv-*, mgmt-*…</text>
+    <text x="150" y="176" text-anchor="middle" class="t-sub">(also Cursor or any agent with a shell)</text>
+  </g>
+  <g style="color:var(--skill-ink)">
+    <rect x="20" y="240" width="260" height="76" rx="10" fill="var(--skill)" stroke="var(--skill-ink)"/>
+    <text x="150" y="268" text-anchor="middle" class="t-title">/meta</text>
+    <text x="150" y="290" text-anchor="middle" class="t-sub">merges, promotes, forgets memories;</text>
+    <text x="150" y="306" text-anchor="middle" class="t-sub">acts on observations</text>
+  </g>
+  <g style="color:var(--hook-ink)">
+    <rect x="20" y="420" width="260" height="80" rx="10" fill="var(--hook)" stroke="var(--hook-ink)"/>
+    <text x="150" y="448" text-anchor="middle" class="t-title">Claude Code hooks</text>
+    <text x="150" y="470" text-anchor="middle" class="t-mono">settings.json</text>
+    <text x="150" y="488" text-anchor="middle" class="t-sub">UserPromptSubmit, PostToolUse(Skill)</text>
+  </g>
+
+  <!-- middle: CLI -->
+  <g style="color:var(--cli-ink)">
+    <rect x="380" y="34" width="320" height="476" rx="12" fill="var(--cli)" stroke="var(--cli-ink)"/>
+    <text x="540" y="60" text-anchor="middle" class="t-title">vague CLI · vague/sdk/cli.py</text>
+    <g class="t-mono">
+      <rect x="400" y="80" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
+      <text x="540" y="105" text-anchor="middle">context --shell --skill &lt;name&gt;</text>
+      <rect x="400" y="152" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
+      <text x="540" y="177" text-anchor="middle">memory-log &lt;key&gt; "&lt;text&gt;"</text>
+      <rect x="400" y="224" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
+      <text x="540" y="249" text-anchor="middle">memory-search [words] [--scope]</text>
+      <rect x="400" y="296" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
+      <text x="540" y="321" text-anchor="middle">status</text>
+      <rect x="400" y="368" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
+      <text x="540" y="393" text-anchor="middle">migrate (one-time)</text>
+      <rect x="400" y="440" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
+      <text x="540" y="465" text-anchor="middle">log-event</text>
+    </g>
+  </g>
+
+  <!-- right: stores -->
+  <g style="color:var(--store-ink)">
+    <rect x="820" y="56" width="260" height="96" rx="16" fill="var(--store)" stroke="var(--store-ink)"/>
+    <text x="950" y="84" text-anchor="middle" class="t-mono" style="font-weight:700">memory.jsonl</text>
+    <text x="950" y="106" text-anchor="middle" class="t-sub">learnings + observations</text>
+    <text x="950" y="124" text-anchor="middle" class="t-sub">every project in one file</text>
+    <text x="950" y="142" text-anchor="middle" class="t-sub">kept forever, curated by /meta</text>
+  </g>
+  <g style="color:var(--store-ink)">
+    <rect x="820" y="200" width="260" height="84" rx="16" fill="var(--store)" stroke="var(--store-ink)" stroke-dasharray="6 4"/>
+    <text x="950" y="228" text-anchor="middle" class="t-mono" style="font-weight:700">scratch/&lt;scope&gt;.jsonl</text>
+    <text x="950" y="250" text-anchor="middle" class="t-sub">working notes shared by agents</text>
+    <text x="950" y="268" text-anchor="middle" class="t-sub">hidden after 7 days</text>
+  </g>
+  <g style="color:var(--store-ink)">
+    <rect x="820" y="380" width="260" height="96" rx="16" fill="var(--store)" stroke="var(--store-ink)"/>
+    <text x="950" y="408" text-anchor="middle" class="t-mono" style="font-weight:700">events/YYYY-MM.jsonl</text>
+    <text x="950" y="430" text-anchor="middle" class="t-sub">who used what, and when</text>
+    <text x="950" y="448" text-anchor="middle" class="t-sub">memory keys only, never text</text>
+    <text x="950" y="466" text-anchor="middle" class="t-sub">feeds status + the usage graph</text>
+  </g>
+
+  <!-- arrows: left column to CLI. CLI rows: 80, 152, 224, 296, 368, 440 (40 high) -->
+  <g stroke="var(--arrow)" stroke-width="1.6" fill="none" marker-end="url(#ah)">
+    <line x1="280" y1="88"  x2="398" y2="88"/>
+    <line x1="398" y1="114" x2="282" y2="114"/>
+    <line x1="280" y1="158" x2="398" y2="168"/>
+    <line x1="280" y1="178" x2="398" y2="234"/>
+    <line x1="280" y1="262" x2="398" y2="254"/>
+    <line x1="280" y1="460" x2="398" y2="460"/>
+    <!-- CLI to stores -->
+    <!-- reads end on the CLI box edge: both context and memory-search read both files -->
+    <line x1="820" y1="80"  x2="702" y2="80"/>
+    <line x1="680" y1="168" x2="818" y2="130"/>
+    <line x1="680" y1="182" x2="818" y2="232"/>
+    <line x1="820" y1="262" x2="702" y2="262"/>
+    <line x1="680" y1="352" x2="818" y2="400"/>
+    <line x1="680" y1="460" x2="818" y2="442"/>
+  </g>
+  <g class="t-lbl">
+    <rect x="291" y="80" width="98" height="16" rx="3" fill="var(--label-bg)"/><text x="340" y="92" text-anchor="middle">runs preamble</text>
+    <rect x="294" y="106" width="92" height="16" rx="3" fill="var(--label-bg)"/><text x="340" y="118" text-anchor="middle">MEMORY block</text>
+    <rect x="316" y="155" width="48" height="16" rx="3" fill="var(--label-bg)"/><text x="340" y="167" text-anchor="middle">logs</text>
+    <rect x="306" y="198" width="68" height="16" rx="3" fill="var(--label-bg)"/><text x="340" y="210" text-anchor="middle">searches</text>
+    <rect x="298" y="242" width="84" height="30" rx="3" fill="var(--label-bg)"/><text x="340" y="254" text-anchor="middle">reads</text><text x="340" y="267" text-anchor="middle">--scope all</text>
+    <rect x="294" y="452" width="92" height="16" rx="3" fill="var(--label-bg)"/><text x="340" y="464" text-anchor="middle">hook payload</text>
+
+    <rect x="706" y="66" width="110" height="30" rx="3" fill="var(--label-bg)"/><text x="761" y="78" text-anchor="middle">read by context</text><text x="761" y="91" text-anchor="middle">+ memory-search</text>
+    <rect x="698" y="141" width="104" height="16" rx="3" fill="var(--label-bg)"/><text x="750" y="153" text-anchor="middle">appends 1 line</text>
+    <rect x="714" y="199" width="72" height="16" rx="3" fill="var(--label-bg)"/><text x="750" y="211" text-anchor="middle">--scratch</text>
+    <rect x="706" y="248" width="110" height="30" rx="3" fill="var(--label-bg)"/><text x="761" y="260" text-anchor="middle">read by context</text><text x="761" y="273" text-anchor="middle">+ memory-search</text>
+    <rect x="684" y="368" width="134" height="16" rx="3" fill="var(--label-bg)"/><text x="751" y="380" text-anchor="middle">reads/writes + ids</text>
+    <rect x="708" y="443" width="86" height="16" rx="3" fill="var(--label-bg)"/><text x="751" y="455" text-anchor="middle">skill_start</text>
+  </g>
+</svg>
+</div>
+<p class="note">Not shown, because it does not exist: no server, no daemon, no database, no embeddings, no lock files. The old stores (<code>learnings.md</code>, <code>timeline.md</code>, <code>observations.md</code>, <code>principles.md</code>, <code>project.md</code>, <code>planning/</code>) are gone. <code>vague migrate</code> moves their content into the files above.</p>
+
+<h2>2. One skill run, step by step</h2>
+<div class="flow">
+  <div class="step"><b class="n">1</b><b>Skill starts</b><br>The hook runs <code>vague log-event</code>, which appends a <code>skill_start</code> event.<div class="who">Mechanical: the model does nothing.</div></div>
+  <div class="link"><span class="a">→</span>preamble runs</div>
+  <div class="step"><b class="n">2</b><b>Memory is shown</b><br><code>eval "$(vague context --shell --skill dev-develop)"</code> prints the MEMORY block.<div class="who">At most 1,500 tokens, ranked.</div></div>
+  <div class="link"><span class="a">→</span>model works</div>
+  <div class="step"><b class="n">3</b><b>Look up more</b><br><code>vague memory-search drift alert</code> when the block isn't enough.<div class="who">Example: dev-investigate.</div></div>
+  <div class="link"><span class="a">→</span>learns a fact</div>
+  <div class="step"><b class="n">4</b><b>Write it down</b><br><code>vague memory-log &lt;key&gt; "&lt;text&gt;"</code>, plus <code>--global</code>, <code>--scratch</code> or <code>--about</code>.<div class="who">The model's choice, guided by the Memory guideline.</div></div>
+  <div class="link"><span class="a">→</span>days later</div>
+  <div class="step"><b class="n">5</b><b>Curate</b><br><code>/meta</code> reads every memory with <code>vague memory-search --scope all</code>. It merges duplicates, promotes facts that hold in several projects, and fixes or forgets memories whose <code>(files: …)</code> no longer exist.<div class="who">Nothing is deleted automatically.</div></div>
+</div>
+
+<h2>3. Which command to use</h2>
+<div class="scroll">
+<table>
+  <tr><th>I want to…</th><th>Command</th><th>What happens on disk</th></tr>
+  <tr><td>save a fact about this project</td><td><code>vague memory-log ai-ml-tests-need-docker "Tests run only in the container…" --files Taskfile.yml --skill dev-ship</code></td><td>One line appended to <code>memory.jsonl</code>, scope = this repo</td></tr>
+  <tr><td>save a fact that holds in every repo</td><td>add <code>--global</code></td><td>Same line, scope = <code>global</code>. It shows up in every project's MEMORY block, taking at most 1/3 of the budget.</td></tr>
+  <tr><td>leave a note for other agents on this project</td><td>add <code>--scratch</code></td><td>One line in <code>scratch/&lt;scope&gt;.jsonl</code>. Hidden after 7 days. It is not a lock.</td></tr>
+  <tr><td>give feedback about a skill</td><td><code>vague memory-log slides-fan-chart "Missing range chart → add recipe" --about slides</code></td><td>An observation, always in <code>global</code>. <code>/meta</code> reads it.</td></tr>
+  <tr><td>correct a fact</td><td>re-use the same key</td><td>A new line. The latest line wins, and the old one stays as history.</td></tr>
+  <tr><td>retire a fact or close an observation</td><td><code>vague memory-log &lt;key&gt; --status forgotten</code> (or <code>actioned</code>, <code>declined</code>)</td><td>A status-only line. The memory disappears from blocks and searches.</td></tr>
+  <tr><td>find something the block didn't show</td><td><code>vague memory-search &lt;words&gt;</code> (<code>--scope global|&lt;project&gt;|all</code>, <code>--kind observation</code>, <code>--scratch</code>)</td><td>Read only. Matches every word across key, text, files and skill. With no words, it lists every memory, newest first. Each line prints as <code>scope/key  [skill]  text  (files: …)</code>. Default scope: this project plus <code>global</code>.</td></tr>
+  <tr><td>see every project at a glance</td><td><code>vague status</code></td><td>Read only. Shows branch, git state, path, last activity, in-flight designs and memory count.</td></tr>
+</table>
+</div>
+
+<h2>4. Which skill calls what</h2>
+<div class="scroll">
+<table>
+  <tr><th>Skills</th><th>Read at start (preamble)</th><th><code>memory-log</code> learning</th><th><code>memory-log --about</code></th><th><code>memory-search</code></th><th><code>--scratch</code></th></tr>
+  <tr><td>dev-develop, dev-ship, plan-eng, plan-ideation, mgmt-review</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td>no</td><td>guideline only</td></tr>
+  <tr><td>dev-investigate</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes</td><td class="yes">yes (error words)</td><td>guideline only</td></tr>
+  <tr><td>retro</td><td class="yes">yes</td><td>no</td><td class="yes">yes</td><td class="yes">yes</td><td>guideline only</td></tr>
+  <tr><td>meta</td><td class="yes">yes</td><td class="yes">yes (merge, promote, forget)</td><td class="yes">yes</td><td class="yes">yes (<code>--scope all</code>, all observations)</td><td>guideline only</td></tr>
+  <tr><td>the other 13 (diagram, slides, triage, vault*, iv-*, mgmt-log/progress/setup)</td><td class="yes">yes</td><td>no</td><td class="yes">yes</td><td>no</td><td>guideline only</td></tr>
+</table>
+</div>
+<div class="warn"><b>Gap:</b> no skill body tells agents to use <code>--scratch</code> yet. Only the Memory section in <code>vague/assets/claude/guidelines.md</code> mentions it. That includes <code>/dev-develop</code>, which runs parallel subagents, so the scratchpad works but no skill relies on it.</div>
+
+<h2>5. What the agent actually sees</h2>
+<p>A real MEMORY block from this repo, printed by the preamble. The data is a migrated copy, with lines shortened here:</p>
+<pre>vague memory · scope atisben-vague · 11 memories
+Scratch (shared by this scope's agents, last 7 days):
+- [phase-4-status] verification running
+Memories (most relevant first):
+- [slug-fallback-cwd-subdir] Any fallback that derives project identity from cwd basename misidentifies…
+- [verify-subagent-claims-independently] Re-running tests plus a manual end-to-end run caught a path…
+- [telemetry-must-be-mechanical] Agent-discretionary end-of-skill logging never fires in practice…
+- …</pre>
+<p>The block's budget is 1,500 tokens (6,000 characters):</p>
+<ul>
+  <li>scratch notes first, up to 300 tokens</li>
+  <li>full lines up to 1,200 tokens in total</li>
+  <li>key-only index lines up to 1,500</li>
+  <li>a final <code>+N more: vague memory-search</code> line</li>
+</ul>
+<p>Memories are ranked by three rules, in this order:</p>
+<ol>
+  <li>files you changed</li>
+  <li>the same skill</li>
+  <li>the newest first</li>
+</ol>
+<p>A search prints one line per memory, as <code>scope/key  [skill]  text  (files: …)</code>, leaving out the parts that are empty. A real search from the same copy, with the text shortened:</p>
+<pre>$ vague memory-search --scope alma-ai_ml docker
+alma-ai_ml/ai-ml-local-pytest-env  [dev-ship]  uv run pytest outside the container fails on missing settings env vars…
+alma-ai_ml/ai-ml-tests-need-docker  [dev-review]  alma/ai_ml tests and mypy run only inside the container…  (files: Taskfile.yml)</pre>
+<p>These two lines are the duplicate that <code>/meta</code> should merge.</p>
+
+<h2>6. One line of memory</h2>
+<p>Every memory, observation and scratch note has these 8 fields:</p>
+<pre>{"ts":"2026-10-05T14:01:29Z", "scope":"alma-ai_ml", "key":"ai-ml-tests-need-docker", "kind":"learning",
+ "text":"alma/ai_ml tests and mypy run only inside the customer-risk-train container…",
+ "files":["Taskfile.yml"], "skill":"dev-ship", "status":"active"}</pre>
+<div class="scroll">
+<table>
+  <tr><th>Field</th><th>Meaning</th></tr>
+  <tr><td><code>scope</code></td><td>Which project it belongs to: the <code>owner-repo</code> slug from the git remote, the main checkout's folder name, or <code>global</code></td></tr>
+  <tr><td><code>key</code></td><td>Its name. The same scope and key on a new line replace the old content.</td></tr>
+  <tr><td><code>kind</code></td><td><code>learning</code> (a fact about a project) or <code>observation</code> (feedback about a skill)</td></tr>
+  <tr><td><code>files</code>, <code>skill</code></td><td>Used for ranking, and printed by <code>memory-search</code>. <code>files</code> lets <code>/meta</code> spot dead paths. <code>skill</code> tells it which skill an observation is about.</td></tr>
+  <tr><td><code>status</code></td><td><code>active</code>, <code>forgotten</code>, <code>actioned</code> or <code>declined</code></td></tr>
+</table>
+</div>
+
+<h2>7. Which project am I in?</h2>
+<div class="scroll">
+<table>
+  <tr><th>Where the command runs</th><th>Scope</th></tr>
+  <tr><td>A git repo with an <code>origin</code> remote</td><td><code>owner-repo</code>, e.g. <code>atisben-vague</code>. All worktrees share it.</td></tr>
+  <tr><td>A git repo without a remote</td><td>The main checkout's folder name. Worktrees share it too.</td></tr>
+  <tr><td>A plain folder, e.g. <code>~/Obsidian</code></td><td>The folder name: <code>Obsidian</code></td></tr>
+  <tr><td><code>$HOME</code> or <code>/</code></td><td>None. <code>memory-log</code> refuses unless you pass <code>--global</code>.</td></tr>
+</table>
+</div>
+
+<h2>8. Safety</h2>
+<ul>
+  <li><b>Concurrent writers:</b> each write is a single append of one line, so parallel agents never overwrite each other and no lock is needed.</li>
+  <li><b>Crashes:</b> a half-written last line is skipped with a warning, and every other line still reads.</li>
+  <li><b>Privacy:</b> events hold memory keys, never memory text or project file contents. Nothing leaves the machine. <code>telemetry: off</code> stops events, and memories are still written.</li>
+  <li><b>Direct edits:</b> do not edit <code>memory.jsonl</code> by hand. Edits through the CLI are the ones monitoring can see.</li>
+</ul>
+
+<h2>Inventory</h2>
+<div class="scroll">
+<table>
+  <tr><th>Component</th><th>Real path</th><th>Talks to</th><th>What flows</th></tr>
+  <tr><td>Skills</td><td><code>vague/assets/skills/*/SKILL.md</code></td><td>vague CLI</td><td>preamble call, <code>memory-*</code> commands</td></tr>
+  <tr><td>Memory guideline</td><td><code>vague/assets/claude/guidelines.md</code> (Memory section)</td><td>every runtime's instructions, via <code>vague install</code></td><td>when to log, <code>--global</code>, <code>--scratch</code>, <code>--about</code></td></tr>
+  <tr><td>CLI entry</td><td><code>vague/sdk/cli.py</code></td><td>commands below</td><td>arguments</td></tr>
+  <tr><td>Preamble</td><td><code>vague/sdk/commands/init.py</code> (<code>context</code>)</td><td><code>core/memory.py</code></td><td>the MEMORY block, read events with ids</td></tr>
+  <tr><td>Memory commands</td><td><code>vague/sdk/commands/memory.py</code></td><td><code>core/memory.py</code>, <code>core/events.py</code></td><td>log, search</td></tr>
+  <tr><td>Ledger logic</td><td><code>vague/sdk/core/memory.py</code></td><td><code>memory.jsonl</code>, <code>scratch/</code></td><td>append, fold, rank, render, search</td></tr>
+  <tr><td>Project identity</td><td><code>vague/sdk/core/slug.py</code> (<code>get_scope</code>)</td><td>git</td><td>scope name</td></tr>
+  <tr><td>Events</td><td><code>vague/sdk/core/events.py</code>, <code>commands/events.py</code></td><td><code>events/YYYY-MM.jsonl</code></td><td><code>skill_start</code>, <code>context_read</code>/<code>context_write</code> with <code>ids</code>; <code>read_events</code> for status</td></tr>
+  <tr><td>Dashboard</td><td><code>vague/sdk/core/status.py</code></td><td>events, ledger, git</td><td>one row per project</td></tr>
+  <tr><td>Migration</td><td><code>vague/sdk/core/migrate.py</code></td><td>old <code>projects/&lt;slug&gt;/*.md</code></td><td>62 learnings + 54 observations → ledger, 71 events</td></tr>
+</table>
+</div>
+
+</main>
+</body>
+</html>

@@ -11,9 +11,8 @@ description: |
 sdk_commands:
   - vague context
   - vague status
-  - vague observations-log
+  - vague memory-log
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -124,22 +123,12 @@ If nothing fits, say so plainly and offer the closest two options via AskUserQue
 
 ## Observation Protocol
 
-Throughout, watch for:
-- A request that fit no lane (a gap suggesting a new skill)
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about triage` (see the Memory guideline).
+
+Watch especially for:
+- A request that fit no lane. Log it with key `new-skill-<working-name>`: it is a new-skill candidate.
 - Routing the manager had to correct ("no, I wanted X")
-- Repeated triage friction — the same ambiguous ask every time
-
-Log silently — do not interrupt the handoff:
-
-```bash
-vague observations-log '{"skill":"triage","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"triage"}'
-```
-
-If a request fit no lane, log it as a new-skill candidate:
-
-```bash
-vague observations-log '{"skill":"new:WORKING_NAME","type":"new-skill","issue":"Manager needed X; no skill covers it","suggestion":"PROPOSED_SKILL","principle":"GENERALISABLE_TAKEAWAY","source_skill":"triage"}'
-```
+- Repeated triage friction: the same ambiguous ask every time
 
 ---
 

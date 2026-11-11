@@ -17,7 +17,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
-      - name: Lint
-        run: uv run --extra dev ruff check .
+      - name: Pre-commit hooks
+        run: uvx pre-commit run --all-files --show-diff-on-failure
       - name: Test
         run: uv run --extra dev pytest -q

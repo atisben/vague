@@ -1,14 +1,14 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 21 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
 ## Overview
 
-- **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
-- **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
-- **Mechanical telemetry:** every skill preamble records the repo path via `vague context --skill`, feeding `vague status` with zero agent cooperation.
+- **21 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
+- **One memory ledger** in `~/.vague/memory.jsonl` holds every learning and observation, scoped to a project or `global`. Every skill preamble prints a ranked slice of it (at most 1,500 tokens).
+- **Mechanical telemetry:** a Claude Code hook logs each skill start to `~/.vague/events/`, feeding `vague status` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Cursor, or Windsurf.
 - **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite.
 
@@ -55,9 +55,8 @@ Then use any slash command in your AI tool.
 ### Reflection
 | Command | When to use |
 |---------|-------------|
-| `/learn` | Browse, search, prune, and export project learnings. |
 | `/retro` | Weekly engineering retrospective. |
-| `/meta` | Review observations and improve the skills themselves. |
+| `/meta` | Review observations, improve the skills, and curate the memory ledger. |
 | `/vault` | Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault. |
 
 ### Management
@@ -105,7 +104,6 @@ Idea
                                └─ merge
 
                               /dev-investigate   (when bugs happen)
-                              /learn         (anytime)
                               /retro         (end of week)
 ```
 
@@ -118,14 +116,18 @@ All data lives in `~/.vague/`:
 ```
 ~/.vague/
 ├── config.md
-└── projects/
-    └── {owner-repo}/
-        ├── project.md      ← repo path + last_seen (powers `vague status`)
-        ├── learnings.md
-        ├── timeline.md
-        ├── retros/
-        └── designs/
+├── memory.jsonl              ← every learning and observation, all projects (append-only)
+├── scratch/<scope>.jsonl     ← shared working notes per project, hidden after 7 days
+├── events/YYYY-MM.jsonl      ← skill starts and memory reads/writes (powers `vague status`)
+├── projects/<owner-repo>/
+│   ├── designs/              ← design docs (documents, not memory)
+│   ├── diagrams/
+│   └── retros/
+├── team/                     ← mgmt-* state
+└── interview/                ← iv-* state
 ```
+
+Each memory line has a `scope` (a project slug or `global`) and a `key`. Re-logging a key supersedes it, and `--status forgotten` hides it. Nothing is ever rewritten in place. `vague migrate` moves the old per-project `learnings.md`, `observations.md`, `timeline.md` and `project.md` files into the ledger and the events log, and leaves the originals untouched.
 
 ---
 
@@ -184,15 +186,17 @@ into your `CLAUDE.md` outside the markers, then delete it yourself.
 ## CLI Reference
 
 ```bash
-vague init                              # JSON context for skills (slug, branch, config, learnings)
-vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + records the repo path
+vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + the MEMORY block
 vague status                            # cross-project dashboard: branches, in-flight plans
 vague config-get proactive              # read config value
 vague config-set proactive false        # write config value
-vague learnings-log '<json>'            # append a learning
-vague learnings-search --type pitfall   # filter learnings
+vague memory-log <key> "<text>" --files a,b --skill dev-ship  # log a learning (--global: every repo)
+vague memory-log <key> "<issue → fix>" --about dev-ship       # log feedback about a skill
+vague memory-log <key> --status forgotten                     # hide a memory
+vague memory-search [words...]          # memories containing every word (no words: all), newest first
+vague memory-search --scope all         # every scope; also --scope global or --scope <project>
+vague migrate --dry-run                 # preview moving the old stores into the ledger
 vague slug                              # print SLUG= and BRANCH=
-vague timeline-log '<json>'             # append session event
 vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-validate <dir>              # validate a skill against the contract
 vague skill-audit <dir> --strict        # scan for legacy bash patterns
@@ -203,17 +207,14 @@ vague install --runtime claude:work     # install/sync one Claude profile
 
 ## Telemetry
 
-The project path is captured **mechanically**: the preamble every skill runs —
-`eval "$(vague context --shell --skill <name>)"` — records it as a
-side effect. No agent cooperation needed, no logging step a model can skip.
+The project path is captured **mechanically**: the `vague log-event` hook
+logs every skill start to `~/.vague/events/YYYY-MM.jsonl`, with the repo's
+main checkout path. No agent cooperation needed, no logging step a model can
+skip. `vague status` derives each project's path and last activity from those
+events, then runs git checks across all your projects.
 
-Each invocation records the project's **repo path + last seen** in
-`~/.vague/projects/{slug}/project.md`. This is what lets `vague status` run
-git checks across all your projects.
-
-Capture is best-effort and can never break a skill: if the write fails
-(read-only disk, lock contention), the error is swallowed and the context
-output still prints.
+Capture is best-effort and can never break a skill: if the write fails, the
+error is swallowed and the command output still prints.
 
 ### Reading it back
 
@@ -234,8 +235,8 @@ logged), including how to wire the `vague log-event` hook. To disable event logg
 vague config-set telemetry off
 ```
 
-`project.md`, timeline, and learnings are structural state (they power
-`vague status`, `/retro`, and learning recall) and are still written.
+Memories are structural state, not telemetry, so `memory.jsonl` is still
+written. Without events, `vague status` has no activity to show.
 
 ---
 
@@ -301,5 +302,5 @@ task install
 - [gstack](https://github.com/garrytan/gstack): An ensemble of advanced skills using bash command to interract with persistent, project checkpoints
 - [karpathy's wiki](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): A paradigm for saving persisent files to local wiki that serves as a brain for LLM supported tasks
 - [get shit done](https://github.com/gsd-build/get-shit-done): A light-weight meta-prompting, context engineering, and spec-driven development system
-- Felix Rieseberg prompt 
+- Felix Rieseberg prompt
 >  I want a deeper version of this task, not a bigger one. Before rewriting it: (1) say what a top professional in this field would do here that I’m not asking for; (2) name the rawest material they would start from instead of what has already been digested for me; (3) name the specific methods and tools they would use; (4) say what, other than you or me, would show the result is right. Then rewrite my prompt to ask for exactly that

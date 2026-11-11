@@ -11,9 +11,8 @@ description: |
   "company research", "/iv-research".
 sdk_commands:
   - vague context
-  - vague observations-log
+  - vague memory-log
 requires_slug: false
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
@@ -340,18 +339,14 @@ Present the research brief to the user in this format:
 
 ## Observation Protocol
 
-Throughout, watch for:
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-research` (see the Memory guideline).
+
+Watch especially for:
 - Searches that returned low-quality or outdated results
 - Companies where public information is scarce (stealth startups, private companies)
 - JD patterns not covered by the hidden requirements framework
 - Fit dimensions that don't capture important aspects of a role
 - Profile fields that would improve assessment quality
-
-Log silently — do not interrupt the conversation:
-
-```bash
-vague observations-log '{"skill":"iv-research","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"iv-research"}'
-```
 
 ---
 

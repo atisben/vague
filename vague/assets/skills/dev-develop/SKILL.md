@@ -7,27 +7,23 @@ description: |
   workers get full context for their specific job.
   Trigger: "develop this", "build this feature", "implement this", "orchestrate".
 sdk_commands:
-  - vague init
-  - vague timeline-log
-  - vague learnings-log
-  - vague observations-log
+  - vague context
+  - vague memory-log
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Bash
   - Read
   - Agent
   - AskUserQuestion
 benefits-from:
-  - office-hours
-  - plan-eng-review
+  - plan-ideation
+  - plan-eng
 ---
 
 ## Preamble
 
 ```bash
 eval "$(vague context --shell --skill dev-develop)"
-SESSION_ID="$$-$(date +%s)"
 ```
 
 **Proactive invocation:** When the user describes a multi-step feature or implementation task that would benefit from structured delegation rather than ad-hoc coding.
@@ -93,7 +89,7 @@ Present the plan to the user:
 PHASE 1: [name] — [what the subagent will do]
   Inputs:  [files/context it needs]
   Outputs: [files it will create/modify]
-  
+
 PHASE 2: [name] — [what the subagent will do]  
   Inputs:  [files/context it needs, including Phase 1 outputs]
   Outputs: [files it will create/modify]
@@ -220,15 +216,11 @@ If the verification agent reports issues, spawn fix agents for each issue. Then 
 
 ---
 
-## Step 6: Log and Handoff
+## Step 6: Log Learnings
 
+If a phase surfaced a non-obvious pattern or pitfall, log it:
 ```bash
-vague timeline-log "{\"skill\":\"develop\",\"event\":\"completed\",\"branch\":\"$BRANCH\",\"outcome\":\"success\",\"session\":\"$SESSION_ID\"}"
-```
-
-Log any learnings:
-```bash
-vague learnings-log '{"skill":"dev-develop","type":"pattern","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill dev-develop
 ```
 
 ---
@@ -257,26 +249,7 @@ Include these rules in every agent brief:
 
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"dev-develop","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-develop"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation.
-
-```bash
-vague observations-log '{"skill":"dev-develop","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"dev-develop"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about dev-develop` (see the Memory guideline).
 
 ---
 

@@ -6,13 +6,11 @@ description: |
   test strategy, and performance. Interactive, opinionated, one issue at a time.
   Trigger: "review the architecture", "engineering review", "lock in the plan".
 benefits-from:
-  - office-hours
+  - plan-ideation
 sdk_commands:
-  - vague init
-  - vague learnings-log
-  - vague observations-log
+  - vague context
+  - vague memory-log
 requires_slug: true
-requires_planning: false
 allowed-tools:
   - Read
   - Write
@@ -234,30 +232,9 @@ Show to user, support revision loops, then save.
 
 ---
 
----
-
 ## Observation Protocol
 
-Throughout this skill's execution, watch for:
-- Steps that produce wrong or suboptimal output
-- Missing rules the user has to correct
-- Workflow inefficiencies or unnecessary steps
-- Gaps where a different skill would help
-- **User corrections** — any time the user tells you to do something the skill should have done automatically (e.g. "read the plan", "check the tests first", "use the right branch")
-
-When you notice any of these, log an observation:
-
-```bash
-vague observations-log '{"skill":"plan-eng","type":"improvement","issue":"WHAT_HAPPENED","suggestion":"CONCRETE_CHANGE","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-eng"}'
-```
-
-**User correction detection:** If the user has to explicitly ask you to perform a step that should be part of this skill's workflow, log it immediately as a `type: correction` observation. These are the most valuable signals for skill improvement.
-
-```bash
-vague observations-log '{"skill":"plan-eng","type":"correction","issue":"User had to manually ask: WHAT_THEY_SAID","suggestion":"Add this as an explicit step in the skill","principle":"GENERALISABLE_TAKEAWAY","source_skill":"plan-eng"}'
-```
-
-Log silently — do not interrupt the user's workflow to announce observations.
+Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about plan-eng` (see the Memory guideline).
 
 ---
 
@@ -267,5 +244,5 @@ Log silently — do not interrupt the user's workflow to announce observations.
 
 Log a learning if any non-obvious architectural insight was discovered:
 ```bash
-vague learnings-log '{"skill":"plan-eng","type":"architecture","key":"SHORT_KEY","insight":"INSIGHT","confidence":8,"source":"observed"}'
+vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill plan-eng
 ```
