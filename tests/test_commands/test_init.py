@@ -52,3 +52,17 @@ def test_context_json_includes_memory_block(vague_home, git_repo, monkeypatch):
     runner.invoke(sdk_app, ["memory-log", "k", "a global fact", "--global"])
     result = runner.invoke(sdk_app, ["context", "--skill", "dev-develop"])
     assert "a global fact" in json.loads(result.output)["memory"]
+
+
+def test_context_shell_prints_the_logging_hint_for_the_skill(vague_home, git_repo, monkeypatch):
+    monkeypatch.chdir(git_repo)
+    result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "plan-eng"])
+    assert "vague memory-log <key>" in result.output
+    assert "--skill plan-eng" in result.output
+    assert "--scratch" in result.output
+
+
+def test_context_json_memory_includes_the_logging_hint(vague_home, git_repo, monkeypatch):
+    monkeypatch.chdir(git_repo)
+    result = runner.invoke(sdk_app, ["context", "--skill", "diagram"])
+    assert "--skill diagram" in json.loads(result.output)["memory"]

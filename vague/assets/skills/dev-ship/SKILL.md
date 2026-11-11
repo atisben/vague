@@ -210,10 +210,7 @@ If `$PLAN_FILE` exists, update it:
 
 ## Step 10: Log Learnings
 
-If shipping hit a non-obvious pitfall, log it:
-```bash
-vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill dev-ship
-```
+Log a pitfall that shipping hit, such as a CI quirk or a hook that aborts silently.
 
 ---
 

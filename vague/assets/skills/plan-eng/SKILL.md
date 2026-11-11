@@ -242,7 +242,4 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 
 > "Engineering plan saved. You're ready to build. Run `/dev-develop` to implement, or `/diagram` first to draw the architecture overview."
 
-Log a learning if any non-obvious architectural insight was discovered:
-```bash
-vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill plan-eng
-```
+Log any non-obvious architectural insight the review found, with the `--files` it touches.

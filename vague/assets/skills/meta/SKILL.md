@@ -216,10 +216,7 @@ Present a summary:
 - Promoted to global: concat-empty-list
 ```
 
-Log a learning if any non-obvious insight emerged:
-```bash
-vague memory-log <kebab-key> "<one or two sentences>" --files <paths> --skill meta
-```
+Log a learning only for a fact the curation itself revealed, such as a skill convention that keeps drifting.
 
 > "Skills updated. Next steps:
 > - Run `vague install` to deploy changes to your LLM runtime

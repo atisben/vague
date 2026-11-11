@@ -479,10 +479,7 @@ Supersedes: {prior filename — omit if first design}
 
 Show the doc to the user and ask for approval. Support revision loops. Save final version after approval.
 
-Log learnings if any non-obvious insight about the problem space emerged:
-```bash
-vague memory-log <kebab-key> "<one or two sentences>" --skill plan-ideation
-```
+Log any non-obvious insight about the problem space.
 
 ---
 

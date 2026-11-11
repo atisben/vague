@@ -191,3 +191,17 @@ def test_slides_skill_lists_every_bold_template():
     assert f"lists {count} bold templates" in skill_md
     missing = [t["name"] for t in index["templates"] if t["name"] not in skill_md]
     assert not missing, f"slides SKILL.md bold template list is missing: {missing}"
+
+
+def test_every_skill_preamble_passes_its_own_name_to_context():
+    wrong = [
+        skill_md.parent.name
+        for skill_md in _get_assets_skills_dir().glob("*/SKILL.md")
+        if f"vague context --shell --skill {skill_md.parent.name})" not in skill_md.read_text(encoding="utf-8")
+    ]
+    assert not wrong, f"preamble must run `vague context --shell --skill <own name>`: {wrong}"
+
+
+def test_dev_develop_briefs_hand_memory_to_subagents():
+    text = (_get_assets_skills_dir() / "dev-develop" / "SKILL.md").read_text(encoding="utf-8")
+    assert "--scratch" in text, "subagents never run the preamble, so their brief must explain the scratchpad"

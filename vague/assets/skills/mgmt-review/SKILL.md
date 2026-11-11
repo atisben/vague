@@ -359,11 +359,7 @@ Read the profile, edit the fields and sections, write it back. Leave the rest un
 ## Step 10: Log a learning (optional)
 
 If a notable, reusable pattern emerged (a recurring coaching theme, a blind spot that
-shows up across the team, a bias you had to correct hard), log it:
-
-```bash
-vague memory-log <kebab-key> "<one or two sentences>" --skill mgmt-review
-```
+shows up across the team, a bias you had to correct hard), log it.
 
 Only log genuine, generalisable patterns — not routine review outcomes.
 

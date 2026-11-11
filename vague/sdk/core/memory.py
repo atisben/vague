@@ -152,15 +152,24 @@ def _line(memory: Memory, scope: str | None, full: bool = True) -> str:
     return f"- [{label}] {one_line(text=memory.text)}" if full else f"- [{label}]"
 
 
+def logging_hint(skill: str | None) -> str:
+    """One reminder line, so every skill gets the logging rule without repeating it in its own file."""
+    return (
+        f'To log a learning: vague memory-log <key> "<fact>" --skill {skill or "<skill>"} [--files <paths>] '
+        "[--global]. Add --scratch for a note other agents on this project need."
+    )
+
+
 def render_block(
     scope: str | None, skill: str | None, changed_files: Iterable[str], now: datetime | None = None
 ) -> Block:
     """Preamble block: scratch notes, ranked full lines (global capped at a third), key-only index, search pointer."""
     learnings = [m for m in load_ledger() if m.scope in {scope, "global"} and m.kind == "learning" and _live(m)]
     notes = load_scratch(scope=scope, now=now) if scope else []
-    lines = [f"vague memory · scope {scope or 'none (global only)'} · {len(learnings)} memories"]
+    hint = logging_hint(skill=skill)
+    lines = [f"vague memory · scope {scope or 'none (global only)'} · {len(learnings)} memories", hint]
     if not learnings and not notes:
-        lines.append('No memories yet. Log one: vague memory-log <kebab-key> "<fact>" [--global]')
+        lines.append("No memories yet.")
         return Block(text="\n".join(lines), ids=[], scratch_ids=[])
     ids: list[str] = []
     scratch_ids: list[str] = []
@@ -193,7 +202,7 @@ def render_block(
 
     if rest:
         lines.append("Index (key only):")
-        reserve = len(f"+{len(rest)} more: vague memory-search <words>") + 1
+        reserve = len(f"+{len(rest)} more: vague memory-search <words>") + 1 + len(hint) + 1
         shown = 0
         for memory in rest:
             line = _line(memory=memory, scope=scope, full=False)
