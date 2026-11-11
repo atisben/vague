@@ -71,3 +71,22 @@ def test_init_returns_top_3_learnings_when_many(vague_home):
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert len(data["learnings"]) == 3
+
+
+def test_context_skill_prints_context_and_upserts_project_meta(vague_home, git_repo, monkeypatch):
+    monkeypatch.chdir(git_repo)
+    result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "dev-develop"])
+    assert result.exit_code == 0
+    for prefix in ("SLUG=", "BRANCH=", "PROACTIVE=", "TELEMETRY="):
+        assert prefix in result.output
+    assert (vague_home / "projects" / "repo" / "project.md").exists()
+    assert not (vague_home / "analytics").exists()
+
+
+def test_context_json_skill_prints_json_and_upserts_project_meta(vague_home, git_repo, monkeypatch):
+    monkeypatch.chdir(git_repo)
+    result = runner.invoke(sdk_app, ["context", "--skill", "dev-develop"])
+    assert result.exit_code == 0
+    assert json.loads(result.output)["slug"] == "repo"
+    assert (vague_home / "projects" / "repo" / "project.md").exists()
+    assert not (vague_home / "analytics").exists()

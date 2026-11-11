@@ -19,8 +19,8 @@ requires_planning: false
 eval "$(vague context --shell --skill vague-my-skill)"
 ```
 
-Always pass `--skill <name>` — it records the usage event that feeds
-`vague status`, `vague analytics-show`, and `/retro`.
+Always pass `--skill <name>` — it records the repo path that feeds
+`vague status`.
 
 ## Steps
 

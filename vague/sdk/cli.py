@@ -9,9 +9,9 @@ from typing import Annotated
 import typer
 
 from vague.installer import cmd_install, cmd_uninstall
-from vague.sdk.commands.analytics import cmd_analytics_log, cmd_analytics_show
 from vague.sdk.commands.commit import cmd_commit
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
+from vague.sdk.commands.events import cmd_log_event
 from vague.sdk.commands.init import cmd_context, cmd_init
 from vague.sdk.commands.learnings import cmd_learnings_log, cmd_learnings_search
 from vague.sdk.commands.observations import (
@@ -35,6 +35,7 @@ from vague.sdk.commands.skill import (
 from vague.sdk.commands.slug import cmd_slug
 from vague.sdk.commands.status import cmd_status
 from vague.sdk.commands.timeline import cmd_timeline_log
+from vague.sdk.core.events import begin_command
 from vague.sdk.core.logging import get_logger
 
 sdk_app = typer.Typer(
@@ -57,12 +58,15 @@ def _version_callback(value: bool) -> None:
 
 @sdk_app.callback()
 def _main(
+    ctx: typer.Context,
     version: Annotated[
         bool,
         typer.Option("--version", callback=_version_callback, is_eager=True, help="Show version and exit."),
     ] = False,
 ) -> None:
     """Python CLI layer for LLM skill-based AI workflows."""
+    # Core helpers log state-file access under the typer command name.
+    begin_command(command=ctx.invoked_subcommand)
 
 
 @sdk_app.command("install")
@@ -142,21 +146,6 @@ def learnings_search(
     cmd_learnings_search(type_filter=type, min_confidence=min_confidence)
 
 
-@sdk_app.command("analytics-log")
-def analytics_log(json_input: str) -> None:
-    """Append an analytics entry (JSON string)."""
-    cmd_analytics_log(json_input)
-
-
-@sdk_app.command("analytics-show")
-def analytics_show(
-    window: Annotated[str, typer.Argument()] = "7d",
-    as_json: Annotated[bool, typer.Option("--json")] = False,
-) -> None:
-    """Show skill usage analytics."""
-    cmd_analytics_show(window=window, as_json=as_json)
-
-
 @sdk_app.command("observations-log")
 def observations_log(json_input: str) -> None:
     """Append an observation entry (JSON string)."""
@@ -182,6 +171,12 @@ def observations_update(obs_id: int, status: str) -> None:
 def slug() -> None:
     """Output SLUG=... and BRANCH=..."""
     cmd_slug()
+
+
+@sdk_app.command("log-event")
+def log_event() -> None:
+    """Record a Claude Code hook event (reads hook JSON on stdin)."""
+    cmd_log_event()
 
 
 @sdk_app.command("timeline-log")

@@ -57,7 +57,7 @@ SESSION_ID="$$-$(date +%s)"
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `name` | Yes | Must match directory name. Used by analytics. |
+| `name` | Yes | Must match directory name. |
 | `version` | Yes | Semantic version (`1.0.0`). Bump on breaking changes. |
 | `description` | Yes | Shown in the AI tool's skill picker. |
 | `sdk_commands` | Yes | List of `vague` commands this skill calls. |

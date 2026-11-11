@@ -8,7 +8,6 @@ import sys
 import typer
 
 from vague.models import ConfigModel, VagueInitResult
-from vague.sdk.core.analytics import record_skill_start
 from vague.sdk.core.config import get_config
 from vague.sdk.core.learnings import get_top_learnings
 from vague.sdk.core.logging import get_logger
@@ -50,20 +49,15 @@ def cmd_init() -> None:
 
 
 
-def _record_usage(skill: str, slug: str, branch: str, telemetry: str) -> None:
-    """Mechanical telemetry: usage event + project path, best-effort.
+def _record_project_path(slug: str) -> None:
+    """Record the repo path for `vague status`, best-effort.
 
-    Must never propagate — a skill preamble that fails to log must still get
+    Must never propagate — a skill preamble that fails to record must still get
     its context output (the keystone property of context/init).
 
-    `telemetry: off` disables the usage event; project.md is structural
-    (it powers `vague status`, like timeline.md) and is always written.
+    project.md is structural (it powers `vague status`, like timeline.md), so it
+    is written regardless of the telemetry setting.
     """
-    if telemetry != "off":
-        try:
-            record_skill_start(skill=skill, slug=slug, branch=branch)
-        except Exception as e:
-            get_logger().warning("usage capture failed for %s: %s", skill, e)
     try:
         upsert_project_meta(slug=slug, path=get_repo_root())
     except Exception as e:
@@ -76,15 +70,15 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
     With --shell, emit eval-able assignments so a skill can do
     `eval "$(vague context --shell --skill <name>)"` instead of spawning
     python3 three times. Without --shell, behaves like `vague init` (JSON).
-    With --skill, logs a usage event and records the repo path as a
-    best-effort side effect before printing.
+    With --skill, records the repo path as a best-effort side effect
+    before printing.
     """
     if not shell:
         if skill is not None:
             try:
-                _record_usage(skill, get_slug(), get_branch(), get_config().telemetry)
+                _record_project_path(get_slug())
             except Exception as e:
-                get_logger().warning("usage capture failed: %s", e)
+                get_logger().warning("project path capture failed: %s", e)
         cmd_init()
         return
 
@@ -98,7 +92,7 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
         config = ConfigModel()
 
     if skill is not None:
-        _record_usage(skill, slug, branch, str(config.telemetry))
+        _record_project_path(slug)
 
     lines = [
         f"SLUG={shlex.quote(slug)}",

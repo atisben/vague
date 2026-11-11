@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from vague.models import TimelineEntry
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.frontmatter import file_lock
 from vague.sdk.core.logging import get_logger
 
@@ -47,3 +48,4 @@ def append_timeline(slug: str, entry: TimelineEntry) -> None:
         entries = _read_entries(path)
         entries.append(entry_dict)
         _write_entries(path, entries)
+    log_context_access(kind="write", path=path)

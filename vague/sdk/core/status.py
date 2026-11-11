@@ -6,6 +6,7 @@ import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.logging import get_logger
 from vague.sdk.core.projects import get_vague_home, list_project_slugs, read_project_meta
 
@@ -74,6 +75,7 @@ def _git(repo: Path, *args: str) -> str | None:
 
 
 def _read_frontmatter_entries(path: Path) -> list[dict]:
+    log_context_access(kind="read", path=path)
     if not path.exists():
         return []
     try:

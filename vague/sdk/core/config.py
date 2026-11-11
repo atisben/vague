@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from vague.models import ConfigModel
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.frontmatter import FrontmatterError, read_md, update_md
 
 
@@ -20,6 +21,7 @@ def get_config() -> ConfigModel:
     """Read ~/.vague/config.md. On error → return defaults + warn to stderr."""
     home = _get_home()
     config_path = home / "config.md"
+    log_context_access(kind="read", path=config_path)
     try:
         data = read_md(config_path)
         return ConfigModel(**{k: v for k, v in data.items() if k in ConfigModel.model_fields})
@@ -41,3 +43,4 @@ def set_config_key(key: str, value: Any) -> None:
         return data
 
     update_md(config_path, updater)
+    log_context_access(kind="write", path=config_path)

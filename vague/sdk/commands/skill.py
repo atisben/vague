@@ -11,6 +11,7 @@ from pathlib import Path
 import typer
 
 from vague.models import SkillManifest
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.frontmatter import FrontmatterError, read_md
 
 # Patterns that indicate old bash tooling usage
@@ -112,6 +113,7 @@ def cmd_skill_add(skill_dir: str) -> None:
     if dest.exists():
         shutil.rmtree(dest)
     shutil.copytree(src, dest)
+    log_context_access(kind="write", path=dest)
     typer.echo(f"OK: copied {src.name} to assets/skills/")
 
 

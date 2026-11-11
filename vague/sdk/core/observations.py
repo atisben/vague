@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from vague.models import ObservationEntry
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.frontmatter import file_lock
 from vague.sdk.core.logging import get_logger
 
@@ -59,6 +60,7 @@ def append_observation(slug: str, entry: ObservationEntry) -> int:
             entry_dict["id"] = _next_id(entries)
         entries.append(entry_dict)
         _write_entries(path, entries)
+    log_context_access(kind="write", path=path)
 
     return entry_dict["id"]
 
@@ -68,6 +70,7 @@ def list_observations(
     status_filter: str | None = None,
 ) -> list[ObservationEntry]:
     path = _get_observations_path(slug)
+    log_context_access(kind="read", path=path)
     entries = _read_entries(path)
 
     if status_filter:
@@ -98,6 +101,7 @@ def update_observation_status(slug: str, obs_id: int, new_status: str) -> bool:
 
         if found:
             _write_entries(path, entries)
+            log_context_access(kind="write", path=path)
     return found
 
 
