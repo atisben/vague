@@ -32,6 +32,17 @@ def isolate_claude_env(tmp_path, monkeypatch):
     monkeypatch.setenv("VAGUE_HOME", str(isolated_home))
 
 
+@pytest.fixture(autouse=True)
+def clear_claude_session_id(monkeypatch):
+    """Run every test as if outside Claude Code.
+
+    The real suite runs inside a Claude Code session where this variable is set,
+    which would make every vague command log context events. Tests that need
+    the variable set it explicitly.
+    """
+    monkeypatch.delenv("CLAUDE_CODE_SESSION_ID", raising=False)
+
+
 @pytest.fixture
 def vague_home_dir(tmp_path):
     """Create a temporary VAGUE_HOME directory without touching the environment.

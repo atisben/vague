@@ -40,17 +40,3 @@ def test_level_filters_below_threshold(vague_home):
     text = (vague_home / "logs" / "vague.log").read_text()
     assert "should appear" in text
     assert "should not appear" not in text
-
-
-def test_corrupt_analytics_file_logs_warning(vague_home):
-    os.environ["VAGUE_LOG"] = "info"
-    reset_logging()
-    analytics_dir = vague_home / "analytics"
-    analytics_dir.mkdir()
-    (analytics_dir / "skill-usage.md").write_text("---\nentries: [\nbad\n---\n")
-
-    from vague.sdk.core.analytics import get_analytics
-    assert get_analytics("all") == []
-
-    text = (vague_home / "logs" / "vague.log").read_text()
-    assert "failed to read entries" in text

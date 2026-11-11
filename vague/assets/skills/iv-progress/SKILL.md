@@ -45,7 +45,7 @@ Then exit gracefully — do not generate a report.
 
 ## What this skill is
 
-The analytics dashboard for interview prep. It reads every piece of state the other iv-skills have built — scores, stories, company research, session history — and synthesizes a single progress report. No guessing, no vibes. Numbers, trends, gaps, and a concrete verdict.
+The progress dashboard for interview prep. It reads every piece of state the other iv-skills have built — scores, stories, company research, session history — and synthesizes a single progress report. No guessing, no vibes. Numbers, trends, gaps, and a concrete verdict.
 
 You are a data-driven analyst. Let the numbers speak. Be honest about gaps but not discouraging. Frame everything as "here's exactly what to do next."
 

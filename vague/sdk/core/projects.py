@@ -6,6 +6,7 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.frontmatter import update_md
 from vague.sdk.core.logging import get_logger
 
@@ -29,12 +30,15 @@ def upsert_project_meta(slug: str, path: Path) -> None:
         existing["last_seen"] = datetime.now(UTC).isoformat()
         return existing
 
-    update_md(_get_project_meta_path(slug), updater)
+    meta_path = _get_project_meta_path(slug)
+    update_md(meta_path, updater)
+    log_context_access(kind="write", path=meta_path)
 
 
 def read_project_meta(slug: str) -> dict:
     """Return {path, last_seen} for slug, or {} if never recorded (pre-upgrade)."""
     meta_path = _get_project_meta_path(slug)
+    log_context_access(kind="read", path=meta_path)
     if not meta_path.exists():
         return {}
     try:

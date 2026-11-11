@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.frontmatter import read_md, update_md
 
 
@@ -17,6 +18,7 @@ def _get_planning_dir(slug: str) -> Path:
 def get_state(slug: str, key: str) -> Any:
     """Read field from planning/state.md."""
     state_path = _get_planning_dir(slug) / "state.md"
+    log_context_access(kind="read", path=state_path)
     data = read_md(state_path)
     return data.get(key)
 
@@ -30,6 +32,7 @@ def set_state(slug: str, key: str, value: Any) -> None:
         return data
 
     update_md(state_path, updater)
+    log_context_access(kind="write", path=state_path)
 
 
 def list_plans(slug: str, phase: str) -> list[dict]:
@@ -40,6 +43,7 @@ def list_plans(slug: str, phase: str) -> list[dict]:
 
     plans = []
     for plan_file in sorted(phases_dir.glob("*.md")):
+        log_context_access(kind="read", path=plan_file)
         data = read_md(plan_file)
         data["_path"] = str(plan_file)
         plans.append(data)
@@ -50,6 +54,7 @@ def get_plan_status(slug: str, plan_id: str) -> dict:
     """Return frontmatter of PLAN.md as dict."""
     planning_dir = _get_planning_dir(slug)
     for plan_file in planning_dir.rglob(f"{plan_id}.md"):
+        log_context_access(kind="read", path=plan_file)
         return read_md(plan_file)
     return {}
 
@@ -70,6 +75,7 @@ def complete_plan(slug: str, plan_id: str) -> None:
         return data
 
     update_md(plan_file, updater)
+    log_context_access(kind="write", path=plan_file)
 
     # Update roadmap.md
     roadmap_path = planning_dir / "roadmap.md"
@@ -84,3 +90,4 @@ def complete_plan(slug: str, plan_id: str) -> None:
         return data
 
     update_md(roadmap_path, roadmap_updater)
+    log_context_access(kind="write", path=roadmap_path)

@@ -8,7 +8,7 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 
 - **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **State lives in `~/.vague/`** and is scoped per project. Skills never touch the filesystem directly.
-- **Mechanical telemetry:** every skill preamble logs a usage event via `vague context --skill`, feeding `vague status`, `vague analytics-show`, and `/retro` with zero agent cooperation.
+- **Mechanical telemetry:** every skill preamble records the repo path via `vague context --skill`, feeding `vague status` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Cursor, or Windsurf.
 - **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite.
 
@@ -118,8 +118,6 @@ All data lives in `~/.vague/`:
 ```
 ~/.vague/
 ├── config.md
-├── analytics/
-│   └── skill-usage.md      ← written mechanically by `vague context --skill`
 └── projects/
     └── {owner-repo}/
         ├── project.md      ← repo path + last_seen (powers `vague status`)
@@ -187,13 +185,12 @@ into your `CLAUDE.md` outside the markers, then delete it yourself.
 
 ```bash
 vague init                              # JSON context for skills (slug, branch, config, learnings)
-vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + logs the usage event
+vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + records the repo path
 vague status                            # cross-project dashboard: branches, in-flight plans
 vague config-get proactive              # read config value
 vague config-set proactive false        # write config value
 vague learnings-log '<json>'            # append a learning
 vague learnings-search --type pitfall   # filter learnings
-vague analytics-show 7d                 # usage dashboard (7d | 30d | all)
 vague slug                              # print SLUG= and BRANCH=
 vague timeline-log '<json>'             # append session event
 vague commit "msg" --files f1 f2        # atomic git commit
@@ -206,16 +203,13 @@ vague install --runtime claude:work     # install/sync one Claude profile
 
 ## Telemetry
 
-Skill usage is captured **mechanically**: the preamble every skill runs —
-`eval "$(vague context --shell --skill <name>)"` — logs a usage event as a
+The project path is captured **mechanically**: the preamble every skill runs —
+`eval "$(vague context --shell --skill <name>)"` — records it as a
 side effect. No agent cooperation needed, no logging step a model can skip.
 
-Each invocation records:
-
-- a **usage event** (`skill`, `repo` slug, `branch`, `ts`) appended to
-  `~/.vague/analytics/skill-usage.md` (capped at 1,000 entries, oldest evicted)
-- the project's **repo path + last seen** in `~/.vague/projects/{slug}/project.md`
-  — this is what lets `vague status` run git checks across all your projects
+Each invocation records the project's **repo path + last seen** in
+`~/.vague/projects/{slug}/project.md`. This is what lets `vague status` run
+git checks across all your projects.
 
 Capture is best-effort and can never break a skill: if the write fails
 (read-only disk, lock contention), the error is swallowed and the context
@@ -225,7 +219,6 @@ output still prints.
 
 ```bash
 vague status              # cross-project dashboard: branches, in-flight plans, last activity
-vague analytics-show 7d   # skill usage counts (7d | 30d | all)
 ```
 
 `/triage` runs `vague status` automatically as its first step, and
@@ -235,7 +228,7 @@ vague analytics-show 7d   # skill usage counts (7d | 30d | all)
 
 Everything is **100% local** — nothing ever leaves your machine (see
 [Telemetry](docs/telemetry.md) for the full inventory of what is and isn't
-logged). To disable usage events:
+logged), including how to wire the `vague log-event` hook. To disable event logging:
 
 ```bash
 vague config-set telemetry off

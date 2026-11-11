@@ -30,14 +30,6 @@ class TimelineEntry(BaseModel):
     ts: datetime
 
 
-class AnalyticsEntry(BaseModel):
-    skill: str
-    ts: datetime
-    repo: str
-    branch: str = ""
-    event: str = "start"
-
-
 class VagueInitResult(BaseModel):
     slug: str
     branch: str

@@ -21,15 +21,13 @@ def test_status_json_empty(vague_home):
     assert json.loads(result.output) == []
 
 
-def test_context_skill_records_usage_and_path(vague_home, git_repo, monkeypatch):
+def test_context_skill_records_project_path(vague_home, git_repo, monkeypatch):
     monkeypatch.chdir(git_repo)
     result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "dev-ship"])
     assert result.exit_code == 0
     assert "SLUG=" in result.output
 
-    usage = vague_home / "analytics" / "skill-usage.md"
-    assert usage.exists()
-    assert "dev-ship" in usage.read_text()
+    assert not (vague_home / "analytics").exists()
 
     meta = vague_home / "projects" / "repo" / "project.md"
     assert meta.exists()
@@ -56,8 +54,7 @@ def test_context_skill_respects_telemetry_off(vague_home, git_repo, monkeypatch)
     assert result.exit_code == 0
     assert "SLUG=" in result.output
 
-    # usage event suppressed; project.md is structural and still written
-    assert not (vague_home / "analytics" / "skill-usage.md").exists()
+    # project.md is structural and still written
     assert (vague_home / "projects" / "repo" / "project.md").exists()
 
 
@@ -65,7 +62,6 @@ def test_context_without_skill_writes_nothing(vague_home, git_repo, monkeypatch)
     monkeypatch.chdir(git_repo)
     result = runner.invoke(sdk_app, ["context", "--shell"])
     assert result.exit_code == 0
-    assert not (vague_home / "analytics" / "skill-usage.md").exists()
     assert not (vague_home / "projects" / "repo" / "project.md").exists()
 
 
@@ -76,7 +72,6 @@ def test_context_skill_capture_failure_still_outputs(vague_home, git_repo, monke
         raise OSError("disk full")
 
     monkeypatch.chdir(git_repo)
-    monkeypatch.setattr(init_mod, "record_skill_start", boom)
     monkeypatch.setattr(init_mod, "upsert_project_meta", boom)
     result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "dev-ship"])
     assert result.exit_code == 0
@@ -126,19 +121,3 @@ def test_status_counts_inflight_designs(vague_home):
     result = runner.invoke(sdk_app, ["status", "--json"])
     rows = {r["slug"]: r for r in json.loads(result.output)}
     assert rows["planned-project"]["inflight_designs"] == 1
-
-
-def test_analytics_cap_evicts_oldest(vague_home, monkeypatch):
-    from datetime import UTC, datetime
-
-    import vague.sdk.core.analytics as analytics_mod
-    from vague.models import AnalyticsEntry
-
-    monkeypatch.setattr(analytics_mod, "MAX_ENTRIES", 3)
-    for i in range(5):
-        analytics_mod.append_analytics(
-            AnalyticsEntry(skill=f"skill-{i}", ts=datetime.now(UTC), repo="r")
-        )
-    entries = analytics_mod.get_analytics("all")
-    assert len(entries) == 3
-    assert [e.skill for e in entries] == ["skill-2", "skill-3", "skill-4"]

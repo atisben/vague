@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from vague.models import LearningEntry
+from vague.sdk.core.events import log_context_access
 from vague.sdk.core.frontmatter import file_lock
 from vague.sdk.core.logging import get_logger
 
@@ -57,6 +58,7 @@ def append_learning(slug: str, entry: LearningEntry) -> None:
             entries = entries[:500]
 
         _write_entries(path, entries)
+    log_context_access(kind="write", path=path)
 
 
 def search_learnings(
@@ -66,6 +68,7 @@ def search_learnings(
 ) -> list[LearningEntry]:
     """Read and filter learnings. Dedup by (key, type) — keep latest."""
     path = _get_learnings_path(slug)
+    log_context_access(kind="read", path=path)
     entries = _read_entries(path)
 
     # Dedup: keep latest by (key, type)

@@ -116,7 +116,6 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 
 - Full `learnings.md` (only top 3 by confidence, surfaced by `vague init`)
 - Full `timeline.md` (write-only from skills — read by `/retro` only)
-- `skill-usage.md` analytics (only read by `vague analytics-show`, not by LLM)
 - Other projects' data (scoped strictly to the current slug)
 
 ---
@@ -126,8 +125,6 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 ```
 ~/.vague/
 ├── config.md                           ← frontmatter: proactive, telemetry (created on first config-set)
-├── analytics/
-│   └── skill-usage.md                  ← usage entries, written mechanically by `vague context --skill` (max 1000)
 └── projects/
     └── {owner-repo}/                   ← one dir per git repo
         ├── project.md                  ← repo path + last_seen, upserted by `vague context --skill`
@@ -160,7 +157,6 @@ Every skill follows this pattern:
 1. eval "$(vague context --shell --skill {name})"
    └── emits SLUG/BRANCH/PROACTIVE/TELEMETRY for the preamble
    └── side effect (best-effort, never fails the output):
-       ├── appends a usage event to analytics/skill-usage.md
        └── upserts projects/{slug}/project.md (repo path, last_seen)
 
 2. [skill does its work — reads files, writes code, asks questions]
