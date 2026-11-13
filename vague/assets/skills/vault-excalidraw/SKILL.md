@@ -109,8 +109,10 @@ The note is the deliverable. Obsidian renders the Mermaid block, and its text st
 
 | Content | Folder |
 |---|---|
-| Architecture, code walkthrough | `7. Code/` if it exists, else `6. Atomic Notes/` |
-| Anything else | `6. Atomic Notes/` |
+| Alma work (tagged `alma`) | `6. Atomic Notes/Alma/` |
+| Anything else, including architecture and code walkthroughs | `6. Atomic Notes/` |
+
+Never create a folder. `8. Excalidraw/` belongs to the Excalidraw plugin, so do not write notes there.
 
 Use the `/vault` save template exactly: frontmatter with `aliases` and `tags`, `# YYYY-MM-DD - Title` heading, then:
 

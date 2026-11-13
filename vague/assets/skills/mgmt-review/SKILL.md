@@ -159,7 +159,7 @@ blind spots** the last review named — did they move? Closed growth edges are s
 strongest evidence in Step 5.
 
 *(Fallback only if the Skill tool is unavailable: `grep -rilF "<Member Name>"
-"$HOME/Obsidian/8. Team" --include="*.md"`; the primary path is the `/vault`
+"$HOME/Obsidian/6. Atomic Notes/Team" --include="*.md"`; the primary path is the `/vault`
 invocation above.)*
 
 ---
@@ -325,7 +325,7 @@ Confirm the local path once written: "Snapshot written to `<SNAP>`."
 Invoke the `/vault` skill with the Skill tool in **save** mode, using the LOCKED
 conventions:
 
-- **Folder:** `8. Team/`
+- **Folder:** `6. Atomic Notes/Team/`
 - **Tags:** `review`, `perf_review`, plus the member `<slug>`
 - **Title:** `Perf Review — <Name> — <CYCLE>`
 - **Content:** the snapshot body from Step 7.
