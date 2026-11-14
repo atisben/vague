@@ -183,7 +183,7 @@ no artifact, it reads git state and routes to the skill below that fits.
 /plan-eng           → reads scope review + design doc, writes engineering plan
 
 /diagram            → reads code or notes, writes HTML diagram to ~/.vague/projects/{slug}/diagrams/
-/vault export       → copies an artifact into ~/Obsidian/Attachments/, writes a note that embeds it
+/vault export       → copies an artifact into ~/Obsidian/7. Attachments/, writes a note that embeds it
 /vault-excalidraw   → writes a Mermaid flowchart into a vault note, copies it for Excalidraw's Mermaid import
 /slides             → reads notes or a .pptx, writes a self-contained HTML deck to the user's cwd
 

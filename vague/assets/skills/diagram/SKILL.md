@@ -128,7 +128,7 @@ Ask via AskUserQuestion: "Opened in your browser. What should change?" Apply, re
 
 Once approved, offer:
 - Copy into the repo (e.g. `docs/architecture.html`) if it documents this codebase.
-- Export to the vault via `/vault export <path>`: it copies the HTML to `Attachments/` and writes a note that embeds it.
+- Export to the vault via `/vault export <path>`: it copies the HTML to `7. Attachments/` and writes a note that embeds it.
 
 ---
 

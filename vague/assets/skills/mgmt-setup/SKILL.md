@@ -74,7 +74,7 @@ $VAGUE_HOME/team/           (global state root; must NEVER be inside a git repo)
 manager: <name>
 created: <YYYY-MM-DD>
 review_convention:
-  vault_folder: "8. Team/"
+  vault_folder: "6. Atomic Notes/Team/"
   vault_tags: [review, perf_review]
   title_format: "Perf Review — {name} — {period}"
   cycles: [H1-2026, H2-2026]     # named review cycles the manager runs

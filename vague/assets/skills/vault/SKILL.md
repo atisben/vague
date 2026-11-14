@@ -1,6 +1,6 @@
 ---
 name: vault
-version: 1.2.0
+version: 1.3.0
 description: |
   Obsidian vault operations: save notes, export artifacts (HTML diagrams, SVG,
   images) as embedded notes, search, and retrieve content.
@@ -29,7 +29,26 @@ VAULT="$HOME/Obsidian"
 TODAY=$(date +%Y-%m-%d)
 echo "VAULT: $VAULT"
 echo "TODAY: $TODAY"
+echo "FOLDERS (the only valid destinations):"
+find "$VAULT" -maxdepth 2 -type d -not -path '*/.*' | sed "s|$VAULT/||" | sort
 ```
+
+## Vault map
+
+This is the layout at the time of writing. The `FOLDERS` list the preamble prints wins when the two differ.
+
+| Folder | Holds | Written by this skill? |
+|---|---|---|
+| `1. Rough Notes/` | Daily and scratch notes | no |
+| `2. Source Materials/` | Saved links and sources | no |
+| `3. Tags/`, `4. indexes/`, `5. Templates/` | Obsidian structure | no |
+| `6. Atomic Notes/` | Every finished note | **yes, notes** |
+| `6. Atomic Notes/Alma/` | Work notes for Alma, tagged `alma` | **yes, notes** |
+| `6. Atomic Notes/Team/` | Management notes: perf reviews from `/mgmt-review` | **yes, notes** |
+| `7. Attachments/` | Images, SVG, HTML | **yes, attachments** |
+| `8. Excalidraw/` | Drawings the Excalidraw plugin owns | no |
+
+**Never create a folder.** Do not run `mkdir` under `$VAULT`. Every destination must appear in the `FOLDERS` list. There is no `7. Code/`, `Attachments/` or `Notes/`. If no folder fits, use `6. Atomic Notes/` and tell the user.
 
 ---
 
@@ -76,20 +95,21 @@ If A: read the existing file, append or merge new content, write back. Done.
 
 ### Step 2 — Infer folder
 
-**Caller-specified folder (overrides inference):** if the invoker passed an explicit
-target folder — e.g. another skill invoking `/vault save … folder "8. Team/"` — use
-that folder verbatim under `$VAULT` (create it if missing) and skip the inference table
-below. Do the same for any caller-supplied tags in Step 3. This lets specialized skills
-(e.g. `/mgmt-review`) file notes into a dedicated folder instead of the general buckets.
+**Caller-specified folder:** if the invoker passed an explicit target folder (for example
+another skill invoking `/vault save … folder "<folder>/"`), check it against the `FOLDERS`
+list.
+
+- It exists: use it verbatim and skip the table below. Do the same for caller-supplied tags in Step 3.
+- It does not exist: do **not** create it. Ask via AskUserQuestion: A) save to `6. Atomic Notes/`, B) the user names an existing folder.
 
 Otherwise, infer:
 
 | Content type | Folder |
 |---|---|
-| Code walkthrough, engineering review, architecture, technical deep-dive | `$VAULT/7. Code/` |
-| Everything else (how-tos, decisions, research, personal, ML concepts) | `$VAULT/6. Atomic Notes/` |
+| Work at Alma (scoring, fraud, roadmap, team, backend), tagged `alma` | `$VAULT/6. Atomic Notes/Alma/` |
+| Everything else: code walkthroughs, architecture, how-tos, decisions, research, personal, ML concepts | `$VAULT/6. Atomic Notes/` |
 
-If ambiguous, ask.
+Code and architecture notes get the `code` or `architecture` tag, not their own folder. If ambiguous between the two rows, ask.
 
 ### Step 3 — Propose tags
 
@@ -97,11 +117,11 @@ Analyze the content and propose 2–5 tags. Use these conventions:
 
 | Domain | Tags |
 |--------|------|
-| Work | `engineering`, `ml`, `data`, `oncall` |
+| Work | `alma` (every Alma note), `engineering`, `ml`, `data`, `oncall`, `scoring`, `fraud`, `strategy` |
 | ML / AI | `ml_fundamental`, `llm`, `ai`, `model_training` |
 | Infrastructure / homelab | `homelab`, `devops`, `proxmox`, `docker` |
 | Personal | `personal` |
-| Topic overlays | `architecture`, `how_to`, `review`, `decision`, `debugging` |
+| Topic overlays | `architecture`, `code`, `how_to`, `review`, `decision`, `debugging`, `research` |
 
 Present proposed tags and confirm/adjust via AskUserQuestion:
 ```
@@ -140,7 +160,7 @@ tags:
  -
 ```
 
-Use the Write tool to create `$FOLDER/$TITLE.md`.
+Use the Write tool to create `$FOLDER/$TITLE.md`. The folder must already exist. If Write fails because it does not, stop and re-run Step 2. Never `mkdir` to fix it.
 
 Confirm: "Saved to `$FOLDER/$TITLE.md`." Then [record the write](#record-the-write). This also applies when you update an existing note.
 
@@ -164,7 +184,7 @@ vague memory-log vault-<title-slug> "Saved <Title> to <folder>." --files "<absol
 
 ## EXPORT MODE
 
-Turns a file artifact into a vault note that displays it. For an editable drawing instead of a static artifact, use `/vault-excalidraw`. The artifact goes to `Attachments/`; a note in the usual template embeds it with `![[...]]`.
+Turns a file artifact into a vault note that displays it. For an editable drawing instead of a static artifact, use `/vault-excalidraw`. The artifact goes to `7. Attachments/`; a note in the usual template embeds it with `![[...]]`.
 
 ### What Obsidian can display
 
@@ -195,15 +215,15 @@ If off, tell the user: "Obsidian won't display the HTML inline until you enable 
 
 ### Step 3 — Title, folder, tags
 
-Run **Save** Steps 1–4 (dedup check, folder, tags, title). For diagrams: architecture → `7. Code/`, mind map → `6. Atomic Notes/`.
+Run **Save** Steps 1–4 (dedup check, folder, tags, title). Diagrams follow the same folder table: `6. Atomic Notes/Alma/` for Alma work, else `6. Atomic Notes/`.
 
 ### Step 4 — Copy the artifact
 
 Name the attachment after the note title, not the timestamped source name:
 
 ```bash
-mkdir -p "$VAULT/Attachments"
-DEST="$VAULT/Attachments/<Title>.<ext>"
+[ -d "$VAULT/7. Attachments" ] || { echo "MISSING: 7. Attachments"; exit 1; }
+DEST="$VAULT/7. Attachments/<Title>.<ext>"
 [ -e "$DEST" ] && echo "EXISTS: $DEST"
 cp "<source path>" "$DEST"
 ```
@@ -224,7 +244,7 @@ Obsidian search does not index text inside an embedded file. Write the key facts
 Source: `<original absolute path>`
 ```
 
-Confirm: "Exported to `$FOLDER/$TITLE.md`, artifact in `Attachments/<Title>.<ext>`." Then [record the write](#record-the-write) for the note and for the attachment.
+Confirm: "Exported to `$FOLDER/$TITLE.md`, artifact in `7. Attachments/<Title>.<ext>`." Then [record the write](#record-the-write) for the note and for the attachment.
 
 Mention once: the HTML diagram picks light/dark from the OS setting, not the Obsidian theme.
 
