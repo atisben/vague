@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import subprocess
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 from vague.sdk.core.events import event_ts, read_events
 from vague.sdk.core.logging import get_logger
-from vague.sdk.core.memory import load_ledger, vague_home
+from vague.sdk.core.memory import Memory, load_ledger
 
 GIT_TIMEOUT_S = 2
 # "ship" is the pre-rename name, still present in events logged before the rename.
@@ -31,17 +31,19 @@ def collect_status() -> list[dict]:
         moment = event_ts(value=event.get("ts"))
         if event.get("repo") and moment:
             by_repo.setdefault(str(event["repo"]), []).append((moment, event))
-    memories = Counter(m.scope for m in load_ledger() if m.status == "active" and m.text)
+    ledger = load_ledger()
+    memories = Counter(m.scope for m in ledger if m.status == "active" and m.text)
     for scope in memories.keys() - by_repo.keys() - {"global"}:
         by_repo[scope] = []
-    rows = [_project_row(slug=slug, events=sorted(events, key=lambda pair: pair[0]), memories=memories[slug])
+    rows = [_project_row(slug=slug, events=sorted(events, key=lambda pair: pair[0]), memories=memories[slug],
+                         ledger=ledger)
             for slug, events in by_repo.items()]
     # A scope with memories but no events has no last_seen and sorts last.
     rows.sort(key=lambda r: r["last_seen"] or "", reverse=True)
     return rows
 
 
-def _project_row(slug: str, events: list[tuple[datetime, dict]], memories: int) -> dict:
+def _project_row(slug: str, events: list[tuple[datetime, dict]], memories: int, ledger: list[Memory]) -> dict:
     path = next((str(e["main_root"]) for _, e in reversed(events) if e.get("main_root")), None)
     starts = [(ts, e) for ts, e in events if e.get("event") == "skill_start" and e.get("skill")]
     last_start = starts[-1] if starts else None
@@ -55,8 +57,7 @@ def _project_row(slug: str, events: list[tuple[datetime, dict]], memories: int) 
         "last_seen": events[-1][0].isoformat() if events else None,
         "last_event": {"skill": last_start[1]["skill"], "event": "skill_start", "ts": last_start[0].isoformat()}
         if last_start else None,
-        "inflight_designs": _count_inflight_designs(designs=vague_home() / "projects" / slug / "designs",
-                                                    last_ship=last_ship),
+        "inflight_designs": _count_inflight_designs(ledger=ledger, scope=slug, last_ship=last_ship),
         "memories": memories,
     }
     if path:
@@ -84,9 +85,11 @@ def _git(repo: Path, *args: str) -> str | None:
     return None
 
 
-def _count_inflight_designs(designs: Path, last_ship: datetime | None) -> int:
-    """Design docs modified after the last dev-ship start: plans not yet shipped."""
-    if not designs.is_dir():
-        return 0
-    return sum(1 for doc in designs.glob("*.md")
-               if last_ship is None or datetime.fromtimestamp(doc.stat().st_mtime, tz=UTC) > last_ship)
+def _count_inflight_designs(ledger: list[Memory], scope: str, last_ship: datetime | None) -> int:
+    """/plan-eng doc memories of this scope logged after the last dev-ship start: plans not yet shipped.
+
+    A doc key carries the branch, so re-planning a branch supersedes its pointer instead of adding one.
+    """
+    return sum(1 for m in ledger
+               if m.scope == scope and m.kind == "doc" and m.skill == "plan-eng" and m.status == "active"
+               and (last_ship is None or m.ts > last_ship))

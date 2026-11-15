@@ -14,7 +14,7 @@ import pytest
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app
-from vague.sdk.core.memory import BLOCK_LIMIT, Memory, append_memory, ledger_path, scratch_path
+from vague.sdk.core.memory import BLOCK_LIMIT, Memory, append_memory, ledger_path
 
 runner = CliRunner()
 
@@ -150,12 +150,65 @@ def test_memory_log_status_only_for_unknown_key_errors(home, repo):
     assert not (home / "memory.jsonl").exists()
 
 
-def test_memory_log_scratch_writes_scratch_file_not_ledger(home, repo):
+def test_scratch_flag_writes_a_note(home, repo):
     result = _log("claim-auth-refactor", "agent 2 owns src/auth", "--scratch")
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
+    (row,) = _ledger(home)
+    assert (row["key"], row["kind"], row["scope"]) == ("claim-auth-refactor", "note", "o-r")
+    assert not (home / "scratch").exists()
+
+
+def test_doc_flag_requires_files(home, repo):
+    result = _log("eng-plan-main", "Eng plan for main.", "--doc")
+    assert result.exit_code == 1
+    assert "--doc" in result.stderr and "--files" in result.stderr
     assert not (home / "memory.jsonl").exists()
-    (line,) = scratch_path(scope="o-r").read_text().splitlines()
-    assert json.loads(line)["key"] == "claim-auth-refactor"
+
+
+def test_doc_flag_writes_a_doc_with_its_deliverable(home, repo, tmp_path):
+    plan = tmp_path / "plan.md"
+    plan.write_text("# plan")
+    result = _log("eng-plan-main", "Eng plan for main.", "--doc", "--files", str(plan), "--skill", "plan-eng")
+    assert result.exit_code == 0, result.output
+    (row,) = _ledger(home)
+    assert (row["kind"], row["skill"], row["files"]) == ("doc", "plan-eng", [str(plan)])
+
+
+@pytest.mark.parametrize(("first", "second"), [
+    (["--scratch"], []),
+    ([], ["--scratch"]),
+    (["--doc", "--files", "/p.md"], ["--scratch"]),
+])
+def test_log_rejects_kind_change_on_existing_key(home, repo, first, second):
+    assert _log("k", "first", *first).exit_code == 0
+    result = _log("k", "second", *second)
+    assert result.exit_code == 1
+    assert "note" in result.stderr
+    assert len(_ledger(home)) == 1
+
+
+def test_log_allows_learning_to_become_doc(home, repo):
+    _log("vault-my-note", "Saved My Note.", "--files", "/vault/My Note.md")
+    result = _log("vault-my-note", "My Note in the vault.", "--doc", "--files", "/vault/My Note.md")
+    assert result.exit_code == 0, result.output
+    assert [row["kind"] for row in _ledger(home)] == ["learning", "doc"]
+
+
+def test_doc_flag_rejects_about_and_scratch(home, repo):
+    assert _log("k", "t", "--doc", "--files", "/p.md", "--scratch").exit_code == 1
+    assert _log("k", "t", "--doc", "--files", "/p.md", "--about", "meta").exit_code == 1
+
+
+def test_memory_search_skill_filter_and_doc_kind(home, repo):
+    _log("eng-plan-main", "Eng plan.", "--doc", "--files", "/p.md", "--skill", "plan-eng")
+    _log("plan-fact", "A fact about plan-eng.", "--skill", "plan-eng-lite")
+    assert _search("--skill", "plan-eng") == ["o-r/eng-plan-main  [plan-eng]  Eng plan.  (files: /p.md)"]
+    assert _search("--kind", "doc") == ["o-r/eng-plan-main  [plan-eng]  Eng plan.  (files: /p.md)"]
+
+
+def test_memory_search_rejects_unknown_kind_and_conflicting_scratch(home, repo):
+    assert runner.invoke(sdk_app, ["memory-search", "--kind", "nope"]).exit_code == 1
+    assert runner.invoke(sdk_app, ["memory-search", "--kind", "doc", "--scratch"]).exit_code == 1
 
 
 def test_memory_search_ands_words_and_logs_served_ids(home, repo, in_session):
@@ -203,9 +256,9 @@ def test_status_help_mentions_designs_not_plans():
     assert "in-flight designs" in result.stdout and "plans" not in result.stdout
 
 
-def _put(scope: str, key: str, text: str = "needle", minutes_ago: int = 0, scratch: bool = False) -> None:
+def _put(scope: str, key: str, text: str = "needle", minutes_ago: int = 0, kind: str = "learning") -> None:
     ts = datetime.now(UTC) - timedelta(minutes=minutes_ago)
-    append_memory(memory=Memory(ts=ts, scope=scope, key=key, kind="learning", text=text), scratch=scratch)
+    append_memory(memory=Memory(ts=ts, scope=scope, key=key, kind=kind, text=text))
 
 
 def _search(*args: str) -> list[str]:
@@ -257,9 +310,10 @@ def test_memory_search_without_words_lists_every_active_memory_newest_first(home
     assert read["ids"] == ["other/new", "global/mid", "elsewhere/old"]
 
 
-def test_memory_search_scope_all_scratch_spans_every_scratchpad(home, repo):
-    _put(scope="o-r", key="mine", scratch=True, minutes_ago=1)
-    _put(scope="elsewhere", key="theirs", scratch=True)
+def test_memory_search_scope_all_scratch_spans_every_scope(home, repo):
+    _put(scope="o-r", key="mine", kind="note", minutes_ago=1)
+    _put(scope="elsewhere", key="theirs", kind="note")
+    _put(scope="o-r", key="fact")
     assert _search("--scratch") == ["o-r/mine  needle"]
     assert _search("--scratch", "--scope", "all") == ["elsewhere/theirs  needle", "o-r/mine  needle"]
     assert _search("--scratch", "--scope", "elsewhere") == ["elsewhere/theirs  needle"]
@@ -275,7 +329,7 @@ def test_memory_review_command_is_gone(home, repo):
 
 def test_memory_search_scratch_hides_old_notes(home, repo):
     old = datetime.now(UTC) - timedelta(days=8)
-    append_memory(memory=Memory(ts=old, scope="o-r", key="old", kind="learning", text="needle"), scratch=True)
+    append_memory(memory=Memory(ts=old, scope="o-r", key="old", kind="note", text="needle"))
     _log("fresh", "needle", "--scratch")
     result = runner.invoke(sdk_app, ["memory-search", "needle", "--scratch"])
     assert result.stdout.splitlines() == ["o-r/fresh  needle"]
@@ -311,7 +365,7 @@ def test_context_read_events_carry_ids_never_text_or_files(home, repo, in_sessio
     assert "TOPSECRETTEXT" in result.stdout
     reads = [e for e in _events(home) if e["command"] == "context" and e["event"] == "context_read"]
     by_file = {e["path"]: e["ids"] for e in reads}
-    assert by_file == {"memory.jsonl": ["o-r/k"], "scratch/o-r.jsonl": ["o-r/note"]}
+    assert by_file == {"memory.jsonl": ["o-r/note", "o-r/k"]}
     raw = (home / "events").read_text() if (home / "events").is_file() else "".join(
         f.read_text() for f in (home / "events").glob("*.jsonl"))
     for secret in ("TOPSECRETTEXT", "SCRATCHSECRET", "secret_module"):

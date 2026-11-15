@@ -121,12 +121,18 @@ def memory_log(
     use_global: Annotated[bool, typer.Option("--global", help="Holds in every repo: scope global.")] = False,
     about: Annotated[str | None, typer.Option("--about", help="Feedback about this skill (observation).")] = None,
     status: Annotated[str | None, typer.Option("--status", help="active|forgotten|actioned|declined")] = None,
-    scratch: Annotated[bool, typer.Option("--scratch", help="Write to the scope's shared scratchpad.")] = False,
-    skill: Annotated[str | None, typer.Option("--skill", help="The skill writing this learning.")] = None,
+    scratch: Annotated[bool, typer.Option(
+        "--scratch", help="A note for this project's other agents (kind note), hidden after 7 days.")] = False,
+    doc: Annotated[bool, typer.Option(
+        "--doc", help="A pointer to a document a skill wrote (kind doc). Needs --files <path>.")] = False,
+    skill: Annotated[str | None, typer.Option("--skill", help="The skill writing this memory.")] = None,
 ) -> None:
-    """Log a memory to the global ledger. Re-using a key supersedes it."""
+    """Log a memory to the global ledger. Re-using a key supersedes it.
+
+    Kinds: learning (default), observation (--about), note (--scratch), doc (--doc).
+    """
     cmd_memory_log(key=key, text=text, files=files, use_global=use_global, about=about, status=status,
-                   scratch=scratch, skill=skill)
+                   scratch=scratch, skill=skill, doc=doc)
 
 
 @sdk_app.command("memory-search")
@@ -134,11 +140,12 @@ def memory_search(
     words: Annotated[list[str] | None, typer.Argument(help="Words to match; none lists every memory.")] = None,
     scope: Annotated[str | None, typer.Option(
         "--scope", help="A project scope, global, or all. Default: this scope plus global.")] = None,
-    kind: Annotated[str | None, typer.Option("--kind", help="learning|observation")] = None,
-    scratch: Annotated[bool, typer.Option("--scratch", help="Search scratchpads instead of the ledger.")] = False,
+    kind: Annotated[str | None, typer.Option("--kind", help="learning|observation|note|doc")] = None,
+    scratch: Annotated[bool, typer.Option("--scratch", help="Only notes: shorthand for --kind note.")] = False,
+    skill: Annotated[str | None, typer.Option("--skill", help="Only memories this skill wrote (exact match).")] = None,
 ) -> None:
     """Print memories that contain every word across key, text, files and skill, newest first."""
-    cmd_memory_search(words=words or [], scope=scope, kind=kind, scratch=scratch)
+    cmd_memory_search(words=words or [], scope=scope, kind=kind, scratch=scratch, skill=skill)
 
 
 @sdk_app.command("ui")

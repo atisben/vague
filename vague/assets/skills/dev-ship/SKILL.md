@@ -8,6 +8,7 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: true
 allowed-tools:
   - Bash
@@ -43,10 +44,11 @@ BASE=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF
 echo "BASE: $BASE"
 # Diff summary
 git diff origin/$BASE --stat 2>/dev/null || echo "NO_DIFF"
-# Find the most recent engineering/design plan
-PLAN_FILE=$(ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -1)
-echo "PLAN_FILE: ${PLAN_FILE:-NONE}"
+# Find the engineering plans (doc pointers to vault notes), newest first
+vague memory-search --kind doc --skill plan-eng || echo "PLAN: NONE"
 ```
+
+Each line prints as `scope/key  [skill]  text  (files: <path>)`. The plan for this branch has the key `eng-plan-<branch>`, with every `/` in the branch replaced by `-`. Take the path of that line, or of the newest line when no key matches. Call it `$PLAN_FILE`: it is a vault note.
 
 **If `$PLAN_FILE` exists, read it now.** Use it for context throughout: commit messages, PR description, and the review checklist should reference the plan's goals and test strategy.
 
@@ -194,9 +196,9 @@ gh pr create \
 
 ## Step 9: Update Plan
 
-If `$PLAN_FILE` exists, update it:
-- Mark completed items in `## Next Steps` (check the `/dev-ship` checkbox)
-- Add a `## Shipped` section at the bottom:
+If `$PLAN_FILE` exists, update that vault note with Edit:
+- Mark completed items in `# Next Actions` (check the `/dev-ship` checkbox)
+- Add a `## Shipped` section just above `# Next Actions`:
 
 ```markdown
 ## Shipped

@@ -26,6 +26,7 @@ block, and `--skill` ranks this skill's memories first.
 1. Run the preamble above. It sets `$SLUG`, `$BRANCH`, `$PROACTIVE`, `$TELEMETRY` and prints the ranked memories.
 2. Do work...
 3. Log a learning, if one emerged. The preamble printed the command, so name only this skill's trigger here.
+4. If the skill writes a document, save it in the vault (through `/vault`) or the repo, never under `~/.vague/`. Then point the ledger at it: `vague memory-log <doc-key> "<one-line summary>" --doc --files "<absolute path>" --skill vague-my-skill`.
 
 ## Observation Protocol
 

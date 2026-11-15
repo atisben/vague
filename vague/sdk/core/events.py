@@ -214,11 +214,10 @@ def _git_for_cwd() -> tuple[GitContext, str]:
 
 
 def _memory_name(resolved: str) -> str | None:
-    """`memory.jsonl` or `scratch/<scope>.jsonl` for a memory store, so the event names the store, not the machine."""
+    """`memory.jsonl` for the memory ledger, so the event names the store, not the machine."""
     home = os.path.realpath(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
     name = os.path.relpath(resolved, home)
-    is_scratch = os.path.dirname(name) == "scratch" and name.endswith(".jsonl")
-    return name if name == "memory.jsonl" or is_scratch else None
+    return name if name == "memory.jsonl" else None
 
 
 def log_context_access(

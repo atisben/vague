@@ -10,6 +10,7 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: true
 allowed-tools:
   - Bash
@@ -25,8 +26,7 @@ allowed-tools:
 
 ```bash
 eval "$(vague context --shell --skill diagram)"
-VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-DIAGRAM_DIR="$VAGUE_HOME/projects/$SLUG/diagrams"
+DIAGRAM_DIR="/tmp/vague-diagrams"   # drafts only: the approved diagram moves to the vault in Step 5
 mkdir -p "$DIAGRAM_DIR"
 ```
 
@@ -48,7 +48,7 @@ What should I draw?
 
 | Kind | Shape | Source of truth |
 |---|---|---|
-| Mind map | Radial tree: root in the center, 3–7 branches, ≤ 3 levels deep | The user's notes, a doc, a design doc in `$VAGUE_HOME/projects/$SLUG/designs/`, or the conversation |
+| Mind map | Radial tree: root in the center, 3–7 branches, ≤ 3 levels deep | The user's notes, a doc, a design doc (`vague memory-search --kind doc` lists the vault paths), or the conversation |
 | Architecture overview | Layered boxes-and-arrows: entry points → components → stores/external services | The code itself |
 
 The one distinction: a mind map shows **what relates to what** (no direction, no flow).
@@ -102,9 +102,9 @@ Produce one self-contained HTML file:
 - Below the diagram, for architecture views only, add the inventory table from Step 2 and a single "The one thing to remember" sentence.
 - Mobile: the SVG scales to width; the table scrolls inside its own container.
 
-Save and open:
+Save the draft and open it:
 ```bash
-OUTPUT_FILE="$DIAGRAM_DIR/<kind>-<short-topic>-$(date +%Y%m%d-%H%M%S).html"
+OUTPUT_FILE="/tmp/vague-diagrams/<kind>-<short-topic>-$(date +%Y%m%d-%H%M%S).html"
 open "$OUTPUT_FILE"
 ```
 
@@ -126,9 +126,22 @@ Fix anything that fails, then reopen.
 
 Ask via AskUserQuestion: "Opened in your browser. What should change?" Apply, reopen, repeat until approved.
 
-Once approved, offer:
-- Copy into the repo (e.g. `docs/architecture.html`) if it documents this codebase.
-- Export to the vault via `/vault export <path>`: it copies the HTML to `7. Attachments/` and writes a note that embeds it.
+Once approved, keep it. The draft in `/tmp/vague-diagrams/` is temporary, so the vault holds the kept copy.
+
+1. Export it through the `/vault` skill (see its "Saving for Another Skill" section). It copies the HTML to `7. Attachments/` and writes a note that embeds it. Use `6. Atomic Notes/Alma/` and add the `alma` tag for Alma work:
+
+   ```
+   /vault export "$OUTPUT_FILE" title "<Diagram Title>" folder "6. Atomic Notes/" tags "architecture,code"
+   ```
+
+2. Point the ledger at the note. `<name>` is the title in lowercase with hyphens, so a redrawn diagram replaces the older pointer:
+
+   ```bash
+   eval "$(vague context --shell --skill diagram)" >/dev/null
+   vague memory-log "diagram-<name>" "<one-line summary of what it shows>" --doc --files "<VAULT_NOTE path>" --files "<attachment path>" --skill diagram
+   ```
+
+Also offer to copy it into the repo (e.g. `docs/architecture.html`) if it documents this codebase.
 
 ---
 

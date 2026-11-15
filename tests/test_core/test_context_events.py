@@ -69,10 +69,10 @@ def test_context_skill_records_ledger_read_and_no_writes(home, in_session):
     assert [r for r in rows if r[0] == "context_write"] == []
 
 
-def test_scratch_write_records_relative_scratch_path(home, in_session):
+def test_note_write_records_the_ledger_path(home, in_session):
     runner.invoke(sdk_app, ["memory-log", "note", "a note", "--global", "--scratch"])
     (event,) = _context(home)
-    assert event["path"] == "scratch/global.jsonl"
+    assert event["path"] == "memory.jsonl"
 
 
 def test_config_commands_record_their_file(home, in_session):

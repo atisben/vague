@@ -11,6 +11,7 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: false
 allowed-tools:
   - Bash
@@ -310,7 +311,7 @@ When converting PowerPoint files:
 
 ## Phase 5: Delivery
 
-1. **Clean up** — Delete `.slides/previews/` if it exists. Then record the deck so the usage graph shows it: `vague memory-log slides-<deck-slug> "Built the <name> deck." --files "<absolute path of the .html>" --skill slides`
+1. **Clean up** — Delete `.slides/previews/` if it exists. Then point the memory ledger at the deck, so `vague memory-search --kind doc` finds it and the usage graph shows it: `vague memory-log slides-<deck-slug> "<one-line summary of the deck>" --doc --files "<absolute path of the .html>" --skill slides`
 2. **Open** — Use `open [filename].html` to launch in browser
 3. **Summarize** — Tell the user:
    - File location, style name, slide count

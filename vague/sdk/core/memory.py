@@ -1,4 +1,14 @@
-"""Global memory ledger in $VAGUE_HOME/memory.jsonl, plus per-scope scratchpads, folded per (scope, key)."""
+"""Global memory ledger in $VAGUE_HOME/memory.jsonl, folded per (scope, key).
+
+Four kinds share the one file:
+
+| kind        | meaning                               | lifetime                  |
+|-------------|---------------------------------------|---------------------------|
+| learning    | a durable fact                        | forever                   |
+| observation | feedback about a skill, for /meta     | until actioned            |
+| note        | a working note for this scope's agents | hidden 7 days after `ts` |
+| doc         | a pointer to a document a skill wrote | forever                   |
+"""
 
 from __future__ import annotations
 
@@ -14,7 +24,7 @@ from pydantic import BaseModel, field_validator
 from vague.sdk.core.logging import get_logger
 from vague.sdk.core.slug import get_git_context
 
-Kind = Literal["learning", "observation"]
+Kind = Literal["learning", "observation", "note", "doc"]
 Status = Literal["active", "forgotten", "actioned", "declined"]
 KINDS: tuple[str, ...] = get_args(Kind)
 STATUSES: tuple[str, ...] = get_args(Status)
@@ -25,6 +35,8 @@ BLOCK_LIMIT = 6_000
 FULL_LIMIT = 4_800
 SCRATCH_LIMIT = 1_200
 SCRATCH_TTL = timedelta(days=7)
+DOC_INDEX_SIZE = 5
+DOC_HEADER = f"Documents (newest {DOC_INDEX_SIZE}, vague memory-search --kind doc for more):"
 
 
 class Memory(BaseModel):
@@ -62,19 +74,15 @@ def ledger_path() -> Path:
     return vague_home() / "memory.jsonl"
 
 
-def scratch_path(scope: str) -> Path:
-    return vague_home() / "scratch" / f"{scope}.jsonl"
-
-
 def one_line(text: str | None) -> str:
     return " ".join((text or "").split())
 
 
-def append_memory(memory: Memory, scratch: bool = False) -> Path:
+def append_memory(memory: Memory) -> Path:
     """Append one line in a single O_APPEND write, without a lock, the same guarantee events.py relies on."""
     if memory.text is not None and len(memory.text) > MAX_TEXT:
         raise ValueError(f"text is {len(memory.text)} characters, the limit is {MAX_TEXT}")
-    path = scratch_path(scope=memory.scope) if scratch else ledger_path()
+    path = ledger_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
     try:
@@ -112,15 +120,11 @@ def load_ledger() -> list[Memory]:
     return fold(lines=read_lines(path=ledger_path()))
 
 
-def _live(memory: Memory) -> bool:
-    return memory.status == "active" and bool(memory.text)
-
-
-def load_scratch(scope: str, now: datetime | None = None) -> list[Memory]:
-    """Active notes of one scope touched in the last 7 days, newest first."""
-    cutoff = (now or datetime.now(UTC)) - SCRATCH_TTL
-    notes = [m for m in fold(lines=read_lines(path=scratch_path(scope=scope))) if _live(m) and m.ts >= cutoff]
-    return sorted(notes, key=lambda m: m.ts, reverse=True)
+def _live(memory: Memory, now: datetime | None = None) -> bool:
+    """Active, with text, and for a note touched in the last 7 days: a stale note no longer describes the work."""
+    if memory.status != "active" or not memory.text:
+        return False
+    return memory.kind != "note" or memory.ts >= (now or datetime.now(UTC)) - SCRATCH_TTL
 
 
 def normalize_files(values: list[str], cwd: Path | None = None) -> list[str]:
@@ -184,19 +188,26 @@ def logging_hint(skill: str | None) -> str:
     """One reminder line, so every skill gets the logging rule without repeating it in its own file."""
     return (
         f'To log a learning: vague memory-log <key> "<fact>" --skill {skill or "<skill>"} [--files <paths>] '
-        "[--global]. Add --scratch for a note other agents on this project need."
+        "[--global]. Add --scratch for a note other agents on this project need, "
+        "or --doc --files <path> for a document you wrote."
     )
 
 
 def render_block(
     scope: str | None, skill: str | None, changed_files: Iterable[str], now: datetime | None = None
 ) -> Block:
-    """Preamble block: scratch notes, ranked full lines (global capped at a third), key-only index, search pointer."""
-    learnings = [m for m in load_ledger() if m.scope in {scope, "global"} and m.kind == "learning" and _live(m)]
-    notes = load_scratch(scope=scope, now=now) if scope else []
+    """Preamble block: notes, newest docs, ranked learnings (global capped at a third), key-only index, search pointer.
+
+    Observations never appear: they are feedback for /meta, not context for the task.
+    """
+    visible = [m for m in load_ledger() if m.scope in {scope, "global"} and _live(memory=m, now=now)]
+    learnings = [m for m in visible if m.kind == "learning"]
+    # Notes are this project's working state, so a global note would leak into every repo.
+    notes = sorted((m for m in visible if m.kind == "note" and m.scope == scope), key=lambda m: m.ts, reverse=True)
+    docs = sorted((m for m in visible if m.kind == "doc" and m.files), key=lambda m: m.ts, reverse=True)
     hint = logging_hint(skill=skill)
     lines = [f"vague memory · scope {scope or 'none (global only)'} · {len(learnings)} memories", hint]
-    if not learnings and not notes:
+    if not learnings and not notes and not docs:
         lines.append("No memories yet.")
         return Block(text="\n".join(lines), ids=[], scratch_ids=[])
     ids: list[str] = []
@@ -214,6 +225,14 @@ def render_block(
             lines.extend([scratch_header, line] if not scratch_ids else [line])
             scratch_ids.append(note.id)
             budget -= len(line) + 1
+
+    if docs:
+        # Key and path only: the doc itself holds the content, and a skill opens it when it needs it.
+        lines.append(DOC_HEADER)
+        for doc in docs[:DOC_INDEX_SIZE]:
+            label = doc.key if doc.scope == scope else doc.id
+            lines.append(f"- [{label}] {doc.files[0]}")
+            ids.append(doc.id)
 
     if learnings:
         lines.append("Memories (most relevant first):")
@@ -245,17 +264,16 @@ def render_block(
 
 
 def search(
-    words: Iterable[str], scopes: Iterable[str] | None, kind: str | None = None, scratch: bool = False,
+    words: Iterable[str], scopes: Iterable[str] | None, kind: str | None = None, skill: str | None = None,
     now: datetime | None = None,
 ) -> list[Memory]:
-    """Active memories containing every word across key, text, files and skill, newest first. `scopes=None`: all."""
+    """Active memories containing every word across key, text, files and skill, newest first. `scopes=None`: all.
+
+    `skill` matches the skill field exactly, so `plan-eng` never returns a `plan-eng-lite` memory.
+    """
     needles = [w.lower() for w in words if w.strip()]
-    if scratch:
-        names = sorted(scopes) if scopes is not None else sorted(p.stem for p in vague_home().glob("scratch/*.jsonl"))
-        pool = [note for name in names for note in load_scratch(scope=name, now=now)]
-    else:
-        wanted = None if scopes is None else set(scopes)
-        pool = [m for m in load_ledger() if _live(m) and (wanted is None or m.scope in wanted)]
-    hits = [m for m in pool if (kind is None or m.kind == kind)
+    wanted = None if scopes is None else set(scopes)
+    hits = [m for m in load_ledger() if _live(memory=m, now=now) and (wanted is None or m.scope in wanted)
+            and (kind is None or m.kind == kind) and (skill is None or m.skill == skill)
             and all(n in " ".join([m.key, m.text or "", *m.files, m.skill or ""]).lower() for n in needles)]
     return sorted(hits, key=lambda m: m.ts, reverse=True)

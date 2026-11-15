@@ -253,20 +253,33 @@ A change is done only when all four conditions hold:
 
 ## Memory
 
-vague keeps one memory ledger for every project, `~/.vague/memory.jsonl`. The skill preamble prints the ranked memories for the current project as a MEMORY block. These commands read and write it:
+vague keeps one memory ledger for every project, `~/.vague/memory.jsonl`. Each line has one of four kinds:
+
+| Kind | What it holds | Lifetime |
+|---|---|---|
+| `learning` | A durable fact | Forever |
+| `observation` | Feedback about a skill | Until `/meta` actions it |
+| `note` | A working note for other agents, such as subagents | Hidden after 7 days |
+| `doc` | A pointer to a document a skill wrote, such as a vault note or a deck | Forever |
+
+The skill preamble prints the ranked memories for the current project as a MEMORY block, with the newest 5 docs as key and path. These commands read and write the ledger:
 
 | When | Command |
 |---|---|
 | A later session would otherwise rediscover a fact | `vague memory-log <kebab-key> "<one or two sentences>" --files <paths it touches> --skill <current skill>` |
-| The skill wrote a deliverable file, in the repo or not (an Obsidian note, a deck) | `vague memory-log <kebab-key> "Saved <name>." --files "<absolute path>" --skill <current skill>`. Run it from the user's project, and tell the user you logged it. |
+| The skill wrote a document, in the repo or not (an Obsidian note, a deck) | `vague memory-log <kebab-key> "<one-line summary>" --doc --files "<absolute path>" --skill <current skill>`. Run it from the user's project, and tell the user you logged it. |
 | The fact would hold in a different repo (tools, agents, workflow) | Add `--global` |
 | You have feedback about a skill itself | `vague memory-log <key> "<issue → suggestion>" --about <skill>`. `/meta` reads it. |
-| Other agents on the same project need your working notes | Add `--scratch`. Scratch notes expire after 7 days. They are not a lock. |
+| Other agents on the same project need your working notes | Add `--scratch`. It writes a `note` into the same ledger. Notes are hidden after 7 days. They are not a lock. |
 | You need a memory the MEMORY block did not show | `vague memory-search <words>`. Add `--scope global` for global only, `--scope <project>` for one project, or `--scope all` for every project |
+| You need a document an earlier skill wrote | `vague memory-search --kind doc --skill <name>`. Each line ends with `(files: <path>)`. Read that path. |
 
 Follow these rules for every memory:
 
 - Log skill feedback silently, without interrupting the user. A user correction is the most valuable kind: the user had to ask for a step the skill should have done.
 - Re-use an existing key to correct a fact. The latest line for a key wins.
+- Put the branch or date in a doc key, such as `eng-plan-<branch>` or `retro-<YYYY-MM-DD>`. A newer document then replaces the older pointer.
+- Keep a document in the vault or the repo, never under `~/.vague/`. The ledger holds only the pointer.
+- Never switch a key between `note` and another kind. A `learning` may become a `doc`.
 - Never edit `~/.vague/memory.jsonl` directly.
 - Report only files a vague skill wrote. No hook logs ordinary Write or Edit calls, by design. The usage graph shows a file only when a skill reports it, and flags files under `~/Obsidian` so the user can see every vault write.

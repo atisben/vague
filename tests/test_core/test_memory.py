@@ -26,7 +26,6 @@ from vague.sdk.core.memory import (
     rank,
     read_lines,
     render_block,
-    scratch_path,
     search,
 )
 
@@ -66,10 +65,11 @@ def test_append_memory_rejects_text_over_600_chars(make_memory):
     assert not ledger_path().exists()
 
 
-def test_append_memory_scratch_goes_to_scope_file_not_ledger(make_memory):
-    append_memory(memory=make_memory(scope="o-r", key="note"), scratch=True)
-    assert scratch_path(scope="o-r").read_text().count("\n") == 1
-    assert not ledger_path().exists()
+def test_note_is_stored_in_the_ledger_file(make_memory):
+    append_memory(memory=make_memory(scope="o-r", key="note", kind="note"))
+    (row,) = [json.loads(line) for line in ledger_path().read_text().splitlines()]
+    assert row["kind"] == "note"
+    assert not (ledger_path().parent / "scratch").exists()
 
 
 def test_fold_same_scope_and_key_returns_latest_text(make_memory):
@@ -179,9 +179,9 @@ def test_render_block_overlapping_memory_is_first_full_line(make_memory):
 
 
 def test_render_block_scratch_section_capped_and_expired_hidden(make_memory):
-    append_memory(memory=make_memory(key="stale-note", text="OLDNOTE", ts=NOW - timedelta(days=8)), scratch=True)
+    append_memory(memory=make_memory(key="stale-note", kind="note", text="OLDNOTE", ts=NOW - timedelta(days=8)))
     for i in range(30):
-        append_memory(memory=make_memory(key=f"note-{i}", text="n" * 100, ts=NOW), scratch=True)
+        append_memory(memory=make_memory(key=f"note-{i}", kind="note", text="n" * 100, ts=NOW))
     block = render_block(scope="o-r", skill=None, changed_files=[], now=NOW)
     assert "OLDNOTE" not in block.text
     lines = block.text.splitlines()
@@ -218,11 +218,50 @@ def test_search_scopes_and_kind_filter(make_memory):
     assert [m.key for m in search(words=["needle"], scopes=None, kind="observation")] == ["z"]
 
 
-def test_search_scratch_hides_notes_older_than_seven_days(make_memory):
-    append_memory(memory=make_memory(key="old", text="needle", ts=NOW - timedelta(days=8)), scratch=True)
-    append_memory(memory=make_memory(key="fresh", text="needle", ts=NOW - timedelta(days=6)), scratch=True)
-    hits = search(words=["needle"], scopes=["o-r"], scratch=True, now=NOW)
-    assert [m.key for m in hits] == ["fresh"]
+def test_note_is_hidden_after_seven_days(make_memory):
+    append_memory(memory=make_memory(key="old", kind="note", text="needle", ts=NOW - timedelta(days=8)))
+    append_memory(memory=make_memory(key="fresh", kind="note", text="needle", ts=NOW - timedelta(days=6)))
+    append_memory(memory=make_memory(key="old-fact", text="needle", ts=NOW - timedelta(days=30)))
+    assert [m.key for m in search(words=["needle"], scopes=["o-r"], kind="note", now=NOW)] == ["fresh"]
+    assert [m.key for m in search(words=["needle"], scopes=["o-r"], now=NOW)] == ["fresh", "old-fact"]
+    block = render_block(scope="o-r", skill=None, changed_files=[], now=NOW)
+    assert block.scratch_ids == ["o-r/fresh"]
+
+
+def test_search_scratch_returns_only_notes(make_memory):
+    append_memory(memory=make_memory(key="note", kind="note", text="needle", ts=NOW))
+    append_memory(memory=make_memory(key="fact", text="needle", ts=NOW))
+    append_memory(memory=make_memory(key="plan", kind="doc", text="needle", files=["/p.md"], ts=NOW))
+    assert [m.key for m in search(words=["needle"], scopes=["o-r"], kind="note", now=NOW)] == ["note"]
+
+
+def test_search_skill_filter_is_an_exact_match(make_memory):
+    append_memory(memory=make_memory(key="a", skill="plan-eng"))
+    append_memory(memory=make_memory(key="b", skill="plan-eng-lite"))
+    append_memory(memory=make_memory(key="c", text="mentions plan-eng in text"))
+    assert [m.key for m in search(words=[], scopes=["o-r"], skill="plan-eng")] == ["a"]
+
+
+def test_doc_is_excluded_from_the_ranked_block(make_memory):
+    append_memory(memory=make_memory(key="fact", text="LEARNINGTEXT"))
+    append_memory(memory=make_memory(key="eng-plan-main", kind="doc", text="DOCTEXT", files=["/plans/p.md"]))
+    block = render_block(scope="o-r", skill=None, changed_files=[])
+    ranked = block.text.split("Memories (most relevant first):", 1)[1]
+    assert "- [fact] LEARNINGTEXT" in ranked
+    assert "eng-plan-main" not in ranked and "DOCTEXT" not in block.text
+
+
+def test_block_lists_newest_docs_as_key_and_path(make_memory):
+    for i in range(7):
+        append_memory(memory=make_memory(key=f"doc-{i}", kind="doc", text="Saved.", files=[f"/d/{i}.md"],
+                                         ts=NOW - timedelta(days=7 - i)))
+    append_memory(memory=make_memory(scope="other", key="theirs", kind="doc", files=["/x.md"], ts=NOW))
+    block = render_block(scope="o-r", skill=None, changed_files=[], now=NOW)
+    lines = block.text.splitlines()
+    start = lines.index("Documents (newest 5, vague memory-search --kind doc for more):")
+    assert lines[start + 1:start + 6] == [f"- [doc-{i}] /d/{i}.md" for i in (6, 5, 4, 3, 2)]
+    assert "theirs" not in block.text
+    assert "o-r/doc-6" in block.ids and "o-r/doc-1" not in block.ids
 
 
 def _git(cwd: Path, *args: str) -> None:

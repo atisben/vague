@@ -48,6 +48,20 @@ BS_PATTERNS = (
     r'source\s+["\']?.*_preamble\.sh',
 )
 
+# Skills whose deliverable is a file the user must find later. Each logs it as a doc memory, which is how
+# `vague status`, the preamble's document index and the usage graph learn the file exists.
+FILE_WRITING_SKILLS = ("vault", "vault-excalidraw", "slides", "plan-eng", "plan-ideation", "retro", "diagram")
+
+# Hidden per-project document folders under $VAGUE_HOME, replaced by doc memories pointing at real files.
+# Either the path is anchored on the vague home, or the slug segment is a placeholder a skill fills in.
+_STATE_DIR_PATTERN = re.compile(
+    r"(?:\.vague|VAGUE_HOME)[^\s`]*?/projects/[^\s/`]+/(?:designs|retros|diagrams)\b"
+    r"|projects/(?:\$\{?SLUG\}?|\{slug\}|<slug>|\*|\.\.\.)/(?:designs|retros|diagrams)\b"
+)
+# A deliverable logged as a learning ("Saved X.") ranks among facts and never reaches the document index.
+_SAVED_LEARNING_PATTERN = re.compile(r"memory-log\b(?![^\n]*--doc\b)[^\n]*?[\"'](?:Saved|Drew)\b")
+_DOC_LOG_PATTERN = re.compile(r"vague memory-log\b[^\n]*--doc\b")
+
 _REMOVED_PATTERN = re.compile(rf"\bvague ({'|'.join(re.escape(c) for c in REMOVED_COMMANDS)})(?![\w-])")
 _CODE_PATTERN = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)
 # `vague` only counts at the start of a shell command, so prose like "the vague repo" is ignored.
@@ -107,6 +121,19 @@ def frontmatter_commands(frontmatter: dict) -> set[str]:
     return {m.group(1) for entry in declared if (m := re.match(r"vague ([a-z][a-z0-9-]*)", str(entry)))}
 
 
+def memory_convention_findings(path: Path, text: str) -> list[str]:
+    """Lines that still teach the old per-project document folders or log a deliverable as a learning."""
+    findings: list[str] = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        if match := _STATE_DIR_PATTERN.search(line):
+            findings.append(f"{path}: reference-to-projects-state-dir: line {number}: `{match.group(0)}`, "
+                            "log the document with `vague memory-log <key> ... --doc --files <path>` instead")
+        if _SAVED_LEARNING_PATTERN.search(line):
+            findings.append(f"{path}: saved-learning-convention: line {number}: a deliverable logged as a learning, "
+                            "add --doc so it becomes a doc memory")
+    return findings
+
+
 def check_skill(skill_dir: Path) -> list[str]:
     """Findings for one skill directory, each as `<file>: <rule>: <detail>`. Empty means it passes."""
     skill_md = skill_dir / "SKILL.md"
@@ -130,6 +157,10 @@ def check_skill(skill_dir: Path) -> list[str]:
             findings.append(f"{skill_md}: frontmatter: invalid manifest: {e}")
 
     findings += [f"{skill_md}: removed-command: `{hit}` no longer exists" for hit in removed_commands_in(text=text)]
+    findings += memory_convention_findings(path=skill_md, text=text)
+    if name in FILE_WRITING_SKILLS and not _DOC_LOG_PATTERN.search(text):
+        findings.append(f"{skill_md}: deliverable-doc-memory: a file-writing skill must log what it wrote with "
+                        "`vague memory-log <key> ... --doc --files <path>`")
 
     if not re.search(rf"vague context --shell --skill {re.escape(name)}(?![\w-])", text):
         findings.append(f"{skill_md}: preamble: must run `vague context --shell --skill {name}`")
@@ -170,8 +201,9 @@ def check_repo(repo_root: Path) -> list[str]:
     findings = [finding for directory in dirs for finding in check_skill(skill_dir=directory)]
 
     for path in _instruction_files(repo_root=repo_root):
-        hits = removed_commands_in(text=path.read_text(encoding="utf-8"))
-        findings += [f"{path}: removed-command: `{hit}` no longer exists" for hit in hits]
+        text = path.read_text(encoding="utf-8")
+        findings += [f"{path}: removed-command: `{hit}` no longer exists" for hit in removed_commands_in(text=text)]
+        findings += memory_convention_findings(path=path, text=text)
 
     names = [d.name for d in dirs]
     readme, claude_md = repo_root / "README.md", repo_root / "CLAUDE.md"

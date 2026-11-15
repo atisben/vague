@@ -13,6 +13,7 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: false
 allowed-tools:
   - Bash
@@ -124,10 +125,10 @@ Use the `/vault` save template exactly: frontmatter with `aliases` and `tags`, `
 6. **Not verified**: every fact you could not confirm. Never leave this section out; write "none" if empty.
 7. `# Next Actions` and `# References` (the real source files and repos).
 
-After you write the note, record it so the usage graph shows the vault write and its project. Run it from the project the user works in, and tell the user you logged it:
+After you write the note, point the memory ledger at it. The `doc` pointer makes the note findable with `vague memory-search --kind doc`, and the usage graph shows the vault write and its project. Run it from the project the user works in, and tell the user you logged it:
 
 ```bash
-vague memory-log excalidraw-<title-slug> "Drew <Title> as a Mermaid note." --files "<absolute note path>" --skill vault-excalidraw
+vague memory-log excalidraw-<title-slug> "<one-line summary of what the diagram shows>" --doc --files "<absolute note path>" --skill vault-excalidraw
 ```
 
 ---

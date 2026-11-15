@@ -116,18 +116,24 @@ All data lives in `~/.vague/`:
 ```
 ~/.vague/
 ├── config.md
-├── memory.jsonl              ← every learning and observation, all projects (append-only)
-├── scratch/<scope>.jsonl     ← shared working notes per project, hidden after 7 days
+├── memory.jsonl              ← one ledger, all projects (append-only): learnings, observations, notes, doc pointers
 ├── events/YYYY-MM.jsonl      ← skill starts and memory reads/writes (powers `vague status`)
-├── projects/<owner-repo>/
-│   ├── designs/              ← design docs (documents, not memory)
-│   ├── diagrams/
-│   └── retros/
 ├── team/                     ← mgmt-* state
 └── interview/                ← iv-* state
 ```
 
-Each memory line has a `scope` (a project slug or `global`) and a `key`. Re-logging a key supersedes it, and `--status forgotten` hides it. Nothing is ever rewritten in place.
+Each memory line has a `scope` (a project slug or `global`), a `key` and one of four kinds:
+
+| Kind | What it holds | Lifetime |
+|---|---|---|
+| `learning` | A durable fact | Forever |
+| `observation` | Feedback about a skill (`--about`) | Until `/meta` actions it |
+| `note` | A working note for other agents (`--scratch`) | Hidden after 7 days |
+| `doc` | A pointer to a document a skill wrote (`--doc`) | Forever |
+
+Documents themselves never live in `~/.vague/`. Design docs, eng plans, retros and diagrams are Obsidian vault notes, and a deck is an HTML file in your working directory. The ledger keeps only a `doc` pointer to each, keyed by branch or date (`eng-plan-<branch>`, `retro-<YYYY-MM-DD>`), so a newer document replaces the older pointer.
+
+Re-logging a key supersedes it, and `--status forgotten` hides it. Nothing is ever rewritten in place.
 
 ---
 
@@ -193,9 +199,12 @@ vague config-get proactive              # read config value
 vague config-set proactive false        # write config value
 vague memory-log <key> "<text>" --files a,b --skill dev-ship  # log a learning (--global: every repo)
 vague memory-log <key> "<issue → fix>" --about dev-ship       # log feedback about a skill
+vague memory-log <key> "<note>" --scratch --skill dev-develop  # leave a note for other agents (hidden after 7 days)
+vague memory-log <key> "<summary>" --doc --files <abs path> --skill plan-eng  # point at a document a skill wrote
 vague memory-log <key> --status forgotten                     # hide a memory
 vague memory-search [words...]          # memories containing every word (no words: all), newest first
 vague memory-search --scope all         # every scope; also --scope global or --scope <project>
+vague memory-search --kind doc --skill plan-eng  # filter by kind (learning|observation|note|doc) and skill
 vague slug                              # print SLUG= and BRANCH=
 vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-check [paths...]            # check skills against the rules (no path: every skill + README/CLAUDE.md)
