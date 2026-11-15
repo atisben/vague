@@ -13,8 +13,6 @@ sdk_commands:
   - vague memory-log
   - vague memory-search
   - vague design-check
-runtimes:
-  - claude
 hooks:
   PostToolUse:
     - matcher: "Edit|Write"

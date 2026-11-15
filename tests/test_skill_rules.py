@@ -283,12 +283,6 @@ def test_check_repo_checks_agent_names_in_reference_files(tmp_path, skill_dir):
     assert any("missing-agent" in f and "shiny-asset-producer" in f for f in check_repo(repo_root=repo))
 
 
-def test_check_skill_accepts_a_runtimes_list_and_rejects_unknown_runtimes(skill_dir):
-    assert check_skill(skill_dir=skill_dir(name="ok", fields={"runtimes": ["claude"]})) == []
-    findings = check_skill(skill_dir=skill_dir(name="bad", fields={"runtimes": ["vscode"]}))
-    assert any("invalid manifest" in f and "runtimes" in f for f in findings), findings
-
-
 def test_check_repo_lets_a_notice_name_dropped_upstream_agents(tmp_path, skill_dir):
     repo = _repo_with_agents(tmp_path, skill_dir, body="\nNo agents here.\n")
     notice = repo / "vague" / "assets" / "skills" / "shiny" / "NOTICE.md"
