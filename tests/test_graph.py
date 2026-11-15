@@ -1,8 +1,8 @@
-"""The usage graph: events and memories folded into nodes and links for the UI."""
+"""Tests for vague/graph.py."""
 
 from datetime import UTC, datetime
 
-from vague.sdk.core.graph import activity_by_day, build_graph, skill_usage
+from vague.graph import activity_by_day, build_graph, skill_usage
 
 NOW = datetime(2026, 11, 11, 12, 0, tzinfo=UTC)
 

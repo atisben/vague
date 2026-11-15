@@ -17,6 +17,6 @@ The `retro` skill merges the `retro` skill from Matt Pocock's skills collection 
 
 - The session log is read with `jq` filters, from the Claude Code projects directory.
 - A **Skill defect** category joins upstream's seven, fed by observations.
-- Mechanical fixes in the vague repo become rules in `vague/sdk/core/skill_rules.py`.
+- Mechanical fixes in the vague repo become rules in `vague/skill_rules.py`.
 - Judgement-call standards go where `/dev-review` reads them.
 - Upstream's `writing-for-agents` step is dropped: vague's guidelines carry the writing rules.

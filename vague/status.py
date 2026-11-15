@@ -6,13 +6,19 @@ Its path is the latest non-empty `main_root`, so a project that moved shows wher
 
 from __future__ import annotations
 
+import json
+import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+import typer
+from rich.console import Console
+from rich.table import Table
+
 from vague import git
-from vague.sdk.core.events import event_ts, read_events
-from vague.sdk.core.memory import Memory, load_ledger
+from vague.events import event_ts, read_events
+from vague.memory import Memory, load_ledger
 
 GIT_TIMEOUT_S = 2
 # "ship" is the pre-rename name, still present in events logged before the rename.
@@ -79,3 +85,70 @@ def _count_inflight_designs(ledger: list[Memory], scope: str, last_ship: datetim
     return sum(1 for m in ledger
                if m.scope == scope and m.kind == "doc" and m.skill == "plan-eng" and m.status == "active"
                and (last_ship is None or m.ts > last_ship))
+
+
+console = Console()
+
+
+def cmd_status(as_json: bool = False) -> None:
+    """Show a cross-project dashboard. Rich table by default, JSON with --json."""
+    try:
+        rows = collect_status()
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise typer.Exit(1) from e
+
+    if as_json:
+        typer.echo(json.dumps(rows, default=str))
+        return
+
+    if not rows:
+        typer.echo("No projects yet — run any skill inside a repo.")
+        return
+
+    table = Table(title="vague status")
+    table.add_column("Project", style="cyan")
+    table.add_column("Path")
+    table.add_column("Branch")
+    table.add_column("Git")
+    table.add_column("Last activity")
+    table.add_column("In-flight designs", justify="right")
+    table.add_column("Memories", justify="right")
+
+    for row in rows:
+        table.add_row(
+            row["slug"],
+            row["path"] or "-",
+            row["branch"] or "—",
+            _git_cell(row),
+            _activity_cell(row),
+            str(row["inflight_designs"]) if row["inflight_designs"] else "—",
+            str(row["memories"]) if row["memories"] else "—",
+        )
+
+    console.print(table)
+
+    inflight = [r for r in rows if r["inflight_designs"]]
+    if inflight:
+        names = ", ".join(r["slug"] for r in inflight)
+        console.print(f"[yellow]{len(inflight)} project(s) with unshipped designs:[/yellow] {names}")
+
+
+def _git_cell(row: dict) -> str:
+    if row["path_state"] == "stale":
+        return "[red]path stale[/red]"
+    if row["path_state"] == "unknown":
+        return "[dim]path unknown (run a skill there once)[/dim]"
+    if row["dirty"] is None:
+        return "[dim]git unavailable[/dim]"
+    return "[yellow]dirty[/yellow]" if row["dirty"] else "[green]clean[/green]"
+
+
+def _activity_cell(row: dict) -> str:
+    last_seen = (row["last_seen"] or "")[:10]
+    event = row["last_event"]
+    if event and event.get("skill"):
+        suffix = f" ({event['skill']})"
+    else:
+        suffix = ""
+    return (last_seen or "—") + suffix

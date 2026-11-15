@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-vague = "vague.sdk.cli:main"
+vague = "vague.cli:main"
 
 [build-system]
 requires = ["hatchling"]

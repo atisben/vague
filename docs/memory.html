@@ -109,7 +109,7 @@
   <!-- middle: CLI -->
   <g style="color:var(--cli-ink)">
     <rect x="380" y="34" width="320" height="476" rx="12" fill="var(--cli)" stroke="var(--cli-ink)"/>
-    <text x="540" y="60" text-anchor="middle" class="t-title">vague CLI · vague/sdk/cli.py</text>
+    <text x="540" y="60" text-anchor="middle" class="t-title">vague CLI · vague/cli.py</text>
     <g class="t-mono">
       <rect x="400" y="80" width="280" height="40" rx="6" fill="var(--panel)" stroke="var(--cli-ink)"/>
       <text x="540" y="105" text-anchor="middle">context --shell --skill &lt;name&gt;</text>
@@ -296,13 +296,13 @@ alma-ai_ml/ai-ml-tests-need-docker  [dev-review]  alma/ai_ml tests and mypy run 
   <tr><th>Component</th><th>Real path</th><th>Talks to</th><th>What flows</th></tr>
   <tr><td>Skills</td><td><code>vague/assets/skills/*/SKILL.md</code></td><td>vague CLI</td><td>preamble call, <code>memory-*</code> commands</td></tr>
   <tr><td>Memory guideline</td><td><code>vague/assets/claude/guidelines.md</code> (Memory section)</td><td>every runtime's instructions, via <code>vague install</code></td><td>when to log, <code>--global</code>, <code>--scratch</code>, <code>--doc</code>, <code>--about</code></td></tr>
-  <tr><td>CLI entry</td><td><code>vague/sdk/cli.py</code></td><td>commands below</td><td>arguments</td></tr>
-  <tr><td>Preamble</td><td><code>vague/sdk/commands/init.py</code> (<code>context</code>)</td><td><code>core/memory.py</code></td><td>the MEMORY block, read events with ids</td></tr>
-  <tr><td>Memory commands</td><td><code>vague/sdk/commands/memory.py</code></td><td><code>core/memory.py</code>, <code>core/events.py</code></td><td>log, search</td></tr>
-  <tr><td>Ledger logic</td><td><code>vague/sdk/core/memory.py</code></td><td><code>memory.jsonl</code></td><td>append, fold, rank, render, search</td></tr>
-  <tr><td>Project identity</td><td><code>vague/sdk/core/slug.py</code> (<code>get_scope</code>)</td><td>git</td><td>scope name</td></tr>
-  <tr><td>Events</td><td><code>vague/sdk/core/events.py</code>, <code>commands/events.py</code></td><td><code>events/YYYY-MM.jsonl</code></td><td><code>skill_start</code>, <code>context_read</code>/<code>context_write</code> with <code>ids</code>; <code>read_events</code> for status</td></tr>
-  <tr><td>Dashboard</td><td><code>vague/sdk/core/status.py</code></td><td>events, ledger, git</td><td>one row per project</td></tr>
+  <tr><td>CLI entry</td><td><code>vague/cli.py</code></td><td>commands below</td><td>arguments</td></tr>
+  <tr><td>Preamble</td><td><code>vague/cli.py</code> (<code>context</code>)</td><td><code>memory.py</code></td><td>the MEMORY block, read events with ids</td></tr>
+  <tr><td>Memory commands</td><td><code>vague/memory.py</code> (<code>cmd_memory_*</code>)</td><td><code>memory.py</code>, <code>events.py</code></td><td>log, search</td></tr>
+  <tr><td>Ledger logic</td><td><code>vague/memory.py</code></td><td><code>memory.jsonl</code></td><td>append, fold, rank, render, search</td></tr>
+  <tr><td>Project identity</td><td><code>vague/git.py</code> (<code>get_scope</code>)</td><td>git</td><td>scope name</td></tr>
+  <tr><td>Events</td><td><code>vague/events.py</code></td><td><code>events/YYYY-MM.jsonl</code></td><td><code>skill_start</code>, <code>context_read</code>/<code>context_write</code> with <code>ids</code>; <code>read_events</code> for status</td></tr>
+  <tr><td>Dashboard</td><td><code>vague/status.py</code></td><td>events, ledger, git</td><td>one row per project</td></tr>
 </table>
 </div>
 

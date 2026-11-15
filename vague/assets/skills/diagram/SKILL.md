@@ -75,7 +75,7 @@ Build an inventory before drawing:
 
 | Component | Real path | Talks to | What flows |
 |---|---|---|---|
-| e.g. CLI | `vague/sdk/cli.py` | installer | install command |
+| e.g. CLI | `vague/cli.py` | installer | install command |
 
 Rules:
 - Every box uses a real module, file, service, or directory name. No `Service A`, no `foo`.

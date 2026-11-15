@@ -10,12 +10,17 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from vague.models import ConfigModel
+from pydantic import BaseModel
+
 from vague.paths import atomic_write, vague_home
 
 CONFIG_FILENAME = "config.env"
 CLAUDE_DIRS_KEY = "VAGUE_CLAUDE_DIRS"
 PATH_SEPARATOR = ":"
+
+
+class ConfigModel(BaseModel):
+    telemetry: str = "local"  # "local" | "off"
 
 
 def config_path() -> Path:
@@ -42,7 +47,7 @@ def load_config() -> dict[str, str]:
 def get_config() -> ConfigModel:
     """The typed settings, with defaults for every key the file leaves out."""
     # Imported here: the event log reads load_config to check telemetry.
-    from vague.sdk.core.events import log_context_access
+    from vague.events import log_context_access
 
     log_context_access(kind="read", path=config_path())
     data = load_config()
@@ -51,7 +56,7 @@ def get_config() -> ConfigModel:
 
 def set_config_key(key: str, value: str) -> None:
     """Set one key in config.env, keeping every other line, comments included."""
-    from vague.sdk.core.events import log_context_access
+    from vague.events import log_context_access
 
     path = config_path()
     try:
