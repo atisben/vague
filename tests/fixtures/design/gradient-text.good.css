@@ -1,0 +1,9 @@
+.hero-title {
+  font-size: 4rem;
+  color: #1f2937;
+}
+
+.hero-panel {
+  background: linear-gradient(180deg, #f8fafc, #eef2ff);
+  background-clip: padding-box;
+}

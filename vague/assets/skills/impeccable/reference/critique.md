@@ -3,7 +3,7 @@
 
 Resolve one stable target, run two independent assessments, synthesize a design critique, save it to the vault, and ask the user what to improve next. The chat response is the primary deliverable. The vault note is an archive of that run.
 
-vague has no detector engine, no screenshot tool and no live overlay. Every check in this file runs with Claude's own tools: Read, Glob, Grep, and the optional read-only reviewer subagents. A check that needs a rendered page is reasoned from the code and labelled **unverified (no render)**.
+vague has no screenshot tool and no live overlay. Its detector, `vague design-check`, reads source files only. Every other check in this file runs with Claude's own tools: Read, Glob, Grep, and the optional read-only reviewer subagents. A check that needs a rendered page is reasoned from the code and labelled **unverified (no render)**.
 
 ### Hard Invariants
 
@@ -63,7 +63,13 @@ Write down: design-specificity verdict, brief fit, mockup fit, heuristic scores,
 
 ### Assessment B: Code Evidence Against the Craft Floor
 
-Read [craft-floor.md](craft-floor.md) and run its Verify and Refuse lists against the code. This replaces upstream's detector and browser overlay. It is mechanical: grep, read, and compare values.
+Run the detector on the target's UI files first. It exits 1 when it finds anything:
+
+```bash
+vague design-check <target paths>
+```
+
+It covers eight source tells (see Detector in SKILL.md), all in the "Verifiable from code" group. Then read [craft-floor.md](craft-floor.md) and run its Verify and Refuse lists against the code for the rest. This replaces upstream's browser overlay. It is mechanical: grep, read, and compare values.
 
 Each check falls into one of two groups:
 

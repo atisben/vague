@@ -1,0 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;700&display=swap");
+
+body {
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+}
+
+code {
+  font-family: ui-monospace, "SF Mono", monospace;
+}

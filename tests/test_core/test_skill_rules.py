@@ -71,6 +71,26 @@ def test_check_skill_passes_on_every_bundled_skill():
     assert findings == []
 
 
+def test_impeccable_frontmatter_declares_the_design_check_hook():
+    import re
+
+    from vague.sdk.core.frontmatter import read_md
+
+    skill_md = default_repo_root() / "vague" / "assets" / "skills" / "impeccable" / "SKILL.md"
+    frontmatter = read_md(path=skill_md)
+    [entry] = frontmatter["hooks"]["PostToolUse"]
+    assert re.fullmatch(entry["matcher"], "Edit")
+    assert re.fullmatch(entry["matcher"], "Write")
+    assert entry["hooks"] == [{"type": "command", "command": "vague design-check --hook"}]
+    assert "vague design-check" in frontmatter["sdk_commands"]
+
+
+def test_check_skill_rejects_a_malformed_hooks_block(skill_dir):
+    bad = skill_dir(name="bad-hooks", fields={"hooks": {"PostToolUse": [{"matcher": "Edit", "hooks": "nope"}]}},
+                    body=_preamble("bad-hooks"))
+    assert any("invalid manifest" in f for f in check_skill(skill_dir=bad))
+
+
 def test_check_repo_passes_on_this_repo():
     assert check_repo(repo_root=default_repo_root()) == []
 

@@ -66,7 +66,13 @@ On RTL-declared pages, each of the following is a signal to verify the rendered 
 
 ### 5. Implementation Integrity (CRITICAL)
 
-Scan the source yourself with Grep and Read, and verify each finding in context. Look for repeated implementation shortcuts, design-system drift, misleading or decorative content, and structure that is interchangeable with an unrelated product. Keep mechanical findings (a grep hit you can point to) separate from visual judgment and call out false positives.
+Run the detector on the audited files first. It exits 1 when it finds anything, which is expected here:
+
+```bash
+vague design-check <target paths>
+```
+
+It covers eight source tells (see Detector in SKILL.md). Verify each hit in context and call out false positives. Then scan the source yourself with Grep and Read for what the rules do not cover, and verify each finding in context. Look for repeated implementation shortcuts, design-system drift, misleading or decorative content, and structure that is interchangeable with an unrelated product. Keep mechanical findings (a grep hit you can point to) separate from visual judgment and call out false positives.
 
 **Desktop apps** (Electron, NW.js, CEF, WebView2, Tauri): audit the source, and inspect the rendered window only if this session has a tool that can reach it. Otherwise say the rendered check did not run.
 

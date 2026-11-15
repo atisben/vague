@@ -94,7 +94,7 @@ Walk the complete path again with mouse, keyboard, and touch where applicable. C
 - console errors, layout shift, interaction latency, and image loading everywhere; supported browsers on the web; supported OS versions, runtime warnings, and dropped frames on native;
 - agreement with the brief, the chosen mockup if the direction file (named by the `design-direction` note) names one, neighboring features, and the user's scope.
 
-Run the project's own relevant QA commands (linters, type checks, visual-regression tests) where they exist. Fix real defects and document only narrow intentional exceptions. A clean scan does not replace visual judgment.
+Run `vague design-check <changed UI paths>` and clear every finding, or waive a deliberate one with a reasoned `impeccable-disable-next-line` comment (see Detector in SKILL.md). Run the project's own relevant QA commands (linters, type checks, visual-regression tests) where they exist. Fix real defects and document only narrow intentional exceptions. A clean scan does not replace visual judgment.
 
 Finish with a source diff: remove accidental churn, orphaned code, redundant values, and temporary artifacts. Ship only when the feature is functionally complete and consistently finished across the path.
 

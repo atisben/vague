@@ -11,6 +11,7 @@ import typer
 from vague.installer import cmd_install, cmd_uninstall
 from vague.sdk.commands.commit import cmd_commit
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
+from vague.sdk.commands.design import cmd_design_check
 from vague.sdk.commands.events import cmd_log_event
 from vague.sdk.commands.init import cmd_context
 from vague.sdk.commands.memory import cmd_memory_log, cmd_memory_search
@@ -167,6 +168,20 @@ def slug() -> None:
 def log_event() -> None:
     """Record a Claude Code hook event (reads hook JSON on stdin)."""
     cmd_log_event()
+
+
+@sdk_app.command("design-check")
+def design_check(
+    paths: Annotated[list[str] | None, typer.Argument(help="UI files or directories to scan (recursive).")] = None,
+    hook: Annotated[bool, typer.Option(
+        "--hook", help="Read a PostToolUse payload on stdin and check the edited file; exit 2 on findings.")] = False,
+) -> None:
+    """Scan UI source files for AI-design tells (Impeccable's 8 source rules). Exits 1 on any finding.
+
+    Brand fonts named in this project's `design-type` learning are never flagged.
+    No path is a usage error (exit 2).
+    """
+    cmd_design_check(paths=paths or [], hook=hook)
 
 
 @sdk_app.command("commit")
