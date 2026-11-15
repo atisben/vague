@@ -544,7 +544,7 @@ One more thing.
 
 **Builder mode:**
 > "Design doc saved. This is the kind of thing that's satisfying to build because [callback to what would make them proud].
-> When you're ready: `/plan-eng` to lock in the architecture, then `/dev-develop`. Don't over-plan it — the best builder projects are started, not planned."
+> When you're ready: `/plan-eng` to lock in the architecture, then `/dev-implement`. Don't over-plan it — the best builder projects are started, not planned."
 
 Close with 2-3 curated resources (essays, repos, tools) specifically relevant to this problem space. Non-obvious — not the first search result.
 

@@ -101,9 +101,9 @@ When you must ask, use AskUserQuestion with a recommendation based on Step 1:
 | Roadmap, scope, "think bigger", strategy | `/plan-ideation` (scope review) | Finds the 10-star version, expands or cuts scope |
 | Mind map, architecture overview, "how do these connect" | `/diagram` | Draws it from the real code or notes |
 | A bug, an error, "why is this broken" | `/dev-investigate` | Root-cause first, no fixes without diagnosis |
-| A defined task to build out | `/dev-develop` | Orchestrates the build across subagents |
+| A defined task to build out | `/dev-implement` | Builds it inline, or as a task graph across worktree subagents |
 | Code is ready to land | `/dev-ship` | Tests, version, changelog, PR |
-| "What did we ship", weekly retro | `/retro` | Commit history and work-pattern analysis |
+| A hard session, skill friction, "what went wrong" | `/retro` | Proposes checks, standards and skill fixes from the session log |
 
 Hand off explicitly. Say what you're routing to and why in one line, then invoke it:
 

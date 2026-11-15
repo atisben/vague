@@ -222,7 +222,7 @@ Each item must reference the failing test from the Test Layer it makes pass.
 
 # Next Actions
 - [ ] /diagram (architecture overview, if the plan touches several components)
-- [ ] /dev-develop to implement
+- [ ] /dev-implement to implement
 - [ ] /dev-ship
 ```
 
@@ -254,6 +254,6 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 
 ## Handoff
 
-> "Engineering plan saved to the vault. You're ready to build. Run `/dev-develop` to implement, or `/diagram` first to draw the architecture overview."
+> "Engineering plan saved to the vault. You're ready to build. Run `/dev-implement` to implement, or `/diagram` first to draw the architecture overview."
 
 Log any non-obvious architectural insight the review found, with the `--files` it touches.

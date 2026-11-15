@@ -191,7 +191,7 @@ Label and refer to every container:
 
 ## How to Work on Code
 
-These conventions apply to every task that touches code. Skills such as `/plan-eng`, `/dev-develop`, `/dev-ship`, and `/dev-investigate` assume and enforce them.
+These conventions apply to every task that touches code. Skills such as `/plan-eng`, `/dev-implement`, `/dev-ship`, and `/dev-investigate` assume and enforce them.
 
 ### Task Runner
 
@@ -258,7 +258,7 @@ vague keeps one memory ledger for every project, `~/.vague/memory.jsonl`. Each l
 | Kind | What it holds | Lifetime |
 |---|---|---|
 | `learning` | A durable fact | Forever |
-| `observation` | Feedback about a skill | Until `/meta` actions it |
+| `observation` | Feedback about a skill | Until `/retro` actions it |
 | `note` | A working note for other agents, such as subagents | Hidden after 7 days |
 | `doc` | A pointer to a document a skill wrote, such as a vault note or a deck | Forever |
 
@@ -269,7 +269,7 @@ The skill preamble prints the ranked memories for the current project as a MEMOR
 | A later session would otherwise rediscover a fact | `vague memory-log <kebab-key> "<one or two sentences>" --files <paths it touches> --skill <current skill>` |
 | The skill wrote a document, in the repo or not (an Obsidian note, a deck) | `vague memory-log <kebab-key> "<one-line summary>" --doc --files "<absolute path>" --skill <current skill>`. Run it from the user's project, and tell the user you logged it. |
 | The fact would hold in a different repo (tools, agents, workflow) | Add `--global` |
-| You have feedback about a skill itself | `vague memory-log <key> "<issue → suggestion>" --about <skill>`. `/meta` reads it. |
+| You have feedback about a skill itself | `vague memory-log <key> "<issue → suggestion>" --about <skill>`. `/retro` reads it. |
 | Other agents on the same project need your working notes | Add `--scratch`. It writes a `note` into the same ledger. Notes are hidden after 7 days. They are not a lock. |
 | You need a memory the MEMORY block did not show | `vague memory-search <words>`. Add `--scope global` for global only, `--scope <project>` for one project, or `--scope all` for every project |
 | You need a document an earlier skill wrote | `vague memory-search --kind doc --skill <name>`. Each line ends with `(files: <path>)`. Read that path. |
@@ -278,7 +278,7 @@ Follow these rules for every memory:
 
 - Log skill feedback silently, without interrupting the user. A user correction is the most valuable kind: the user had to ask for a step the skill should have done.
 - Re-use an existing key to correct a fact. The latest line for a key wins.
-- Put the branch or date in a doc key, such as `eng-plan-<branch>` or `retro-<YYYY-MM-DD>`. A newer document then replaces the older pointer.
+- Put the branch or date in a doc key, such as `eng-plan-<branch>` or `diagram-<name>`. A newer document then replaces the older pointer.
 - Keep a document in the vault or the repo, never under `~/.vague/`. The ledger holds only the pointer.
 - Never switch a key between `note` and another kind. A `learning` may become a `doc`.
 - Never edit `~/.vague/memory.jsonl` directly.

@@ -115,12 +115,12 @@ If you would have auto-invoked, say: "I think /my-skill might help — want me t
 
 ## Logging Memories
 
-Skills write memory only through `vague memory-log`. Two shared sources already teach the command: the Memory section of `vague/assets/claude/guidelines.md` and the hint line in the preamble block. A skill therefore never repeats the command. Add a one-line step only when the skill has its own trigger, such as "log a pitfall that shipping hit". A skill that spawns subagents must pass memory in each brief, because a subagent never runs the preamble (see `dev-develop` Step 3).
+Skills write memory only through `vague memory-log`. Two shared sources already teach the command: the Memory section of `vague/assets/claude/guidelines.md` and the hint line in the preamble block. A skill therefore never repeats the command. Add a one-line step only when the skill has its own trigger, such as "log a pitfall that shipping hit". A skill that spawns subagents must pass memory in each brief, because a subagent never runs the preamble (see `dev-implement` Step 4).
 
 | Need | Flag |
 |---|---|
 | The fact holds in every repo | `--global` |
-| Feedback about a skill, read by `/meta` | `--about <skill>` (always global) |
+| Feedback about a skill, read by `/retro` | `--about <skill>` (always global) |
 | A working note for other agents on this project, hidden after 7 days | `--scratch` (kind `note`) |
 | A pointer to a document the skill wrote | `--doc --files <absolute path>` (kind `doc`) |
 | Correct a fact | Re-use its key |
@@ -130,19 +130,19 @@ A key cannot switch between `note` and another kind. A `learning` may become a `
 
 ### Writing a Document
 
-A skill that writes a document (a plan, a retro, a diagram, a deck) never stores it under `~/.vague/`. Follow these steps:
+A skill that writes a document (a plan, a diagram, a deck) never stores it under `~/.vague/`. Follow these steps:
 
 1. Save the document as a vault note through `/vault save "<Title>" folder "<folder>/" tags "<tags>"` (see the vault skill's "Saving for Another Skill" section), or write it to the user's working directory.
 2. Point the ledger at it: `vague memory-log <doc-key> "<one-line summary>" --doc --files "<absolute path>" --skill <name>`.
-3. Put the branch or date in the key (`eng-plan-<branch>`, `retro-<YYYY-MM-DD>`), so a newer document replaces the older pointer. Replace each `/` in a branch with `-`, because a key cannot hold one.
+3. Put the branch or date in the key (`eng-plan-<branch>`, `diagram-<name>`), so a newer document replaces the older pointer. Replace each `/` in a branch with `-`, because a key cannot hold one.
 
-A later skill finds the document with `vague memory-search --kind doc --skill <writer>` and reads the path in the `(files: …)` part of the line. `/plan-eng` writes `eng-plan-<branch>`, and `/dev-develop` and `/dev-ship` read it this way.
+A later skill finds the document with `vague memory-search --kind doc --skill <writer>` and reads the path in the `(files: …)` part of the line. `/plan-eng` writes `eng-plan-<branch>`, and `/dev-implement` and `/dev-ship` read it this way.
 
 **Only log genuine discoveries.** A good test: would this save time in a future session?
 
 Every skill ends with a one-line **Observation Protocol** section before its Handoff. It points at `--about <skill>` and lists only the skill-specific things worth watching for.
 
-Skills do not log their own start or end. The `vague log-event` hook records each skill start in `~/.vague/events/`, and `/retro` reads it from there.
+Skills do not log their own start or end. The `vague log-event` hook records each skill start in `~/.vague/events/`, and `vague status` reads it from there.
 
 ---
 

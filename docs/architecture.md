@@ -43,7 +43,7 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 │  4. On-demand reads          (skill-specific tool outputs)              │
 │     /triage → vague status, git · /dev-ship → git diff, tests           │
 │     /dev-investigate → vague memory-search, stack trace, git log        │
-│     /retro → git log, events log · /meta → memory-search --scope all    │
+│     /retro → session log, observations, memory-search --scope all       │
 │                              │                                          │
 │                              ▼                                          │
 │  5. Conversation history     (grows throughout the session)             │
@@ -75,7 +75,7 @@ Ranking is deterministic: shared files with the uncommitted changes first, then 
 
 ### What Is NOT Injected
 
-- Observations (feedback about skills). Only `/meta` reads them.
+- Observations (feedback about skills). Only `/retro` reads them.
 - Memories past the budget. `vague memory-search <words>` finds them on demand.
 - Other projects' memories, unless they are `global` or searched with `--scope all` or `--scope <project>`.
 
@@ -164,7 +164,7 @@ runs as Step 0.
 
 **Fold rule:** a reader merges lines per (`scope`, `key`) in file order, and the latest non-empty value of each field wins. Re-logging a key supersedes it. A status-only line forgets it. History stays in the file.
 
-**Curation:** `/meta` reads every memory with `vague memory-search --scope all` and the model judges what to fix: duplicates within a project, the same fact in two projects (re-logged once with `--global`), and memories whose `files` no longer exist. It acts with `memory-log` and asks before forgetting anything. Nothing is deleted automatically.
+**Curation:** `/retro` reads every memory with `vague memory-search --scope all` and the model judges what to fix: duplicates within a project, the same fact in two projects (re-logged once with `--global`), and memories whose `files` no longer exist. It acts with `memory-log` and asks before forgetting anything. Nothing is deleted automatically.
 
 ---
 
@@ -185,12 +185,11 @@ no artifact, it reads git state and routes to the skill below that fits.
 /vault-excalidraw   → writes a Mermaid flowchart into a vault note, copies it for Excalidraw's Mermaid import
 /slides             → reads notes or a .pptx, writes a self-contained HTML deck to the user's cwd
 
-/dev-develop        → implements the plan
+/dev-implement      → builds the plan on an integration branch, reviews it with /dev-review
 /dev-ship           → runs tests, reviews the diff, commits, opens PR
-/retro              → reads events + git log, writes a retro vault note, key retro-<YYYY-MM-DD>
 ```
 
-Each skill that writes a doc announces the output path, logs a `doc` pointer with `vague memory-log <key> "<summary>" --doc --files <path>`, and suggests the next skill. The next skill finds it with `vague memory-search --kind doc --skill <writer>`: `/dev-develop` and `/dev-ship` read the `eng-plan-<branch>` note this way.
+Each skill that writes a doc announces the output path, logs a `doc` pointer with `vague memory-log <key> "<summary>" --doc --files <path>`, and suggests the next skill. The next skill finds it with `vague memory-search --kind doc --skill <writer>`: `/dev-implement` and `/dev-ship` read the `eng-plan-<branch>` note this way.
 
 ---
 
@@ -216,14 +215,14 @@ Day 1 — Claude Code — /dev-investigate on acme-api
   memory-log  → vague memory-log eager-load-in-controller \
                   "Add includes() in the controller scope, not the view." --skill dev-ship
 
-─────────────────────────────────────────────── Day 4 — any repo — /dev-develop
+─────────────────────────────────────────────── Day 4 — any repo — /dev-implement
   memory-log  → vague memory-log verify-subagent-claims \
                   "Re-run tests yourself after subagents report success." --global
               → scope global: every repo's preamble can show it
 
-─────────────────────────────────────────────── Day 7 — /retro, then /meta
-  /retro      → events: 3 skill runs on acme-api, 2 memories written this week
-  /meta       → memory-search --scope all: no duplicates, 1 dead path → forget it
+─────────────────────────────────────────────── Day 7 — /retro
+  /retro      → session log: 9 greps to find the hook config → pointer in CLAUDE.md
+              → memory-search --scope all: no duplicates, 1 dead path → forget it
 ```
 
 **Key properties of this model:**

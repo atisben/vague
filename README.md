@@ -51,15 +51,15 @@ Then use any slash command in your AI tool.
 ### Execution
 | Command | When to use |
 |---------|-------------|
-| `/dev-develop` | Orchestrate a feature across fresh-context subagents. |
+| `/dev-implement` | Build a plan inline, or as a task graph of worktree subagents. |
 | `/dev-ship` | Test, version, changelog, commit, push, PR. |
 | `/dev-investigate` | Debug systematically — root cause first. |
+| `/dev-review` | Review a diff on two axes: Standards and Spec. |
 
 ### Reflection
 | Command | When to use |
 |---------|-------------|
-| `/retro` | Weekly engineering retrospective. |
-| `/meta` | Review observations, improve the skills, and curate the memory ledger. |
+| `/retro` | Session retrospective: fix checks, standards and skills, and curate the memory ledger. |
 | `/vault` | Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault. |
 
 ### Management
@@ -102,13 +102,14 @@ Idea
       └─ /slides            → HTML slide deck (PDF optional)
       └─ /impeccable        → UI brief, HTML mockups, build review (Claude Code only)
 
-          └─ /dev-develop   → implement
+          └─ /dev-implement → build
               └─ /dev-ship  → tests + PR
-                  └─ /code-review (built-in) → pre-landing review
+                  └─ /dev-review    → Standards + Spec review
+                  └─ /code-review (built-in) → pre-landing bug hunt
                                └─ merge
 
                               /dev-investigate   (when bugs happen)
-                              /retro         (end of week)
+                              /retro         (after a hard session)
 ```
 
 ---
@@ -131,11 +132,11 @@ Each memory line has a `scope` (a project slug or `global`), a `key` and one of 
 | Kind | What it holds | Lifetime |
 |---|---|---|
 | `learning` | A durable fact | Forever |
-| `observation` | Feedback about a skill (`--about`) | Until `/meta` actions it |
+| `observation` | Feedback about a skill (`--about`) | Until `/retro` actions it |
 | `note` | A working note for other agents (`--scratch`) | Hidden after 7 days |
 | `doc` | A pointer to a document a skill wrote (`--doc`) | Forever |
 
-Documents themselves never live in `~/.vague/`. Design docs, eng plans, retros and diagrams are Obsidian vault notes, and a deck is an HTML file in your working directory. The ledger keeps only a `doc` pointer to each, keyed by branch or date (`eng-plan-<branch>`, `retro-<YYYY-MM-DD>`), so a newer document replaces the older pointer.
+Documents themselves never live in `~/.vague/`. Design docs, eng plans and diagrams are Obsidian vault notes, and a deck is an HTML file in your working directory. The ledger keeps only a `doc` pointer to each, keyed by branch or date (`eng-plan-<branch>`, `diagram-<name>`), so a newer document replaces the older pointer.
 
 Re-logging a key supersedes it, and `--status forgotten` hides it. Nothing is ever rewritten in place.
 
@@ -203,7 +204,7 @@ vague config-get proactive              # read config value
 vague config-set proactive false        # write config value
 vague memory-log <key> "<text>" --files a,b --skill dev-ship  # log a learning (--global: every repo)
 vague memory-log <key> "<issue → fix>" --about dev-ship       # log feedback about a skill
-vague memory-log <key> "<note>" --scratch --skill dev-develop  # leave a note for other agents (hidden after 7 days)
+vague memory-log <key> "<note>" --scratch --skill dev-implement  # leave a note for other agents (hidden after 7 days)
 vague memory-log <key> "<summary>" --doc --files <abs path> --skill plan-eng  # point at a document a skill wrote
 vague memory-log <key> --status forgotten                     # hide a memory
 vague memory-search [words...]          # memories containing every word (no words: all), newest first
@@ -244,8 +245,7 @@ error is swallowed and the command output still prints.
 vague status              # cross-project dashboard: branches, in-flight plans, last activity
 ```
 
-`/triage` runs `vague status` automatically as its first step, and
-`/retro` folds the same data into the weekly retrospective.
+`/triage` runs `vague status` automatically as its first step.
 
 ### Turning it off
 
