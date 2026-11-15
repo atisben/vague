@@ -120,7 +120,7 @@ This approval point has no substitute and no skip condition. When `AskUserQuesti
 
 Record the pick where later sessions and the reviewers can find it, in this order:
 
-1. **Export to the vault.** Run `/vault export "<path>" title "Design Comp - <Page>" folder "6. Atomic Notes/" tags "design,impeccable"`, where `<path>` is the approved mockup's full path under `/tmp/vague-comps/` and `<Page>` is the surface's name in title case. /vault copies the HTML into the vault and writes a note that embeds it.
+1. **Export to the vault.** Run `/vault export "<path>" title "Design Comp - <Page>" folder "6. Atomic Notes/" tags "design,impeccable" kind "plan"`, where `<path>` is the approved mockup's full path under `/tmp/vague-comps/` and `<Page>` is the surface's name in title case. /vault copies the HTML into the vault and writes a note that embeds it.
 2. **Read the note path.** /vault prints `VAULT_NOTE: <path>`. Keep that path.
 3. **Log the doc pointer.** Run `vague memory-log design-comp-<page-slug> "<one line>" --doc --files "<vault note path>" --skill impeccable`. The one line names the page, the chosen mockup, and what leads it. A later session finds it with `vague memory-search design-comp-<page-slug> --kind doc`, even after `/tmp` is cleared.
 4. **Map the mockup.** Load [region-map.md](region-map.md). It turns the mockup's sections into the build checklist and writes it, with the mockup path, into the direction file (`direction.md` in the same folder as the mockups).

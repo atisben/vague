@@ -158,7 +158,7 @@ Keep P3s few: a long tail of minor issues buries the ones that matter.
 After the report is delivered, save a copy so the findings outlive this conversation. Saving never replaces delivering: the user reads the report in chat first.
 
 1. Save the report, from the score table through Recommended Actions, through the vault skill:
-   `/vault save "Design Critique - <Target>" folder "6. Atomic Notes/" tags "design,review,impeccable"`
+   `/vault save "Design Critique - <Target>" folder "6. Atomic Notes/" tags "design,review,impeccable" kind "plan"`
    The vault skill prints `VAULT_NOTE: <path>`.
 2. Log a pointer to it, with `<target-slug>` in lowercase `[a-z0-9-]`:
    ```bash

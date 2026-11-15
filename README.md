@@ -60,6 +60,7 @@ Then use any slash command in your AI tool.
 |---|---|
 | `/retro` | Session retrospective: fix checks, standards and skills, and curate the memory ledger. |
 | `/vault` | Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault. |
+| `/vault-clean` | Keep the vault current: fix frontmatter, distill shipped plans into decisions, merge duplicates, build topic hubs, archive before deleting. |
 
 ### Management
 | Command | When to use |

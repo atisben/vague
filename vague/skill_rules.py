@@ -65,7 +65,7 @@ SKILL_MAP_END = "<!-- skills:end -->"
 
 # Skills whose deliverable is a file the user must find later. Each logs it as a doc memory, which is how
 # `vague status`, the preamble's document index and the usage graph learn the file exists.
-FILE_WRITING_SKILLS = ("vault", "vault-excalidraw", "slides", "plan-eng", "plan-ideation", "diagram")
+FILE_WRITING_SKILLS = ("vault", "vault-clean", "vault-excalidraw", "slides", "plan-eng", "plan-ideation", "diagram")
 
 # Hidden per-project document folders under $VAGUE_HOME, replaced by doc memories pointing at real files.
 # Either the path is anchored on the vague home, or the slug segment is a placeholder a skill fills in.

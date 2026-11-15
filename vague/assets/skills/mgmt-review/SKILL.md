@@ -326,10 +326,11 @@ conventions:
 - **Folder:** `6. Atomic Notes/Team/`
 - **Tags:** `review`, `perf_review`, plus the member `<slug>`
 - **Title:** `Perf Review — <Name> — <CYCLE>`
+- **Kind:** `record` (a review is history: `/vault-clean` never rewrites it)
 - **Content:** the snapshot body from Step 7.
 
 > Invoke `/vault save Perf Review — <Name> — <CYCLE>` and supply the folder, tags,
-> and content above.
+> kind and content above.
 
 (The vault title keeps the `Perf Review — …` convention for continuity with existing
 notes and the config `title_format`; the body is the growth review from Step 7.)

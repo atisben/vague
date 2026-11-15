@@ -1,6 +1,6 @@
 ---
 name: vault
-version: 1.4.0
+version: 1.5.0
 category: Reflection
 summary: Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault.
 description: |
@@ -39,12 +39,14 @@ This is the layout at the time of writing. The `FOLDERS` list the preamble print
 |---|---|---|
 | `1. Rough Notes/` | Daily and scratch notes | no |
 | `2. Source Materials/` | Saved links and sources | no |
-| `3. Tags/`, `4. indexes/`, `5. Templates/` | Obsidian structure | no |
+| `3. Tags/`, `5. Templates/` | Obsidian structure | no |
+| `4. indexes/` | Topic hubs that link related notes, written by `/vault-clean` | no |
 | `6. Atomic Notes/` | Every finished note | **yes, notes** |
 | `6. Atomic Notes/Alma/` | Work notes for Alma, tagged `alma` | **yes, notes** |
 | `6. Atomic Notes/Team/` | Management notes: perf reviews from `/mgmt-review` | **yes, notes** |
 | `7. Attachments/` | Images, SVG, HTML | **yes, attachments** |
 | `8. Excalidraw/` | Drawings the Excalidraw plugin owns | no |
+| `9. Archive/` | Retired notes, created and filled by `/vault-clean` only | no |
 
 **Never create a folder.** Do not run `mkdir` under `$VAULT`. Every destination must appear in the `FOLDERS` list. Code walkthroughs, engineering reviews and architecture notes go in `6. Atomic Notes/` with an `architecture` or `review` tag. If no folder fits, use `6. Atomic Notes/` and tell the user.
 
@@ -68,13 +70,12 @@ Parse `$ARGUMENTS` (first word):
 
 ### Step 1 — Dedup check
 
-Before creating anything, check for an existing note on the same topic.
+Before creating anything, check for an existing note on the same topic. `vague vault-scan --similar` matches title words loosely (case, accents, word order) and skips `9. Archive/`. The grep catches notes that cover the topic under another title.
 
 ```bash
 VAULT="$HOME/Obsidian"
 QUERY="<inferred title or keyword>"
-# Check filenames
-find "$VAULT" -iname "*${QUERY}*.md" 2>/dev/null
+vague vault-scan --similar "$QUERY"
 
 # Check content (-F: treat query as literal text, not a regex)
 grep -rilF "$QUERY" "$VAULT" --include="*.md" 2>/dev/null | head -5
@@ -107,9 +108,17 @@ Otherwise, infer:
 
 Code and architecture notes get the `code` or `architecture` tag, not their own folder. If ambiguous between the two rows, ask.
 
-### Step 3 — Propose tags
+### Step 3 — Propose tags and kind
 
-Analyze the content and propose 2–5 tags. Use these conventions:
+Analyze the content and propose 2–5 tags, and the note's kind. The kind tells `/vault-clean` what it may do to the note later:
+
+| Kind | The note is… | `/vault-clean` may… |
+|---|---|---|
+| `record` | history: a review, an interview, a meeting, a decision record | fix hygiene only, never rewrite it |
+| `knowledge` | evergreen: a how-to, a concept, an architecture walkthrough | merge and refresh it |
+| `plan` | work to do: an eng plan, a design doc, a critique | archive it once the work ships |
+
+Tags use these conventions:
 
 | Domain | Tags |
 |--------|------|
@@ -122,6 +131,7 @@ Analyze the content and propose 2–5 tags. Use these conventions:
 Present proposed tags and confirm/adjust via AskUserQuestion:
 ```
 Proposed tags: engineering, architecture, decision
+Kind: plan
 
 A) Accept
 B) Edit — tell me which to add/remove
@@ -144,6 +154,8 @@ aliases:
 tags:
   - tag1
   - tag2
+kind: knowledge
+status: active
 ---
 # YYYY-MM-DD - Note Title
 
@@ -184,8 +196,8 @@ vague memory-log vault-<title-slug> "<one-line summary of the note>" --doc --fil
 Skills such as `/plan-eng`, `/plan-ideation` and `/diagram` save their documents through this skill. The caller names the destination in the arguments:
 
 ```
-/vault save "<Title>" folder "<folder>/" tags "<tag1>,<tag2>"
-/vault export "<source path>" title "<Title>" folder "<folder>/" tags "<tag1>,<tag2>"
+/vault save "<Title>" folder "<folder>/" tags "<tag1>,<tag2>" kind "<kind>"
+/vault export "<source path>" title "<Title>" folder "<folder>/" tags "<tag1>,<tag2>" kind "<kind>"
 ```
 
 Each argument changes one step of Save mode:
@@ -194,6 +206,7 @@ Each argument changes one step of Save mode:
 |---|---|---|
 | `folder` | Step 2 uses it verbatim | It must appear in the `FOLDERS` list. A missing folder is never created: Step 2 asks the user instead. |
 | `tags` | Step 3 uses them without the confirmation question | Tags stay lowercase with underscores |
+| `kind` | Step 3 uses it as the note's `kind:` | One of `record`, `knowledge`, `plan`. Without it, Step 3 infers the kind. |
 | `title` (or the quoted title after `save`) | Step 4 uses it without the confirmation question | The filename holds no date |
 | none of the above | The step runs as usual | n/a |
 

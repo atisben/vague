@@ -128,7 +128,7 @@ Once approved, keep it. The draft in `/tmp/vague-diagrams/` is temporary, so the
 1. Export it through the `/vault` skill (see its "Saving for Another Skill" section). It copies the HTML to `7. Attachments/` and writes a note that embeds it. Use `6. Atomic Notes/Alma/` and add the `alma` tag for Alma work:
 
    ```
-   /vault export "$OUTPUT_FILE" title "<Diagram Title>" folder "6. Atomic Notes/" tags "architecture,code"
+   /vault export "$OUTPUT_FILE" title "<Diagram Title>" folder "6. Atomic Notes/" tags "architecture,code" kind "knowledge"
    ```
 
 2. Point the ledger at the note. `<name>` is the title in lowercase with hyphens, so a redrawn diagram replaces the older pointer:

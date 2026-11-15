@@ -196,7 +196,7 @@ Once the report above is final, save it to the vault so the user can refer back,
 1. **Save the note** through the `/vault` skill (see its "Saving for Another Skill" section). The body is the full critique report: header, heuristic table, design-specificity verdict, priority issues, persona red flags, minor observations, and questions to consider. Stop before Ask the User and Recommended Actions. Put this line under the header so a later run can read the trend: `Score: <total>/<applicable max> · n/a: <heuristic numbers, or none> · P0: <n> · P1: <n>`.
 
    ```
-   /vault save "Design Critique - <Target>" folder "6. Atomic Notes/" tags "design,review,impeccable"
+   /vault save "Design Critique - <Target>" folder "6. Atomic Notes/" tags "design,review,impeccable" kind "plan"
    ```
 
    `<Target>` is the user's name for the surface, e.g. "Homepage". /vault prints `VAULT_NOTE: <path>`. A note with the same title is updated in place, so the vault keeps one critique per target.
