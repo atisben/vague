@@ -1,6 +1,8 @@
 ---
 name: plan-ideation
 version: 2.0.0
+category: Planning
+summary: You have an idea. Validates it, challenges it, writes a design doc. Say "think bigger" on an existing plan to expand, hold, or reduce its scope.
 description: |
   YC-style office hours for idea validation, design doc generation, and scope review.
   Three modes: Startup (hard-nosed, demand-focused), Builder (side projects,
@@ -8,10 +10,6 @@ description: |
   find the 10-star version, then expand or reduce scope). Never writes code.
   Trigger: "I have an idea", "help me think through this", "is this worth building",
   "think bigger", "expand scope", "strategy review", "is this ambitious enough".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -546,9 +544,3 @@ One more thing.
 > When you're ready: `/plan-eng` to lock in the architecture, then `/dev-implement`. Don't over-plan it — the best builder projects are started, not planned."
 
 Close with 2-3 curated resources (essays, repos, tools) specifically relevant to this problem space. Non-obvious — not the first search result.
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about plan-ideation` (see the Memory guideline).

@@ -10,11 +10,10 @@ A vague skill is a Markdown file at `{skill-dir}/{name}/SKILL.md` that an AI too
 ---
 name: my-skill
 version: 1.0.0
+category: Execution
+summary: One line for the README skill map.
 description: |
   One paragraph. What it does, when to use it, trigger phrases.
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -42,12 +41,6 @@ eval "$(vague context --shell --skill my-skill)"
 
 ---
 
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about my-skill` (see the Memory guideline).
-
----
-
 ## Handoff
 
 > "What this skill produces and what to run next."
@@ -61,8 +54,9 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 |-------|----------|-------|
 | `name` | Yes | Must match directory name. |
 | `version` | Yes | Semantic version (`1.0.0`). Bump on breaking changes. |
-| `description` | Yes | Shown in the AI tool's skill picker. |
-| `sdk_commands` | Yes | List of `vague` commands this skill calls. |
+| `description` | Yes | Shown in the AI tool's skill picker. Its last sentence, `Trigger: ...`, feeds the routing table. |
+| `category` | Yes | The README heading: `Entry point`, `Planning`, `Design`, `Execution`, `Reflection`, `Management` or `Interview prep`. |
+| `summary` | Yes | One line for the README skill map. |
 | `allowed-tools` | Yes | List only tools the skill actually uses. |
 | `benefits-from` | No | Array of skill names this one reads outputs from. |
 | `hooks` | No | Claude Code hooks active once the skill is invoked, keyed by event: `PostToolUse: [{matcher: "Edit\|Write", hooks: [{type: command, command: ...}]}]`. `vague skill-check` validates the shape. `/impeccable` uses it to run `vague design-check --hook`. |
@@ -89,7 +83,7 @@ Memories (most relevant first):
 - [n-plus-one] Always eager-load associations on list queries.
 ```
 
-The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/sdk/core/memory.py`. The block holds recent notes (`--scratch`), the newest 5 `doc` pointers as key and path, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
+The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/memory.py`. The block holds recent notes (`--scratch`), the newest 5 `doc` pointers as key and path, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
 
 `vague context` never fails: missing config returns defaults, a missing git remote falls back to the folder name, and a broken ledger drops the block.
 
@@ -122,7 +116,7 @@ A later skill finds the document with `vague memory-search --kind doc --skill <w
 
 **Only log genuine discoveries.** A good test: would this save time in a future session?
 
-Every skill ends with a one-line **Observation Protocol** section before its Handoff. It points at `--about <skill>` and lists only the skill-specific things worth watching for.
+The preamble hint also shows how to log feedback about the skill (`--about <skill>`), so a skill never repeats it. A skill with its own signals adds a **Feedback to watch for** list before its Handoff, and lists only what is specific to it.
 
 Skills do not log their own start or end. The `vague log-event` hook records each skill start in `~/.vague/events/`, and `vague status` reads it from there.
 
@@ -185,11 +179,11 @@ vague skill-check                    # check every bundled skill plus README.md 
 ```
 
 A skill passes the check when:
-- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `allowed-tools`)
+- All required frontmatter fields are present (`name`, `version`, `description`, `category`, `summary`, `allowed-tools`)
 - The preamble runs `vague context --shell --skill <own name>`
-- Every `vague <command>` it calls exists, and every `vague memory-*` command it calls is listed in `sdk_commands`
+- Every `vague <command>` it calls in code exists. The check reads the commands from the text, so a skill keeps no list of them
 
-With no path, the check also verifies that README.md and CLAUDE.md list every skill and state the real skill count, and that every `vague <command>` the docs show exists. A pre-commit hook runs it on every commit that touches a skill, README.md, or CLAUDE.md.
+With no path, the check also verifies that every `vague <command>` the docs show exists, and it regenerates the README skill map between `<!-- skills:start -->` and `<!-- skills:end -->` from each skill's `category` and `summary`. When it rewrites the table it exits 1, so you stage README.md and commit again. A pre-commit hook runs it on every commit that touches a skill, README.md, or CLAUDE.md.
 
 ---
 

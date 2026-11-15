@@ -1,10 +1,9 @@
 ---
 name: vague-my-skill
 version: 1.0.0
+category: Execution
+summary: One line for the README skill map.
 description: One-line description of what this skill does.
-sdk_commands:
-  - vague context
-  - vague memory-log
 ---
 
 # My Skill
@@ -27,6 +26,9 @@ block, and `--skill` ranks this skill's memories first.
 3. Log a learning, if one emerged. The preamble printed the command, so name only this skill's trigger here.
 4. If the skill writes a document, save it in the vault (through `/vault`) or the repo, never under `~/.vague/`. Then point the ledger at it: `vague memory-log <doc-key> "<one-line summary>" --doc --files "<absolute path>" --skill vague-my-skill`.
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about vague-my-skill` (see the Memory guideline).
+Optional. Delete this section unless the skill has its own signals. The preamble hint already shows how to log feedback.
+
+Log skill feedback, as the preamble hint shows, when you see:
+- A signal specific to this skill

@@ -1,6 +1,8 @@
 ---
 name: mgmt-log
 version: 1.1.0
+category: Management
+summary: Log a 1:1, capture feedback or a win for a report.
 description: |
   Minimal between-cycle capture: append a dated 1:1 note, win, concern, strength,
   growth note, or blind spot to a team member's running log. Feeds the growth-focused
@@ -8,9 +10,6 @@ description: |
   State lives at $VAGUE_HOME/team/ (global, not per-project).
   Trigger: "log a 1:1", "note feedback for <name>", "capture a win",
   "jot down a concern about <name>", "note a blind spot", "/mgmt-log".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -172,9 +171,7 @@ If nothing else was requested, you are done.
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-log` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Prompting the user when the note was already fully specified in the arguments

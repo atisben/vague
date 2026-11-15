@@ -1,6 +1,8 @@
 ---
 name: vault-clean
 version: 1.0.0
+category: Reflection
+summary: "Keep the vault current: fix frontmatter, distill shipped plans into decisions, merge duplicates, build topic hubs, archive before deleting."
 description: |
   Maintain the Obsidian vault so search returns the current truth. Scans every note
   with `vague vault-scan`, fixes frontmatter hygiene on its own, then asks before it
@@ -10,12 +12,6 @@ description: |
   report to the vault.
   Trigger: "clean the vault", "vault cleaning", "tidy my vault", "dedupe the vault",
   "the vault is a mess", "distill the vault", "/vault-clean".
-sdk_commands:
-  - vague context
-  - vague vault-scan
-  - vague memory-log
-  - vague memory-search
-requires_slug: false
 allowed-tools:
   - Bash
   - Read

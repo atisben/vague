@@ -1,6 +1,8 @@
 ---
 name: mgmt-progress
 version: 1.1.0
+category: Management
+summary: Team progress, promo readiness, review status.
 description: |
   Read-only team dashboard: growth trajectory and each member's current growth
   focus across review cycles, promotion readiness, and staleness (who has no recent
@@ -8,9 +10,6 @@ description: |
   (global, not per-project).
   Trigger: "team progress", "who's ready for promo", "review status",
   "how is my team doing", "/mgmt-progress".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -269,11 +268,9 @@ Run `/mgmt-log Sam Ortiz` to refresh evidence, then `/mgmt-review Sam Ortiz` to 
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-progress` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Staleness thresholds that feel too strict or too lenient for real teams
 - Review-snapshot fields the rollup doesn't capture but managers ask about
 - Trajectory patterns the `below/meets/exceeds` model can't express

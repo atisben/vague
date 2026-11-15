@@ -1,16 +1,14 @@
 ---
 name: dev-implement
 version: 2.0.0
+category: Execution
+summary: Build a plan inline, or as a task graph of worktree subagents.
 description: |
   Build work that is already decided: a plan-eng plan, a spec, tickets, or the plan agreed in this
   conversation. Small work is built inline, test-first. Larger work becomes a task graph: each ready
   ticket goes to a fresh implementer subagent in its own git worktree, a merger lands it on one
   integration branch, and /dev-review checks the result. Never reopens the plan.
   Trigger: "implement this", "build this feature", "develop this", "orchestrate", "/dev-implement".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -217,12 +215,6 @@ Paste this block into every implementer and fixer brief:
 - R4: an architectural decision (new table, schema change, library switch) → STOP, change nothing, report back
 R4 overrides R1 to R3.
 ```
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about dev-implement` (see the Memory guideline).
 
 ---
 

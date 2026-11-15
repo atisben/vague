@@ -1,6 +1,8 @@
 ---
 name: mgmt-review
 version: 2.0.0
+category: Management
+summary: Run a performance review for a report.
 description: |
   Run a growth-focused development review for one team member. Centers on what they
   achieved, what didn't land and why, the strengths to double down on, and the blind
@@ -11,9 +13,6 @@ description: |
   Obsidian. State lives at $VAGUE_HOME/team/ (global, not per-project).
   Trigger: "run a performance review", "review <name>", "management review",
   "growth review", "write a review", "/mgmt-review".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -387,9 +386,7 @@ Only log genuine, generalisable patterns — not routine review outcomes.
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-review` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Bias the user had to point out (recency, halo, leniency) or blind spots that were skipped

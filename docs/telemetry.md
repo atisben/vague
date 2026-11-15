@@ -1,6 +1,12 @@
 # Telemetry
 
-vague telemetry is **100% local**. Nothing is sent to any server.
+vague telemetry is **100% local**. Nothing is sent to any server. This page is the one place that says what vague records, what it never records, and how to turn each part off.
+
+| Record | File | On by default | Turn it off |
+|---|---|---|---|
+| Memories | `~/.vague/memory.jsonl` | Yes, it is state, not telemetry | n/a |
+| Usage events | `~/.vague/events/YYYY-MM.jsonl` | Yes | `vague config-set telemetry off` |
+| Debug log | `~/.vague/logs/vague.log` | No | Leave `VAGUE_LOG` unset |
 
 ---
 
@@ -23,7 +29,9 @@ The preamble prints at most 1,500 tokens of it, for this scope plus `global`, in
 ### events/YYYY-MM.jsonl
 Written to `~/.vague/events/YYYY-MM.jsonl` (one file per month, one JSON line per event). It records vague usage only: which skill started, which files Claude wrote while a skill ran, and which memories a `vague` command served or wrote.
 
-Skill starts and file writes come from `vague log-event`, which a Claude Code hook runs with the hook payload on stdin. Context events come from `vague` itself.
+Skill starts and file writes come from `vague log-event`, which a Claude Code hook runs with the hook payload on stdin. No agent has to cooperate, so no model can skip the step. Context events come from `vague` itself. Capture is best-effort: a failed write is swallowed, and the command's output still prints.
+
+`vague status` reads these events back: each project's path and last activity, plus git checks across all your projects. `/triage` runs it as its first step.
 
 A skill started in a worktree:
 
@@ -69,7 +77,7 @@ Fields that depend on the event:
 
 `root` is the checkout or worktree path and `main_root` is the main checkout, so a worktree event links to its repo by `main_root` while `root` tells the worktrees apart. Outside a repo, or on a bare repo, both paths are `cwd`. Git resolves symlinks in these paths, so they may differ from `cwd` (`/private/var` vs `/var` on macOS). Use `main_root` for identity, not `repo`.
 
-`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl` or `config.md`. For the ledger, `path` is the constant relative name `memory.jsonl`. For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
+`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl` or `config.env`. For the ledger, `path` is the constant relative name `memory.jsonl`. For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
 
 `file_write` names the path Claude wrote with its Write or Edit tool, never the contents. A skill sends no end signal, so the last skill started in the session owns every later write. A write in a session with no skill start logs nothing. The hook reads only the current month file to find that skill, so a session that crosses a month boundary loses attribution.
 
@@ -77,17 +85,7 @@ Fields that depend on the event:
 - **Outside Claude Code the session is `unknown`.** The `session` value comes from `$CLAUDE_CODE_SESSION_ID`, which Claude Code sets for its Bash tool and which equals the hook payload's `session_id`. A command run in a plain terminal or by another agent still writes its line, with `session: "unknown"`, so the usage graph stays complete.
 - **`ids` names the memories.** The `memory-*` commands and the preamble add `ids`, a list of `scope/key` names of the memories served or written. Keys are names chosen by the model, never memory text or the memory's `files`.
 - **Reads of a missing file are skipped,** and the same file is logged once per command and kind. `vague status` logs no reads: it serves no memory text.
-- `telemetry: off` disables all events, and a failure to write one never changes a command's output or exit code.
-
-#### Not logged
-
-- Any file path outside a skill run: a Write or Edit with no earlier skill start in the session writes nothing.
-- Read, Grep and Glob calls, at any time.
-- File contents and tool output, including what a Write or Edit wrote.
-- Bash commands.
-- Prompt text beyond the `/name` of a skill.
-- Search patterns and queries.
-- Session start, turn end and session end signals.
+- `telemetry=off` disables all events, and a failure to write one never changes a command's output or exit code.
 
 `vague log-event` ignores every other hook or tool silently. It never prints to stdout and exits 0 on any failure, with one exception covered in the next section.
 
@@ -108,7 +106,11 @@ vague skill-check: 1 finding(s) in retro
 /Users/me/vague/vague/assets/skills/retro/SKILL.md: frontmatter: missing required field `description`
 ```
 
-The check runs even with `telemetry: off`, because it is a guard, not telemetry. The event is still logged first, so a failing check never drops the `file_write` line.
+The check runs even with `telemetry=off`, because it is a guard, not telemetry. The event is still logged first, so a failing check never drops the `file_write` line.
+
+#### Design check while /impeccable runs
+
+`/impeccable` declares its own `PostToolUse` hook in its frontmatter, so the hook exists only in a session that invoked the skill. It runs `vague design-check --hook` on each UI file Claude edits, scans for eight AI-design tells, and returns findings the same way: stderr and exit 2. It records nothing. Run `vague design-check <paths>` to scan by hand.
 
 #### Wiring the hook
 
@@ -138,6 +140,7 @@ The `PostToolUse` matcher `Skill|Write|Edit` limits the hook to Skill, Write and
 vague config-set telemetry local   # log locally (default)
 vague config-set telemetry off     # no logging at all
 vague config-get telemetry         # check current value
+# config-set writes one line, telemetry=<value>, in ~/.vague/config.env
 ```
 
 When `telemetry` is `"off"`:
@@ -147,14 +150,37 @@ When `telemetry` is `"off"`:
 
 ---
 
+## Debug Log
+
+`vague` can log every command it runs (name, duration, exit code) plus any internal errors that would otherwise be swallowed. It is **off by default**. Turn it on with the `VAGUE_LOG` environment variable:
+
+```bash
+export VAGUE_LOG=debug   # debug | info | warning | error (unset = off)
+```
+
+Logs go to a rotating file, `~/.vague/logs/vague.log` (1 MB, 3 backups). A file is the right sink: each skill step spawns a short-lived `vague` process, and the runtime captures its stderr into the model's context. The file persists across those calls, so you can watch one stream:
+
+```bash
+tail -f ~/.vague/logs/vague.log
+```
+
+```text
+2026-06-04 14:45:19 pid=19944 INFO vague start command=context
+2026-06-04 14:45:19 pid=19944 INFO vague end command=context exit=0 duration_ms=26.6
+```
+
+Set `VAGUE_LOG` in your shell profile so every `vague` process the agent spawns inherits it. When you run `vague` by hand, add `VAGUE_LOG_STDERR=1` to echo the log to your terminal too.
+
+---
+
 ## What Is Never Logged
 
-- File contents, Bash commands, tool output
-- Any project file path outside a skill run. During a skill, only the path of a file Claude writes with Write or Edit is logged, as `file_write`. A skill can also report a path with `memory-log --files`.
-- Paths of files Claude only reads
-- Grep and Glob patterns, and any search query
+- File contents, code, tool output, and what a Write or Edit wrote
+- Any project file path outside a skill run: a Write or Edit with no earlier skill start in the session writes nothing. During a skill, only the path of a file Claude writes with Write or Edit is logged, as `file_write`. A skill can also report a path with `memory-log --files`.
+- Read, Grep and Glob calls, at any time, and the paths of files Claude only reads
+- Bash commands
+- Search patterns and queries
 - Prompt text, except the skill name of a leading `/name`
-- Code content
+- Session start, turn end and session end signals
 - User input or conversation text
-- API keys, tokens, secrets
-- Personal information
+- API keys, tokens, secrets, and personal information

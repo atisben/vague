@@ -1,6 +1,8 @@
 ---
 name: triage
 version: 1.0.0
+category: Entry point
+summary: The front door. Triage what's on your plate and route to the right skill.
 description: |
   The front door for an ML engineering manager's day. Triages what you're
   dealing with — a PR to review, an idea to pressure-test, a roadmap to sharpen,
@@ -8,10 +10,6 @@ description: |
   Does light framing only; never does the deep work itself.
   Trigger: "what should I look at", "here's what's on my plate", "where do I start",
   "/triage", "triage this", "help me figure out what I need".
-sdk_commands:
-  - vague context
-  - vague status
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -120,11 +118,9 @@ If nothing fits, say so plainly and offer the closest two options via AskUserQue
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about triage` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - A request that fit no lane. Log it with key `new-skill-<working-name>`: it is a new-skill candidate.
 - Routing the manager had to correct ("no, I wanted X")
 - Repeated triage friction: the same ambiguous ask every time
