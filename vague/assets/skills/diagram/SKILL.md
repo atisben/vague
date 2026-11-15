@@ -1,16 +1,14 @@
 ---
 name: diagram
 version: 2.0.0
+category: Design
+summary: Build a mind map or an architecture overview as a self-contained HTML diagram.
 description: |
   Build a mind map or an architecture overview as a single self-contained HTML page
   (inline SVG, light + dark theme). Reads the real codebase for architecture views,
   or the user's notes/topic for mind maps. Real names and paths in every box.
   Trigger: "mind map", "map this out", "architecture overview", "draw the architecture",
   "diagram this", "visualize the system", "how do these pieces connect".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -141,12 +139,6 @@ Once approved, keep it. The draft in `/tmp/vague-diagrams/` is temporary, so the
    ```
 
 Also offer to copy it into the repo (e.g. `docs/architecture.html`) if it documents this codebase.
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about diagram` (see the Memory guideline).
 
 ---
 

@@ -172,11 +172,13 @@ def _line(memory: Memory, scope: str | None, full: bool = True) -> str:
 
 
 def logging_hint(skill: str | None) -> str:
-    """One reminder line, so every skill gets the logging rule without repeating it in its own file."""
+    """One reminder line, so every skill gets the logging rules without repeating them in its own file."""
+    name = skill or "<skill>"
     return (
-        f'To log a learning: vague memory-log <key> "<fact>" --skill {skill or "<skill>"} [--files <paths>] '
+        f'To log a learning: vague memory-log <key> "<fact>" --skill {name} [--files <paths>] '
         "[--global]. Add --scratch for a note other agents on this project need, "
-        "or --doc --files <path> for a document you wrote."
+        "or --doc --files <path> for a document you wrote. "
+        f'Feedback about this skill: vague memory-log <key> "<issue → suggestion>" --about {name}.'
     )
 
 

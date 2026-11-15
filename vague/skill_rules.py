@@ -42,16 +42,26 @@ class SkillHookMatcher(BaseModel):
     hooks: list[SkillHookCommand]
 
 
+# The README skill map lists categories in this order.
+CATEGORIES = ("Entry point", "Planning", "Design", "Execution", "Reflection", "Management", "Interview prep")
+Category = Literal["Entry point", "Planning", "Design", "Execution", "Reflection", "Management", "Interview prep"]
+
+
 class SkillManifest(BaseModel):
     name: str
     version: str
     description: str
-    sdk_commands: list[str] = []
+    category: Category
+    # One line for the README skill map. The description serves the routing table instead.
+    summary: str
     # Claude Code skill hooks, keyed by event (`PostToolUse`): active only while the skill is loaded.
     hooks: dict[str, list[SkillHookMatcher]] = {}
 
 
-REQUIRED_FIELDS = ("name", "version", "description", "sdk_commands", "allowed-tools")
+REQUIRED_FIELDS = ("name", "version", "description", "category", "summary", "allowed-tools")
+
+SKILL_MAP_START = "<!-- skills:start -->"
+SKILL_MAP_END = "<!-- skills:end -->"
 
 # Skills whose deliverable is a file the user must find later. Each logs it as a doc memory, which is how
 # `vague status`, the preamble's document index and the usage graph learn the file exists.
@@ -119,12 +129,6 @@ def vague_commands_in(text: str) -> set[str]:
         for code in _CODE_PATTERN.findall(_TEXT_FENCE_PATTERN.sub("", text))
         for command in _COMMAND_PATTERN.findall(code.strip("`"))
     }
-
-
-def frontmatter_commands(frontmatter: dict) -> set[str]:
-    """The vague commands a skill declares in its `sdk_commands` list."""
-    declared = frontmatter.get("sdk_commands") or []
-    return {m.group(1) for entry in declared if (m := re.match(r"vague ([a-z][a-z0-9-]*)", str(entry)))}
 
 
 def memory_convention_findings(path: Path, text: str) -> list[str]:
@@ -233,19 +237,9 @@ def check_skill(skill_dir: Path) -> list[str]:
     if not re.search(rf"vague context --shell --skill {re.escape(name)}(?![\w-])", text):
         findings.append(f"{skill_md}: preamble: must run `vague context --shell --skill {name}`")
 
-    used = vague_commands_in(text=text)
-    declared = frontmatter_commands(frontmatter=frontmatter)
-    registered = registered_commands()
     findings += [
-        f"{skill_md}: unknown-command: `vague {c}` is not a vague command" for c in sorted(used - registered)
-    ]
-    findings += [
-        f"{skill_md}: unknown-command: sdk_commands lists `vague {c}`, which is not a vague command"
-        for c in sorted(declared - registered)
-    ]
-    findings += [
-        f"{skill_md}: undeclared-command: `vague {c}` is used but missing from sdk_commands"
-        for c in sorted(c for c in used - declared if c.startswith("memory-"))
+        f"{skill_md}: unknown-command: `vague {c}` is not a vague command"
+        for c in sorted(vague_commands_in(text=text) - registered_commands())
     ]
     findings += missing_reference_findings(skill_dir=skill_dir)
     return findings
@@ -278,19 +272,66 @@ def check_repo(repo_root: Path) -> list[str]:
         ]
         findings += memory_convention_findings(path=path, text=text)
 
-    names = [d.name for d in dirs]
-    readme, claude_md = repo_root / "README.md", repo_root / "CLAUDE.md"
+    readme = repo_root / "README.md"
     readme_text = readme.read_text(encoding="utf-8") if readme.is_file() else ""
-    claude_text = claude_md.read_text(encoding="utf-8") if claude_md.is_file() else ""
-
-    findings += [f"{readme}: skill-list: missing `/{n}`" for n in names if f"/{n}" not in readme_text]
-    findings += [f"{claude_md}: skill-list: missing `/{n}`" for n in names if f"`/{n}`" not in claude_text]
-    # The lookbehind stops "21 skills" from satisfying a count of 1.
-    if not re.search(rf"(?<!\d){len(names)} markdown-based LLM skills", readme_text):
-        findings.append(f"{readme}: skill-count: must state `{len(names)} markdown-based LLM skills`")
-    if not re.search(rf"(?<!\d){len(names)} skills", claude_text):
-        findings.append(f"{claude_md}: skill-count: must state `{len(names)} skills`")
+    if SKILL_MAP_START not in readme_text:
+        findings.append(f"{readme}: skill-map: missing the {SKILL_MAP_START} ... {SKILL_MAP_END} block")
+    # A skill with findings may have no category or summary yet: report those first, the table after.
+    elif not findings and _with_fresh_skill_map(text=readme_text, repo_root=repo_root) != readme_text:
+        findings.append(f"{readme}: skill-map: the skill table is out of date, run `vague skill-check` to fix it")
     return findings
+
+
+def skill_trigger(skill_dir: Path) -> str | None:
+    """The `Trigger:` phrases at the end of a skill's description, on one line, or None."""
+    try:
+        description = str(read_md(path=skill_dir / "SKILL.md").get("description") or "")
+    except FrontmatterError:
+        return None
+    _, found, trigger = " ".join(description.split()).partition("Trigger:")
+    if not found:
+        return None
+    return trigger.strip().removesuffix(".") or None
+
+
+def skill_map(skill_dirs: list[Path]) -> str:
+    """The README skill map: one table per category, in CATEGORIES order, from each skill's category and summary."""
+    rows: dict[str, list[str]] = {}
+    for directory in skill_dirs:
+        frontmatter = read_md(path=directory / "SKILL.md")
+        rows.setdefault(str(frontmatter.get("category")), []).append(
+            f"| `/{directory.name}` | {frontmatter.get('summary', '')} |\n"
+        )
+    return "\n".join(
+        f"### {category}\n| Command | When to use |\n|---|---|\n" + "".join(rows[category])
+        for category in CATEGORIES if category in rows
+    )
+
+
+def _with_fresh_skill_map(text: str, repo_root: Path) -> str:
+    # Imported here: install imports this module for read_md.
+    from vague.install import replace_block
+
+    return replace_block(text=text, block=skill_map(skill_dirs=skill_dirs(repo_root=repo_root)),
+                         start=SKILL_MAP_START, end=SKILL_MAP_END)
+
+
+def write_skill_map(repo_root: Path) -> bool:
+    """Regenerate the README skill map in place. True when the file changed.
+
+    Skipped while any skill has findings: a broken frontmatter would write a broken table.
+    """
+    readme = repo_root / "README.md"
+    if not readme.is_file() or any(check_skill(skill_dir=d) for d in skill_dirs(repo_root=repo_root)):
+        return False
+    text = readme.read_text(encoding="utf-8")
+    if SKILL_MAP_START not in text:
+        return False
+    fresh = _with_fresh_skill_map(text=text, repo_root=repo_root)
+    if fresh == text:
+        return False
+    readme.write_text(fresh, encoding="utf-8")
+    return True
 
 
 def cmd_skill_list(validate: bool = False) -> None:
@@ -320,7 +361,12 @@ def cmd_skill_check(paths: list[str]) -> None:
                 checked.add(directory)
                 findings += check_skill(skill_dir=directory)
     else:
-        findings = check_repo(repo_root=default_repo_root())
+        repo_root = default_repo_root()
+        # Like a formatter in pre-commit: fix the file, then fail so the change gets staged.
+        regenerated = write_skill_map(repo_root=repo_root)
+        findings = check_repo(repo_root=repo_root)
+        if regenerated:
+            findings.append(f"{repo_root / 'README.md'}: skill-map: regenerated the skill table, stage README.md")
 
     for finding in findings:
         typer.echo(finding)

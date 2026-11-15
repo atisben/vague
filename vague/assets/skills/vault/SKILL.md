@@ -1,6 +1,8 @@
 ---
 name: vault
 version: 1.4.0
+category: Reflection
+summary: Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault.
 description: |
   Obsidian vault operations: save notes, export artifacts (HTML diagrams, SVG,
   images) as embedded notes, search, and retrieve content.
@@ -8,10 +10,6 @@ description: |
   "export to vault", "send this diagram to obsidian", "search the vault",
   "find in vault", "recall from vault", "/vault save", "/vault export",
   "/vault search", "/vault find".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -346,9 +344,3 @@ Recent notes:
 ```
 
 Ask: "Open one? Reply with the number, or `/vault search <query>` to find something specific."
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about vault` (see the Memory guideline).

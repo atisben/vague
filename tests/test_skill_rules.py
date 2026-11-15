@@ -7,6 +7,8 @@ from typer.testing import CliRunner
 
 from vague.cli import app
 from vague.skill_rules import (
+    SKILL_MAP_END,
+    SKILL_MAP_START,
     FrontmatterError,
     check_repo,
     check_skill,
@@ -14,6 +16,7 @@ from vague.skill_rules import (
     read_md,
     skill_dir_for,
     skill_dirs,
+    skill_map,
     vague_commands_in,
 )
 
@@ -45,9 +48,7 @@ def test_check_skill_requires_own_name_in_preamble(skill_dir):
 
 def test_check_skill_reports_unknown_vague_command(skill_dir):
     in_body = skill_dir(name="body", body=_preamble("body") + "\n`vague frobnicate --now`\n")
-    in_frontmatter = skill_dir(name="fm", fields={"sdk_commands": ["vague context", "vague frobnicate"]})
     assert any("frobnicate" in f for f in check_skill(skill_dir=in_body))
-    assert any("frobnicate" in f for f in check_skill(skill_dir=in_frontmatter))
 
 
 def test_check_skill_ignores_vague_in_prose(skill_dir):
@@ -55,17 +56,9 @@ def test_check_skill_ignores_vague_in_prose(skill_dir):
     assert check_skill(skill_dir=directory) == []
 
 
-def test_check_skill_reports_undeclared_memory_command(skill_dir):
+def test_check_skill_needs_no_list_of_the_commands_it_runs(skill_dir):
     directory = skill_dir(body=_preamble("demo-skill") + '\n```bash\nvague memory-log k "fact"\n```\n')
-    findings = check_skill(skill_dir=directory)
-    assert any("memory-log" in f and "sdk_commands" in f for f in findings), findings
-
-    declared = skill_dir(
-        name="declared",
-        fields={"sdk_commands": ["vague context", "vague memory-log"]},
-        body=_preamble("declared") + '\n```bash\nvague memory-log k "fact"\n```\n',
-    )
-    assert check_skill(skill_dir=declared) == []
+    assert check_skill(skill_dir=directory) == []
 
 
 def test_check_skill_passes_on_every_bundled_skill():
@@ -84,7 +77,7 @@ def test_impeccable_frontmatter_declares_the_design_check_hook():
     assert re.fullmatch(entry["matcher"], "Edit")
     assert re.fullmatch(entry["matcher"], "Write")
     assert entry["hooks"] == [{"type": "command", "command": "vague design-check --hook"}]
-    assert "vague design-check" in frontmatter["sdk_commands"]
+    assert "design-check" in vague_commands_in(text=skill_md.read_text(encoding="utf-8"))
 
 
 def test_check_skill_rejects_a_malformed_hooks_block(skill_dir):
@@ -97,58 +90,57 @@ def test_check_repo_passes_on_this_repo():
     assert check_repo(repo_root=default_repo_root()) == []
 
 
-def _fake_repo(tmp_path, skill_dir, names, readme, claude_md):
+def _fake_repo(tmp_path, skill_dir, names, readme=""):
+    """A repo with these skills and a README whose skill map is in sync, followed by `readme`."""
     skills_root = tmp_path / "vague" / "assets" / "skills"
     for name in names:
         skill_dir(name=name, root=skills_root)
-    (tmp_path / "README.md").write_text(readme, encoding="utf-8")
-    (tmp_path / "CLAUDE.md").write_text(claude_md, encoding="utf-8")
+    table = skill_map(skill_dirs=skill_dirs(repo_root=tmp_path))
+    (tmp_path / "README.md").write_text(f"{SKILL_MAP_START}\n{table}\n{SKILL_MAP_END}\n{readme}", encoding="utf-8")
     return tmp_path
 
 
 def test_check_repo_passes_on_a_consistent_repo(tmp_path, skill_dir):
-    repo = _fake_repo(
-        tmp_path, skill_dir, names=["alpha", "beta"],
-        readme="2 markdown-based LLM skills: /alpha, /beta", claude_md="2 skills: `/alpha` `/beta`",
+    assert check_repo(repo_root=_fake_repo(tmp_path, skill_dir, names=["alpha", "beta"])) == []
+
+
+def test_check_repo_reports_a_stale_skill_map(tmp_path, skill_dir):
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"])
+    skill_dir(name="beta", root=repo / "vague" / "assets" / "skills")
+    assert any("README.md" in f and "skill-map" in f for f in check_repo(repo_root=repo))
+
+
+def test_check_repo_reports_a_readme_without_the_skill_map_block(tmp_path, skill_dir):
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"])
+    (repo / "README.md").write_text("# vague\n", encoding="utf-8")
+    assert any("README.md" in f and SKILL_MAP_START in f for f in check_repo(repo_root=repo))
+
+
+def test_skill_map_groups_skills_by_category_in_a_fixed_order(tmp_path, skill_dir):
+    skill_dir(name="zeta", fields={"category": "Planning", "summary": "Plan it."})
+    skill_dir(name="alpha", fields={"category": "Execution", "summary": "Build it."})
+    skill_dir(name="beta", fields={"category": "Planning", "summary": "Plan more."})
+    assert skill_map(skill_dirs=sorted(d for d in tmp_path.iterdir())) == (
+        "### Planning\n| Command | When to use |\n|---|---|\n| `/beta` | Plan more. |\n| `/zeta` | Plan it. |\n\n"
+        "### Execution\n| Command | When to use |\n|---|---|\n| `/alpha` | Build it. |\n"
     )
-    assert check_repo(repo_root=repo) == []
 
 
-def test_check_repo_reports_skill_missing_from_readme_and_claude_md(tmp_path, skill_dir):
-    repo = _fake_repo(
-        tmp_path, skill_dir, names=["alpha", "beta"],
-        readme="2 markdown-based LLM skills: /alpha", claude_md="2 skills: `/alpha`",
-    )
-    findings = check_repo(repo_root=repo)
-    assert any("README.md" in f and "beta" in f for f in findings), findings
-    assert any("CLAUDE.md" in f and "beta" in f for f in findings), findings
-
-
-def test_check_repo_reports_wrong_skill_count(tmp_path, skill_dir):
-    repo = _fake_repo(
-        tmp_path, skill_dir, names=["alpha", "beta"],
-        readme="3 markdown-based LLM skills: /alpha /beta", claude_md="3 skills: `/alpha` `/beta`",
-    )
-    findings = check_repo(repo_root=repo)
-    assert any("README.md" in f and "2" in f for f in findings), findings
-    assert any("CLAUDE.md" in f and "2" in f for f in findings), findings
+def test_check_skill_requires_a_known_category_and_a_summary(skill_dir):
+    unknown = check_skill(skill_dir=skill_dir(name="odd", fields={"category": "Misc"}))
+    assert any("invalid manifest" in f and "category" in f for f in unknown), unknown
+    missing = check_skill(skill_dir=skill_dir(name="bare", omit=("summary",)))
+    assert any("summary" in f for f in missing), missing
 
 
 def test_check_repo_includes_skill_findings(tmp_path, skill_dir):
-    repo = _fake_repo(
-        tmp_path, skill_dir, names=["alpha"],
-        readme="1 markdown-based LLM skills: /alpha", claude_md="1 skills: `/alpha`",
-    )
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"])
     skill_dir(name="alpha", root=repo / "vague" / "assets" / "skills", omit=("version",))
     assert any("version" in f for f in check_repo(repo_root=repo))
 
 
 def test_check_repo_reports_unknown_command_in_docs(tmp_path, skill_dir):
-    repo = _fake_repo(
-        tmp_path, skill_dir, names=["alpha"],
-        readme="1 markdown-based LLM skills: /alpha\n\n```bash\nvague skill-audit ./x\n```\n",
-        claude_md="1 skills: `/alpha`",
-    )
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"], readme="\n```bash\nvague skill-audit ./x\n```\n")
     assert any(
         "README.md" in f and "unknown-command" in f and "skill-audit" in f for f in check_repo(repo_root=repo)
     )
@@ -171,8 +163,7 @@ def test_skill_dir_for_resolves_dir_and_nested_file(skill_dir, tmp_path):
 
 
 def _fake_docs_repo(tmp_path, skill_dir, guidelines="", skill_body=""):
-    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"],
-                      readme="1 markdown-based LLM skills: /alpha", claude_md="1 skills: `/alpha`")
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"])
     if skill_body:
         skill_dir(name="alpha", root=repo / "vague" / "assets" / "skills", body=_preamble("alpha") + skill_body)
     path = repo / "vague" / "assets" / "claude" / "guidelines.md"
@@ -213,7 +204,7 @@ def test_check_repo_reports_saved_learning_convention_in_guidelines(tmp_path, sk
 
 
 def test_file_writing_skills_log_their_deliverable_with_doc(skill_dir):
-    fields = {"sdk_commands": ["vague context", "vague memory-log"]}
+    fields = {}
     learning = '\n```bash\nvague memory-log deck-x "Deck." --files "/d.html"\n```\n'
     without = skill_dir(name="slides", fields=fields, body=_preamble("slides") + learning)
     assert any("deliverable-doc-memory" in f for f in check_skill(skill_dir=without))
@@ -250,9 +241,7 @@ def test_check_skill_reports_link_that_escapes_the_skill_dir(skill_dir):
 
 
 def _repo_with_agents(tmp_path, skill_dir, body, agents=()):
-    repo = _fake_repo(tmp_path, skill_dir, names=["shiny", "shiny-extra"],
-                      readme="2 markdown-based LLM skills: /shiny /shiny-extra",
-                      claude_md="2 skills: `/shiny` `/shiny-extra`")
+    repo = _fake_repo(tmp_path, skill_dir, names=["shiny", "shiny-extra"])
     skill_dir(name="shiny", root=repo / "vague" / "assets" / "skills", body=_preamble("shiny") + body)
     agents_dir = repo / "vague" / "assets" / "agents"
     agents_dir.mkdir(parents=True)
@@ -340,15 +329,27 @@ def test_skill_check_flags_preamble_without_skill_flag(skill_dir):
 
 
 def test_skill_check_without_paths_checks_all_skills_and_docs(tmp_path, skill_dir, monkeypatch):
-    skill_dir(name="alpha", root=tmp_path / "vague" / "assets" / "skills")
-    (tmp_path / "README.md").write_text("1 markdown-based LLM skills", encoding="utf-8")
-    (tmp_path / "CLAUDE.md").write_text("1 skills: `/alpha`", encoding="utf-8")
-    monkeypatch.setattr("vague.skill_rules.default_repo_root", lambda: tmp_path)
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"])
+    skill_dir(name="alpha", root=repo / "vague" / "assets" / "skills", omit=("version",))
+    monkeypatch.setattr("vague.skill_rules.default_repo_root", lambda: repo)
 
     result = runner.invoke(app, ["skill-check"])
 
     assert result.exit_code == 1
-    assert "README.md" in result.output and "alpha" in result.output
+    assert "alpha" in result.output and "version" in result.output
+
+
+def test_skill_check_regenerates_a_stale_skill_map_then_passes(tmp_path, skill_dir, monkeypatch):
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"], readme="\n## Rest\n")
+    skill_dir(name="beta", root=repo / "vague" / "assets" / "skills")
+    monkeypatch.setattr("vague.skill_rules.default_repo_root", lambda: repo)
+
+    first = runner.invoke(app, ["skill-check"])
+    second = runner.invoke(app, ["skill-check"])
+
+    assert first.exit_code == 1 and "regenerated" in first.output
+    assert "`/beta`" in (repo / "README.md").read_text() and (repo / "README.md").read_text().endswith("## Rest\n")
+    assert second.exit_code == 0, second.output
 
 
 def test_skill_check_without_paths_passes_on_this_repo():

@@ -28,7 +28,7 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 │                              │                                          │
 │                              ▼                                          │
 │  2. SKILL.md                 (the invoked skill's instructions)         │
-│     frontmatter, preamble, steps, Observation Protocol, Handoff         │
+│     frontmatter, preamble, steps, Feedback to watch for, Handoff        │
 │                              │                                          │
 │      agent runs eval "$(vague context --shell --skill dev-ship)"        │
 │                              ▼                                          │

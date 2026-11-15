@@ -1,16 +1,16 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
 ## Overview
 
-- **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
+- **Slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **One memory ledger** in `~/.vague/memory.jsonl` holds every learning and observation, scoped to a project or `global`. Every skill preamble prints a ranked slice of it (at most 1,500 tokens).
 - **Mechanical telemetry:** a Claude Code hook logs each skill start to `~/.vague/events/`, feeding `vague status` with zero agent cooperation.
 - **Installs into Claude Code:** every Claude profile you declare gets the skills, agents, routing block and hooks.
-- **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite.
+- **Flat package:** one module per job under `vague/` (`memory.py`, `events.py`, `install.py`, ...), one test file per module.
 
 ## Quickstart
 
@@ -27,57 +27,60 @@ Then use any slash command in your AI tool.
 
 ## Skill Map
 
+<!-- skills:start -->
 ### Entry point
 | Command | When to use |
-|---------|-------------|
+|---|---|
 | `/triage` | The front door. Triage what's on your plate and route to the right skill. |
 
 ### Planning
 | Command | When to use |
-|---------|-------------|
-| `/plan-ideation` | You have an idea. Validates it, challenges it, writes a design doc. Say "think bigger" on an existing plan to expand, hold, or reduce its scope. |
+|---|---|
 | `/plan-eng` | Lock in architecture, data model, test strategy. |
+| `/plan-ideation` | You have an idea. Validates it, challenges it, writes a design doc. Say "think bigger" on an existing plan to expand, hold, or reduce its scope. |
 
 ### Design
 | Command | When to use |
-|---------|-------------|
+|---|---|
 | `/diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
-| `/vault-excalidraw` | Draw an architecture, flow, map or timeline as a Mermaid flowchart in a vault note, then import it into Excalidraw as editable shapes. |
+| `/impeccable` | Design, critique, audit, or polish a web UI: a design brief kept in memory, three HTML mockups to pick from, then read-only reviewer subagents check the build. |
 | `/slides` | Build an animated HTML slide deck (fixed 16:9 stage) from notes or a .pptx: pick a style from three live previews, then export to PDF. |
-| `/impeccable` | Design, critique, audit, or polish a web UI: a design brief kept in memory, three HTML mockups to pick from, then read-only reviewer subagents check the build. Claude Code only. |
-
-`/impeccable` and its two reviewer agents (`impeccable-finish-reviewer`, `impeccable-motion-reviewer`) are vendored and adapted from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) under Apache-2.0 (see `vague/assets/skills/impeccable/NOTICE.md`). They need subagents, so `vague install` links them into Claude Code runtimes only, never Cursor or Windsurf.
+| `/vault-excalidraw` | Draw an architecture, flow, map or timeline as a Mermaid flowchart in a vault note, then import it into Excalidraw as editable shapes. |
 
 ### Execution
 | Command | When to use |
-|---------|-------------|
+|---|---|
 | `/dev-implement` | Build a plan inline, or as a task graph of worktree subagents. |
-| `/dev-ship` | Test, version, changelog, commit, push, PR. |
 | `/dev-investigate` | Debug systematically — root cause first. |
 | `/dev-review` | Review a diff on two axes: Standards and Spec. |
+| `/dev-ship` | Test, version, changelog, commit, push, PR. |
 
 ### Reflection
 | Command | When to use |
-|---------|-------------|
+|---|---|
 | `/retro` | Session retrospective: fix checks, standards and skills, and curate the memory ledger. |
 | `/vault` | Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault. |
 
 ### Management
 | Command | When to use |
-|---------|-------------|
-| `/mgmt-setup` | Set up your team, import a career ladder, add team members. |
+|---|---|
 | `/mgmt-log` | Log a 1:1, capture feedback or a win for a report. |
-| `/mgmt-review` | Run a performance review for a report. |
 | `/mgmt-progress` | Team progress, promo readiness, review status. |
+| `/mgmt-review` | Run a performance review for a report. |
+| `/mgmt-setup` | Set up your team, import a career ladder, add team members. |
 
 ### Interview prep
 | Command | When to use |
-|---------|-------------|
+|---|---|
 | `/iv-kickoff` | Start interview coaching — profile, resume analysis, cadence. |
-| `/iv-research` | Research a company, decode a JD, score the fit. |
-| `/iv-stories` | Build and drill your STAR storybank. |
 | `/iv-practice` | Drills and mock interviews with scoring. |
 | `/iv-progress` | Trends, calibration, readiness verdict. |
+| `/iv-research` | Research a company, decode a JD, score the fit. |
+| `/iv-stories` | Build and drill your STAR storybank. |
+
+<!-- skills:end -->
+
+`/impeccable` and its two reviewer agents (`impeccable-finish-reviewer`, `impeccable-motion-reviewer`) are vendored and adapted from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) under Apache-2.0 (see `vague/assets/skills/impeccable/NOTICE.md`). They need subagents, so `vague install` links them into Claude Code runtimes only, never Cursor or Windsurf.
 
 ---
 ## System design
@@ -100,7 +103,7 @@ Idea
           └─ /vault export  → diagram embedded in an Obsidian note
       └─ /vault-excalidraw  → Mermaid note in the vault, imported into Excalidraw
       └─ /slides            → HTML slide deck (PDF optional)
-      └─ /impeccable        → UI brief, HTML mockups, build review (Claude Code only)
+      └─ /impeccable        → UI brief, HTML mockups, build review
 
           └─ /dev-implement → build
               └─ /dev-ship  → tests + PR
@@ -214,79 +217,10 @@ vague install --runtime claude:work     # install/sync one Claude profile
 
 ## Telemetry
 
-The project path is captured **mechanically**: the `vague log-event` hook
-logs every skill start to `~/.vague/events/YYYY-MM.jsonl`, with the repo's
-main checkout path. No agent cooperation needed, no logging step a model can
-skip. `vague status` derives each project's path and last activity from those
-events, then runs git checks across all your projects.
-
-The same hook logs the path (never the contents) of each file Claude writes
-with Write or Edit while a skill runs. When that file belongs to a bundled
-skill, the hook also runs `vague skill-check` on it and returns any findings
-to Claude (exit 2), so a broken skill edit is caught in the same turn.
-
-`/impeccable` declares its own `PostToolUse` hook in its frontmatter. Once you
-invoke the skill, `vague design-check --hook` scans each UI file Claude edits for
-eight AI-design tells and returns findings the same way. Run `vague design-check <paths>`
-to scan by hand.
-
-Capture is best-effort and can never break a skill: if the write fails, the
-error is swallowed and the command output still prints.
-
-### Reading it back
-
-```bash
-vague status              # cross-project dashboard: branches, in-flight plans, last activity
-```
-
-`/triage` runs `vague status` automatically as its first step.
-
-### Turning it off
-
-Everything is **100% local** — nothing ever leaves your machine (see
-[Telemetry](docs/telemetry.md) for the full inventory of what is and isn't
-logged), including how to wire the `vague log-event` hook. To disable event logging:
-
-```bash
-vague config-set telemetry off
-```
-
-Memories are structural state, not telemetry, so `memory.jsonl` is still
-written. Without events, `vague status` has no activity to show.
-
----
-
-## Observability
-
-`vague` can log every command it runs (name, duration, exit code) plus any
-internal errors that would otherwise be swallowed. Logging is **off by default**
-and **100% local**: nothing is sent anywhere (see [Telemetry](docs/telemetry.md)).
-
-Turn it on with the `VAGUE_LOG` environment variable:
-
-```bash
-export VAGUE_LOG=debug   # debug | info | warning | error (unset = off)
-```
-
-Logs are written to a rotating file at `~/.vague/logs/vague.log` (1 MB x 3
-backups). A file is the right sink here: each skill step spawns a separate
-short-lived `vague` process, and an LLM runtime captures their stderr into its
-own context. The file persists across those calls so you can watch one stream.
-
-Run the agent in one terminal and tail the log in another:
-
-```bash
-tail -f ~/.vague/logs/vague.log
-```
-
-```text
-2026-06-04 14:45:19 pid=19944 INFO vague start command=context
-2026-06-04 14:45:19 pid=19944 INFO vague end command=context exit=0 duration_ms=26.6
-```
-
-Set `export VAGUE_LOG=debug` in your shell profile so every `vague` process the
-agent spawns inherits it. When running `vague` by hand, add
-`VAGUE_LOG_STDERR=1` to also echo logs to your terminal.
+Everything vague records stays on this machine. A Claude Code hook logs each skill start to
+`~/.vague/events/`, which feeds `vague status`. An opt-in debug log (`VAGUE_LOG=debug`) records every
+command. [Telemetry](docs/telemetry.md) is the one place that lists what is logged, what never is,
+and how to turn each part off.
 
 ---
 

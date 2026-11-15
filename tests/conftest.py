@@ -90,7 +90,8 @@ def skill_dir(tmp_path):
             "name": name,
             "version": "1.0.0",
             "description": "A test skill",
-            "sdk_commands": ["vague context"],
+            "category": "Execution",
+            "summary": "A test skill.",
             "allowed-tools": ["Bash"],
         }
         frontmatter = {k: v for k, v in {**defaults, **(fields or {})}.items() if k not in omit}

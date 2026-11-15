@@ -1,14 +1,12 @@
 ---
 name: dev-investigate
 version: 1.0.0
+category: Execution
+summary: Debug systematically — root cause first.
 description: |
   Systematic debugging. Four phases: investigate, analyze, hypothesize, implement.
   Iron Law: no fixes without root cause.
   Trigger: "debug this", "fix this bug", "why is this broken", "root cause analysis".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -142,12 +140,6 @@ Always log what was found:
 ```bash
 vague memory-log <kebab-key> "Root cause: [mechanism]. Fix: [what changed]. Watch for: [where else it can appear]." --files <path/to/file> --skill dev-investigate
 ```
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about dev-investigate` (see the Memory guideline).
 
 ---
 

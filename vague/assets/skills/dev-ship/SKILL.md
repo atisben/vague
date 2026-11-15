@@ -1,14 +1,12 @@
 ---
 name: dev-ship
 version: 1.0.0
+category: Execution
+summary: Test, version, changelog, commit, push, PR.
 description: |
   Ship workflow: run tests, review diff, bump VERSION, update CHANGELOG,
   commit, push, create PR. Never push directly — always creates a PR.
   Trigger: "ship", "deploy", "push to main", "create a PR", "merge and push".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -212,12 +210,6 @@ If `$PLAN_FILE` exists, update that vault note with Edit:
 ## Step 10: Log Learnings
 
 Log a pitfall that shipping hit, such as a CI quirk or a hook that aborts silently.
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about dev-ship` (see the Memory guideline).
 
 ---
 

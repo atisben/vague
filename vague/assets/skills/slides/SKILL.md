@@ -1,6 +1,8 @@
 ---
 name: slides
 version: 1.0.0
+category: Design
+summary: 'Build an animated HTML slide deck (fixed 16:9 stage) from notes or a .pptx: pick a style from three live previews, then export to PDF.'
 description: |
   Build a zero-dependency, animated HTML slide deck on a fixed 1920×1080 stage, from
   scratch, from notes, or by converting a .pptx. Shows three real title-slide previews
@@ -8,10 +10,6 @@ description: |
   then generates the full deck as a local HTML file. Optional PDF export.
   Trigger: "make slides", "build a deck", "create a presentation", "slide deck",
   "convert this pptx", "turn this into slides", "/slides".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -388,12 +386,6 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 | [scripts/export-pdf.sh](scripts/export-pdf.sh)     | Export slides to PDF                                                 | Phase 6 (export)          |
 
 All paths in this table are relative to `$SKILL_DIR`.
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about slides` (see the Memory guideline).
 
 ---
 

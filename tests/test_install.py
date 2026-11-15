@@ -23,9 +23,9 @@ from vague.install import (
     replace_block,
     resolve_runtimes,
     runtimes,
-    skill_trigger,
     write_instruction_block,
 )
+from vague.skill_rules import skill_trigger
 
 runner = CliRunner()
 BLOCK = f"{MARKER_START}\nOLD\n{MARKER_END}"

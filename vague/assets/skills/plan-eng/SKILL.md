@@ -1,16 +1,14 @@
 ---
 name: plan-eng
 version: 1.0.0
+category: Planning
+summary: Lock in architecture, data model, test strategy.
 description: |
   Eng manager-mode plan review. Lock in architecture, data flow, edge cases,
   test strategy, and performance. Interactive, opinionated, one issue at a time.
   Trigger: "review the architecture", "engineering review", "lock in the plan".
 benefits-from:
   - plan-ideation
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Read
   - Write
@@ -242,12 +240,6 @@ Show to user, support revision loops, then save it in two steps.
    ```
 
    `BRANCH_KEY` replaces the `/` in a branch name, because a key cannot hold one.
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about plan-eng` (see the Memory guideline).
 
 ---
 
