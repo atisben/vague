@@ -1,13 +1,15 @@
 """Append-only event log of vague usage.
 
 One JSON line per event in $VAGUE_HOME/events/YYYY-MM.jsonl. Only facts about
-vague usage are recorded: which skill started, and which vague state file a
+vague usage are recorded: which skill started, which file a Write or Edit
+touched after a skill started in the session, and which vague state file a
 vague command read or wrote. Deriving which context belonged to which skill is
 the reader's job, by ordering events per session.
 
-Privacy: never project file paths, file contents, search patterns, Bash
-commands, prompt text beyond a leading `/name`, or tool output. Nothing leaves
-the machine.
+Privacy: the hook logs the path of a file written during a skill, and nothing
+else about it. File contents, reads, search patterns, Bash commands, prompt
+text beyond a leading `/name`, and tool output stay unlogged. A write in a
+session where no skill started is not logged at all. Nothing leaves the machine.
 """
 
 from __future__ import annotations
@@ -40,7 +42,7 @@ def _normalize_path(path: str, cwd: str) -> str:
 class Event(BaseModel):
     ts: datetime
     session: str
-    event: Literal["skill_start", "context_read", "context_write"]
+    event: Literal["skill_start", "file_write", "context_read", "context_write"]
     cwd: str
     repo: str
     branch: str
@@ -70,8 +72,28 @@ def _runtime() -> str:
     return Path(config_dir).name if config_dir else "claude"
 
 
-def _classify(payload: dict[str, Any]) -> dict[str, Any] | None:
-    """Event-specific fields of a hook payload, or None when it is not a skill start."""
+def _session_skill(session_id: str, now: datetime | None = None) -> str | None:
+    """The last skill started in this session, from the current month file only.
+
+    A skill sends no end signal, so the latest start owns every later write. A session
+    that crosses a month boundary loses attribution: reading one file keeps the hook cheap.
+    """
+    path = events_path(now=now)
+    if not path.exists():
+        return None
+    skill = None
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("session") == session_id and row.get("event") == "skill_start":
+            skill = row.get("skill") or skill
+    return skill if isinstance(skill, str) else None
+
+
+def _classify(payload: dict[str, Any], now: datetime | None = None) -> dict[str, Any] | None:
+    """Event-specific fields of a hook payload, or None when it records no vague usage."""
     hook = payload.get("hook_event_name")
 
     if hook == "UserPromptSubmit":
@@ -81,43 +103,59 @@ def _classify(payload: dict[str, Any]) -> dict[str, Any] | None:
             return {"event": "skill_start", "skill": match.group(1), "source": "slash"}
         return None
 
-    if hook == "PostToolUse" and payload.get("tool_name") == "Skill":
-        tool_input = payload.get("tool_input")
+    if hook != "PostToolUse":
+        return None
+    tool, tool_input = payload.get("tool_name"), payload.get("tool_input")
+
+    if tool == "Skill":
         tool_response = payload.get("tool_response")
         skill = tool_input.get("skill") if isinstance(tool_input, dict) else None
         failed = isinstance(tool_response, dict) and tool_response.get("success") is False
         if isinstance(skill, str) and skill and not failed:
             return {"event": "skill_start", "skill": skill, "source": "tool"}
 
+    if tool in ("Write", "Edit"):
+        file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
+        if not isinstance(file_path, str) or not file_path:
+            return None
+        skill = _session_skill(session_id=str(payload.get("session_id") or "unknown"), now=now)
+        if skill:
+            path = _normalize_path(path=file_path, cwd=str(payload.get("cwd") or ""))
+            return {"event": "file_write", "skill": skill, "path": path}
+
     return None
 
 
-def parse_hook_payload(payload: dict[str, Any], now: datetime | None = None) -> Event | None:
-    """Turn a hook payload into an Event, or None when it is not a skill start.
+def _base_event(payload: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
+    """Fields every hook event shares: when, which session, and where in git it happened."""
+    cwd = str(payload.get("cwd") or "")
+    agent_id = payload.get("agent_id")
+    git = get_git_context(cwd=Path(cwd) if cwd else None)
+    return {
+        "ts": now or datetime.now(UTC),
+        "session": str(payload.get("session_id") or "unknown"),
+        "cwd": cwd,
+        "repo": get_repo_slug(context=git),
+        "branch": git.branch,
+        "root": str(git.root),
+        "main_root": str(git.main_root),
+        "is_worktree": git.is_worktree,
+        "runtime": _runtime(),
+        "agent_id": agent_id if isinstance(agent_id, str) else None,
+    }
 
-    A payload now yields at most one event, so a single value says "nothing to
+
+def parse_hook_payload(payload: dict[str, Any], now: datetime | None = None) -> Event | None:
+    """Turn a hook payload into an Event, or None when it records no vague usage.
+
+    A payload yields at most one event, so a single value says "nothing to
     record" more plainly than an empty list.
     """
-    fields = _classify(payload)
+    # Classify first: the git lookup spawns processes, and most payloads record nothing.
+    fields = _classify(payload=payload, now=now)
     if fields is None:
         return None
-    cwd = str(payload.get("cwd") or "")
-    work_dir = Path(cwd) if cwd else None
-    agent_id = payload.get("agent_id")
-    git = get_git_context(cwd=work_dir)
-    return Event(
-        ts=now or datetime.now(UTC),
-        session=str(payload.get("session_id") or "unknown"),
-        cwd=cwd,
-        repo=get_repo_slug(context=git),
-        branch=git.branch,
-        root=str(git.root),
-        main_root=str(git.main_root),
-        is_worktree=git.is_worktree,
-        runtime=_runtime(),
-        agent_id=agent_id if isinstance(agent_id, str) else None,
-        **fields,
-    )
+    return Event(**_base_event(payload=payload, now=now), **fields)
 
 
 def append_event(event: Event) -> None:

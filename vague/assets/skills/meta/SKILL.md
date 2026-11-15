@@ -8,7 +8,7 @@ description: |
   "skill improvement", "what needs fixing in our skills", "review observations".
 sdk_commands:
   - vague context
-  - vague skill-validate
+  - vague skill-check
   - vague skill-list
   - vague memory-log
   - vague memory-search
@@ -127,7 +127,7 @@ For each approved observation targeting an existing skill:
 
 After each skill edit, run validation:
 ```bash
-vague skill-validate vague/assets/skills/{name}/
+vague skill-check vague/assets/skills/{name}/
 ```
 
 ---
@@ -152,7 +152,7 @@ For observations whose key starts with `new-skill-`:
 
 4. **Validate the new skill:**
    ```bash
-   vague skill-validate vague/assets/skills/{name}/
+   vague skill-check vague/assets/skills/{name}/
    ```
 
 5. Mark the observation as actioned (`--status actioned`)
@@ -187,7 +187,7 @@ Before finishing, re-read every modified SKILL.md and verify:
 4. **No regressions** — no existing rules or steps were accidentally removed
 5. **Validation passes:**
    ```bash
-   vague skill-validate vague/assets/skills/{name}/
+   vague skill-check vague/assets/skills/{name}/
    ```
 
 Fix any issues found.

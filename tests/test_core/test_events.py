@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime
 
 import pytest
@@ -185,3 +186,53 @@ def test_append_event_uses_event_month_for_file(vague_home_dir, monkeypatch):
     monkeypatch.setenv("VAGUE_HOME", str(vague_home_dir))
     append_event(event=_event(ts=datetime(2026, 12, 3, tzinfo=UTC)))
     assert (vague_home_dir / "events" / "2026-12.jsonl").exists()
+
+
+@pytest.fixture
+def events_home(vague_home_dir, monkeypatch):
+    monkeypatch.setenv("VAGUE_HOME", str(vague_home_dir))
+    return vague_home_dir
+
+
+def test_write_after_skill_start_yields_file_write_with_skill(events_home, hook_payload, tmp_path):
+    append_event(event=_event(skill="plan-eng"))
+    append_event(event=_event(skill="dev-ship"))
+    append_event(event=_event(session="other", skill="vault"))
+    target = tmp_path / "a.txt"
+
+    event = _parse(hook_payload(tool_name="Write", tool_input={"file_path": str(target), "content": "SECRET"}))
+
+    assert event is not None
+    assert (event.event, event.skill) == ("file_write", "dev-ship")
+    # tmp_path sits under /var on macOS, which resolves to /private/var.
+    assert event.path == os.path.realpath(target)
+    assert "SECRET" not in event.model_dump_json()
+
+
+def test_edit_relative_path_resolves_against_cwd(events_home, hook_payload, tmp_path):
+    append_event(event=_event(skill="dev-ship"))
+
+    event = _parse(hook_payload(tool_name="Edit", tool_input={"file_path": "src/a.py"}, cwd=str(tmp_path)))
+
+    assert event is not None and event.path == os.path.realpath(tmp_path / "src" / "a.py")
+
+
+def test_write_without_skill_start_yields_no_event(events_home, hook_payload):
+    append_event(event=_event(session="other", skill="dev-ship"))
+
+    assert _parse(hook_payload(tool_name="Write", tool_input={"file_path": "/work/a.txt"})) is None
+
+
+def test_read_tool_yields_no_event(events_home, hook_payload):
+    append_event(event=_event(skill="dev-ship"))
+
+    assert _parse(hook_payload(tool_name="Read", tool_input={"file_path": "/work/a.txt"})) is None
+
+
+@pytest.mark.parametrize("tool_input", [None, {}, {"file_path": ""}, "not a dict"])
+def test_write_without_file_path_yields_no_event(events_home, hook_payload, tool_input):
+    append_event(event=_event(skill="dev-ship"))
+    payload = hook_payload(tool_name="Write")
+    payload["tool_input"] = tool_input
+
+    assert _parse(payload) is None

@@ -87,3 +87,45 @@ def git_repo(tmp_path):
     subprocess.run(["git", "add", "."], cwd=str(repo_dir), capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=str(repo_dir), capture_output=True)
     return repo_dir
+
+
+@pytest.fixture
+def hook_payload():
+    """Factory for a Claude Code PostToolUse payload, so a test names only the tool and its input."""
+
+    def _make(tool_name="Write", tool_input=None, session_id="s1", cwd="/nonexistent/dir/for/tests", **extra):
+        payload = {
+            "hook_event_name": "PostToolUse", "tool_name": tool_name, "tool_input": tool_input or {},
+            "session_id": session_id, "cwd": cwd,
+        }
+        return {**payload, **extra}
+
+    return _make
+
+
+@pytest.fixture
+def skill_dir(tmp_path):
+    """Factory that writes a SKILL.md into tmp_path and returns its directory.
+
+    The defaults pass every skill rule, so a test names only the field or line it breaks.
+    """
+    from vague.sdk.core.frontmatter import write_md
+
+    def _make(name="demo-skill", fields=None, omit=(), body=None, root=None):
+        defaults = {
+            "name": name,
+            "version": "1.0.0",
+            "description": "A test skill",
+            "sdk_commands": ["vague context"],
+            "requires_slug": True,
+            "allowed-tools": ["Bash"],
+        }
+        frontmatter = {k: v for k, v in {**defaults, **(fields or {})}.items() if k not in omit}
+        if body is None:
+            body = f'## Preamble\n\n```bash\neval "$(vague context --shell --skill {name})"\n```\n'
+        directory = (root or tmp_path) / name
+        directory.mkdir(parents=True, exist_ok=True)
+        write_md(path=directory / "SKILL.md", data=frontmatter, body=body)
+        return directory
+
+    return _make

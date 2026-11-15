@@ -118,3 +118,101 @@ def test_log_event_runtime_from_claude_config_dir(home, monkeypatch):
     runner.invoke(sdk_app, ["log-event"], input=_skill_payload())
     (row,) = _lines(home)
     assert row["runtime"] == ".claude-personal"
+
+
+def test_log_event_write_after_skill_logs_file_write(home, tmp_path):
+    runner.invoke(sdk_app, ["log-event"], input=_skill_payload())
+    write = {
+        "hook_event_name": "PostToolUse", "tool_name": "Write", "session_id": "s1", "cwd": "/nonexistent/x",
+        "tool_input": {"file_path": str(tmp_path / "a.txt"), "content": "SECRET"},
+    }
+
+    result = runner.invoke(sdk_app, ["log-event"], input=json.dumps(write))
+
+    assert result.exit_code == 0
+    skill_row, write_row = sorted(_lines(home), key=lambda r: r["event"] != "skill_start")
+    assert (write_row["event"], write_row["skill"]) == ("file_write", "learn")
+    assert "SECRET" not in json.dumps(write_row)
+
+
+@pytest.fixture
+def bundled_root(tmp_path, monkeypatch):
+    """A tmp bundled skills root, so the hook checks test skills instead of the real ones."""
+    root = tmp_path / "repo" / "vague" / "assets" / "skills"
+    root.mkdir(parents=True)
+    monkeypatch.setattr("vague.sdk.commands.events._bundled_skills_root", lambda: root.resolve())
+    return root
+
+
+def _edit(hook_payload, path):
+    return json.dumps(hook_payload(tool_name="Edit", tool_input={"file_path": str(path)}))
+
+
+def test_edit_of_invalid_skill_file_exits_2_with_findings(home, bundled_root, skill_dir, hook_payload):
+    directory = skill_dir(name="broken", omit=("description",), root=bundled_root)
+
+    result = runner.invoke(sdk_app, ["log-event"], input=_edit(hook_payload, directory / "SKILL.md"))
+
+    assert result.exit_code == 2
+    lines = result.stderr.splitlines()
+    assert lines[0] == "vague skill-check: 1 finding(s) in broken"
+    assert "missing required field `description`" in lines[1]
+    assert result.stdout == ""
+
+
+def test_edit_of_valid_skill_file_exits_0_silently(home, bundled_root, skill_dir, hook_payload):
+    directory = skill_dir(name="fine", root=bundled_root)
+
+    result = runner.invoke(sdk_app, ["log-event"], input=_edit(hook_payload, directory / "SKILL.md"))
+
+    assert result.exit_code == 0
+    assert result.stdout == ""
+    assert result.stderr == ""
+
+
+def test_edit_through_symlinked_skills_dir_is_checked(home, bundled_root, skill_dir, hook_payload, tmp_path):
+    skill_dir(name="broken", omit=("version",), root=bundled_root)
+    installed = tmp_path / "claude" / "skills"
+    installed.mkdir(parents=True)
+    (installed / "broken").symlink_to(bundled_root / "broken")
+
+    result = runner.invoke(sdk_app, ["log-event"], input=_edit(hook_payload, installed / "broken" / "SKILL.md"))
+
+    assert result.exit_code == 2
+    assert "version" in result.stderr
+
+
+def test_skill_md_outside_bundled_root_is_not_checked(home, bundled_root, skill_dir, hook_payload, tmp_path):
+    directory = skill_dir(name="elsewhere", omit=("description",), root=tmp_path / "other")
+
+    result = runner.invoke(sdk_app, ["log-event"], input=_edit(hook_payload, directory / "SKILL.md"))
+
+    assert result.exit_code == 0
+    assert result.stderr == ""
+
+
+def test_check_failure_still_logs_event_and_exits_0(home, bundled_root, skill_dir, hook_payload, monkeypatch):
+    directory = skill_dir(name="broken", omit=("description",), root=bundled_root)
+
+    def _boom(skill_dir):
+        raise RuntimeError("rule crashed")
+
+    monkeypatch.setattr("vague.sdk.core.skill_rules.check_skill", _boom)
+    runner.invoke(sdk_app, ["log-event"], input=_skill_payload())
+
+    result = runner.invoke(sdk_app, ["log-event"], input=_edit(hook_payload, directory / "SKILL.md"))
+
+    assert result.exit_code == 0
+    assert result.stderr == ""
+    assert [row["event"] for row in _lines(home)].count("file_write") == 1
+
+
+def test_telemetry_off_skips_event_but_runs_check(home, bundled_root, skill_dir, hook_payload):
+    (home / "config.md").write_text("---\ntelemetry: 'off'\n---\n")
+    directory = skill_dir(name="broken", omit=("description",), root=bundled_root)
+
+    result = runner.invoke(sdk_app, ["log-event"], input=_edit(hook_payload, directory / "SKILL.md"))
+
+    assert result.exit_code == 2
+    assert "description" in result.stderr
+    assert not (home / "events").exists()

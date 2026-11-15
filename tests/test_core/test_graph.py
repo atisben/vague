@@ -215,3 +215,30 @@ def test_a_sibling_folder_with_the_vault_name_prefix_is_not_the_vault():
                         vault_root="/Users/me/Obsidian")
 
     assert _file_node(graph)["area"] == "external"
+
+
+def test_file_write_event_becomes_file_node_tagged_with_skill():
+    write = _event(event="file_write", skill="dev-ship", path="/r/src/a.py", source=None)
+    graph = build_graph(events=[write], memories=[])
+
+    node = _file_node(graph)
+    assert (node["path"], node["label"], node["relative"], node["area"]) == ("/r/src/a.py", "a.py", "src/a.py", "repo")
+    assert node["skill"] == "dev-ship"
+    assert _links(graph, "has_file") == {("project:me-repo", node["id"])}
+
+
+def test_file_written_and_named_in_memory_is_one_node():
+    write = _event(event="file_write", skill="dev-ship", path="/r/src/a.py", source=None)
+    graph = build_graph(events=[_event(), write], memories=[_memory(files=["src/a.py"])])
+
+    node = _file_node(graph)
+    assert node["path"] == "/r/src/a.py"
+    assert _links(graph, "touches") == {("memory:me-repo/tests-need-docker", node["id"])}
+
+
+def test_file_write_outside_the_repo_lands_in_the_vault_area():
+    write = _event(event="file_write", skill="vault", path="/Users/me/Obsidian/7. Code/Note.md", source=None)
+    graph = build_graph(events=[write], memories=[], vault_root="/Users/me/Obsidian")
+
+    node = _file_node(graph)
+    assert (node["area"], node["relative"]) == ("vault", "7. Code/Note.md")

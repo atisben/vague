@@ -185,13 +185,17 @@ If multiple next steps are appropriate:
 ## Validating Your Skill
 
 ```bash
-vague skill-validate ./my-skill/     # checks required frontmatter fields
-vague skill-audit ./my-skill/        # scans for legacy bs-* bash patterns
+vague skill-check ./my-skill/        # check one skill; exits 1 on any finding
+vague skill-check                    # check every bundled skill plus README.md and CLAUDE.md
 ```
 
-A skill passes validation when:
-- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `requires_slug`)
-- No legacy `bs-*` or `source _preamble.sh` patterns remain
+A skill passes the check when:
+- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `requires_slug`, `allowed-tools`)
+- No removed `vague` command, legacy `bs-*` tool, or sourced `_preamble.sh` script remains
+- The preamble runs `vague context --shell --skill <own name>`
+- Every `vague <command>` it calls exists, and every `vague memory-*` command it calls is listed in `sdk_commands`
+
+With no path, the check also verifies that README.md and CLAUDE.md list every skill and state the real skill count. A pre-commit hook runs it on every commit that touches a skill, README.md, or CLAUDE.md.
 
 ---
 

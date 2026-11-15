@@ -6,12 +6,17 @@ Pure functions, no I/O: the server feeds them rows and the tests feed them dicts
         ├─has_memory─▶ memory ─touches─▶ file      (two files in one memory are related)
         └─has_branch─▶ branch
 
+A file comes from a memory's `files` or from a `file_write` event, and carries the skill that
+named or wrote it. A file with a known location is keyed on its resolved absolute path, so one
+file named in a memory and written in an event is one node.
+
 Skills are not nodes. A skill touches everything, so as a node it would pull unrelated
 projects together. `skill_usage` reports them separately.
 """
 
 from __future__ import annotations
 
+import os
 import zlib
 from collections import Counter
 from datetime import datetime, timedelta
@@ -86,17 +91,34 @@ def _in(moment: datetime, window: tuple[datetime | None, datetime | None]) -> bo
     return (start is None or moment >= start) and (end is None or moment < end)
 
 
-def _locate(relative: str, root: str | None, vault_root: str | None) -> tuple[str | None, str, str]:
-    """(absolute path or None, display name, area) of a memory's file.
+def _under(path: str, base: str) -> str | None:
+    """`path` relative to `base`, or None when it lies outside. A sibling like `Obsidian-old` is outside."""
+    return str(PurePosixPath(path).relative_to(base)) if PurePosixPath(path).is_relative_to(base) else None
+
+
+def _locate(stored: str, root: str | None, vault_root: str | None) -> tuple[str | None, str, str]:
+    """(resolved absolute path or None, display name, area) of a file.
 
     A repo-relative path needs the repo's checkout to become absolute. An absolute path is already openable:
-    it is a file a skill wrote outside the repo, in the Obsidian vault or elsewhere, and the area says which.
+    inside the checkout it is a repo file, otherwise a file a skill wrote in the Obsidian vault or elsewhere.
+    The path is resolved through symlinks because the hook logs resolved paths (/private/var on macOS)
+    while a memory keeps the spelling a skill used (/var): only resolved paths can share one node id.
     """
-    if not relative.startswith("/"):
-        return (str(PurePosixPath(root) / relative) if root else None), relative, "repo"
-    if vault_root and PurePosixPath(relative).is_relative_to(vault_root):
-        return relative, str(PurePosixPath(relative).relative_to(vault_root)), "vault"
-    return relative, relative, "external"
+    if not stored.startswith("/"):
+        return (os.path.realpath(PurePosixPath(root) / stored) if root else None), stored, "repo"
+    resolved = os.path.realpath(stored)
+    if root and (inside := _under(resolved, os.path.realpath(root))) is not None:
+        return resolved, inside, "repo"
+    if vault_root:
+        for path in (stored, resolved):
+            for base in (vault_root, os.path.realpath(vault_root)):
+                if (inside := _under(path, base)) is not None:
+                    return resolved, inside, "vault"
+    return resolved, stored, "external"
+
+
+def _file_id(scope: str, stored: str, absolute: str | None) -> str:
+    return f"file:{absolute}" if absolute else f"file:{scope}:{stored}"
 
 
 def build_graph(
@@ -109,7 +131,19 @@ def build_graph(
 
     for row in events:
         moment, repo, skill = event_ts(row.get("ts")), row.get("repo"), row.get("skill")
-        if row.get("event") != "skill_start" or not skill or not repo or not moment or not _in(moment, window):
+        if not skill or not repo or not moment or not _in(moment, window):
+            continue
+        if row.get("event") == "file_write" and row.get("path"):
+            absolute, shown, area = _locate(row["path"], root=row.get("root"), vault_root=vault_root)
+            file_id = _file_id(scope=repo, stored=row["path"], absolute=absolute)
+            graph.node(f"project:{repo}", "project", repo, repo, moment, root=roots.get(repo))
+            graph.node(
+                file_id, "file", PurePosixPath(row["path"]).name, repo, moment, relative=shown, path=absolute,
+                area=area, skill=skill,
+            )
+            graph.link(f"project:{repo}", file_id, "has_file")
+            continue
+        if row.get("event") != "skill_start":
             continue
         branch_id = f"branch:{repo}:{row.get('branch') or 'unknown'}"
         graph.node(f"project:{repo}", "project", repo, repo, moment, root=roots.get(repo))
@@ -131,8 +165,8 @@ def build_graph(
         graph.link(project, memory_id, "has_memory")
         file_ids = []
         for relative in dict.fromkeys(memory.get("files") or []):
-            file_id = f"file:{scope}:{relative}"
             absolute, shown, area = _locate(relative, root=root, vault_root=vault_root)
+            file_id = _file_id(scope=scope, stored=relative, absolute=absolute)
             graph.node(
                 file_id, "file", PurePosixPath(relative).name, scope, moment, relative=shown, path=absolute,
                 area=area, skill=memory.get("skill"),
