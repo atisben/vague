@@ -1,16 +1,14 @@
 ---
 name: dev-review
 version: 1.0.0
+category: Execution
+summary: 'Review a diff on two axes: Standards and Spec.'
 description: |
   Two-axis review of the changes since a fixed point (commit, branch, tag, merge-base).
   Standards: does the diff follow the repo's documented coding standards, plus a Fowler smell baseline?
   Spec: does the diff match the issue or plan it came from? Runs both in parallel sub-agents,
   verifies each finding against the files, and reports the axes separately. Read-only.
   Trigger: "review since X", "review this branch", "review my changes against the spec", "/dev-review".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read

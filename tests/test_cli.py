@@ -60,9 +60,37 @@ def test_context_shell_prints_the_logging_hint_for_the_skill(vague_home, git_rep
     assert "vague memory-log <key>" in result.output
     assert "--skill plan-eng" in result.output
     assert "--scratch" in result.output
+    assert '"<issue → suggestion>" --about plan-eng' in result.output
 
 
 def test_context_json_memory_includes_the_logging_hint(vague_home, git_repo, monkeypatch):
     monkeypatch.chdir(git_repo)
     result = runner.invoke(app, ["context", "--skill", "diagram"])
     assert "--skill diagram" in json.loads(result.output)["memory"]
+
+
+def test_context_help_says_skill_ranks_memory_block():
+    result = runner.invoke(app, ["context", "--help"], terminal_width=200)
+    assert "Rank the memory block" in " ".join(result.stdout.split())
+
+
+def test_context_shell_block_strips_delimiter_lines(vague_home, git_repo, monkeypatch):
+    import vague.cli as cli_module
+    from vague.memory import Block
+
+    monkeypatch.setattr(cli_module, "render_block",
+                        lambda **_: Block(text="a\nVAGUE_MEMORY\nb", ids=[], scratch_ids=[]))
+    result = runner.invoke(app, ["context", "--shell", "--skill", "x"])
+    assert result.stdout.count("VAGUE_MEMORY") == 2
+
+
+def test_context_shell_block_failure_still_prints_variables(vague_home, git_repo, monkeypatch):
+    import vague.cli as cli_module
+
+    def boom(**_):
+        raise RuntimeError("broken ledger")
+
+    monkeypatch.setattr(cli_module, "render_block", boom)
+    result = runner.invoke(app, ["context", "--shell", "--skill", "x"])
+    assert result.exit_code == 0
+    assert "SLUG=" in result.stdout and "VAGUE_MEMORY" not in result.stdout

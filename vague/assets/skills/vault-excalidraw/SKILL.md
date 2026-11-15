@@ -1,6 +1,8 @@
 ---
 name: vault-excalidraw
 version: 2.0.0
+category: Design
+summary: Draw an architecture, flow, map or timeline as a Mermaid flowchart in a vault note, then import it into Excalidraw as editable shapes.
 description: |
   Draw an editable Excalidraw diagram for the Obsidian vault by writing a Mermaid flowchart:
   an architecture with big zones (subgraphs) holding their real parts, a numbered flow,
@@ -10,10 +12,6 @@ description: |
   Trigger: "excalidraw", "draw this in excalidraw", "excalidraw in my vault",
   "add this to my excalidraw", "draw the architecture in excalidraw",
   "draw the training windows", "/vault-excalidraw".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -157,11 +155,9 @@ Tell the user, in this order:
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about vault-excalidraw` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Any Mermaid construct that the Excalidraw import breaks or drops (`<br>` shown literally, flattened zones, lost arrow styles). Such a complaint means the Step 3 subset needs work.
 
 ---

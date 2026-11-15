@@ -1,35 +1,6 @@
 # vague
 
-Personal development workflow toolkit. 22 skills for the full software development lifecycle.
-
-## Skill Routing
-
-When the user's request matches a skill below, invoke it using the Skill tool as your FIRST action. Do NOT answer directly first.
-
-| Trigger | Skill |
-|---------|-------|
-| "what should I look at", "here's what's on my plate", "where do I start", "triage this" | `/triage` |
-| "I have an idea", "is this worth building", "help me think through this", "think bigger", "expand scope", "strategy review" | `/plan-ideation` |
-| "review the architecture", "engineering review", "lock in the plan" | `/plan-eng` |
-| "mind map", "map this out", "architecture overview", "diagram this", "visualize the system" | `/diagram` |
-| "ship", "deploy", "push to main", "create a PR", code is ready | `/dev-ship` |
-| "debug this", "fix this bug", "why is this broken", error / stack trace | `/dev-investigate` |
-| "review since X", "review this branch", "review against the spec", "review my changes" | `/dev-review` |
-| "implement this", "build this feature", "develop this", "orchestrate" | `/dev-implement` |
-| "retro", "retrospective", "what went wrong this session", "improve skills", "review observations" | `/retro` |
-| "excalidraw", "draw this in excalidraw", "add this to my excalidraw", "draw the architecture in excalidraw", "draw the training windows" | `/vault-excalidraw` |
-| "make slides", "build a deck", "create a presentation", "convert this pptx" | `/slides` |
-| "impeccable", "critique this UI", "polish the design", "audit the UI", "design a new page", "make it look better" | `/impeccable` (Claude Code only) |
-| "save to vault", "note this down", "save this note", "search the vault", "find in vault", "recall from vault", "export to vault", "send this diagram to obsidian" | `/vault` |
-| "set up my team", "import career ladder", "add a team member", "/mgmt-setup" | `/mgmt-setup` |
-| "log a 1:1", "note feedback for <name>", "capture a win", "/mgmt-log" | `/mgmt-log` |
-| "run a performance review", "review <name>", "management review", "/mgmt-review" | `/mgmt-review` |
-| "team progress", "who's ready for promo", "review status", "/mgmt-progress" | `/mgmt-progress` |
-| "interview prep", "job hunting", "start interview coaching" | `/iv-kickoff` |
-| "research {company}", "decode this JD", "is this role a fit" | `/iv-research` |
-| "build stories", "storybank", "story gaps", "retrieval drill" | `/iv-stories` |
-| "practice interview", "mock interview", "drill", "debrief" | `/iv-practice` |
-| "interview progress", "how am I doing", "readiness check" | `/iv-progress` |
+Personal development workflow toolkit. `vague install` writes the skill routing table into each Claude profile's `CLAUDE.md`, between the `vague:start` and `vague:end` markers.
 
 ## Skills Location
 

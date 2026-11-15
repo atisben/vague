@@ -1,18 +1,14 @@
 ---
 name: retro
 version: 2.0.0
+category: Reflection
+summary: 'Session retrospective: fix checks, standards and skills, and curate the memory ledger.'
 description: |
   Retrospective on how the agent worked. Reads the session log and the skill observations in the
   memory ledger, finds where the agent struggled, and proposes environment fixes: a check, a coding
   standard for /dev-review, a skill edit, a navigation pointer, or a deletion. Applies only what the
   user picks, then curates the memory ledger. Changes the environment, never the product code.
   Trigger: "retro", "retrospective", "what went wrong this session", "improve skills", "review observations".
-sdk_commands:
-  - vague context
-  - vague skill-check
-  - vague skill-list
-  - vague memory-log
-  - vague memory-search
 allowed-tools:
   - Bash
   - Read
@@ -159,7 +155,7 @@ Ask via AskUserQuestion: "Which candidates should I apply?" Offer: apply all, pi
 vague skill-check vague/assets/skills/<name>/
 ```
 
-**New skills.** Scaffold `vague/assets/skills/<name>/SKILL.md` from the template in `docs/skill-authoring.md`: all required frontmatter fields, the preamble `eval "$(vague context --shell --skill <name>)"`, the steps, the Observation Protocol line, and a Handoff. Validate it with `vague skill-check`.
+**New skills.** Scaffold `vague/assets/skills/<name>/SKILL.md` from the template in `docs/skill-authoring.md`: all required frontmatter fields, the preamble `eval "$(vague context --shell --skill <name>)"`, the steps, and a Handoff. The preamble hint already teaches feedback logging, so the skill adds a "Feedback to watch for" list only for what is specific to it. Validate it with `vague skill-check`.
 
 **Checks and standards.** Write the check with a test that fails without it. Run it against the whole repo before it blocks anything: a new check is code like any other.
 
@@ -191,9 +187,8 @@ Run each command from the repo of the memory's scope, or add `--global` for a `g
 Re-read every modified skill and confirm:
 
 1. The frontmatter fields, the preamble, and the Handoff are intact.
-2. The one-line Observation Protocol is present.
-3. No existing rule or step was removed by accident.
-4. `vague skill-check vague/assets/skills/<name>/` passes, and so does `uv run pytest` in the vague repo.
+2. No existing rule or step was removed by accident.
+3. `vague skill-check vague/assets/skills/<name>/` passes, and so does `uv run pytest` in the vague repo.
 
 Then report:
 
@@ -211,9 +206,3 @@ Then report:
 Log a learning only for a fact the retro itself revealed, such as a skill convention that keeps drifting.
 
 > "Environment updated. Next: run `vague install` to deploy skill changes, review `git diff`, then `/dev-ship` to open a PR."
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about retro` (see the Memory guideline).

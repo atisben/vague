@@ -14,7 +14,7 @@ import typer
 
 from vague.config import claude_dirs, profile_name_for
 from vague.paths import atomic_write
-from vague.skill_rules import FrontmatterError, read_md
+from vague.skill_rules import skill_trigger
 
 MARKER_START = "<!-- vague:start -->"
 MARKER_END = "<!-- vague:end -->"
@@ -107,18 +107,6 @@ def _remove_dangling_skill_links(skills_target: Path, skills_src: Path) -> None:
             entry.unlink()
 
 
-def skill_trigger(skill_dir: Path) -> str | None:
-    """The `Trigger:` phrases at the end of a skill's description, on one line, or None."""
-    try:
-        description = str(read_md(path=skill_dir / "SKILL.md").get("description") or "")
-    except FrontmatterError:
-        return None
-    _, found, trigger = " ".join(description.split()).partition("Trigger:")
-    if not found:
-        return None
-    return trigger.strip().removesuffix(".") or None
-
-
 def _find_marker_span(content: str, start_marker: str, end_marker: str) -> tuple[int, int] | None:
     """Locate a managed block, requiring each marker to sit alone on its line.
 
@@ -139,14 +127,14 @@ def _find_marker_span(content: str, start_marker: str, end_marker: str) -> tuple
     return start_match.start(), end_match.end()
 
 
-def replace_block(text: str, block: str) -> str:
-    """`text` with its vague block set to `block`. An empty `block` removes the block; text outside never changes.
+def replace_block(text: str, block: str, start: str = MARKER_START, end: str = MARKER_END) -> str:
+    """`text` with its managed block set to `block`. An empty `block` removes the block; text outside never changes.
 
     With no block yet, a non-empty one is appended after a blank line.
     """
-    span = _find_marker_span(text, MARKER_START, MARKER_END)
+    span = _find_marker_span(text, start, end)
     if block:
-        wrapped = f"{MARKER_START}\n{block}\n{MARKER_END}"
+        wrapped = f"{start}\n{block}\n{end}"
         if span is not None:
             return text[:span[0]] + wrapped + text[span[1]:]
         # One blank line between the user's text and the block, however the text ends.

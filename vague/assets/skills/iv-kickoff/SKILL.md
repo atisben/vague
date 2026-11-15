@@ -1,6 +1,8 @@
 ---
 name: iv-kickoff
 version: 1.0.0
+category: Interview prep
+summary: Start interview coaching — profile, resume analysis, cadence.
 description: |
   Initialize the interview coaching relationship. Builds a candidate profile,
   analyzes resume/experience, seeds a storybank, and sets the coaching cadence
@@ -8,9 +10,6 @@ description: |
   not per-project).
   Trigger: "interview prep", "start interview coaching", "I'm job hunting",
   "prepare for interviews", "/iv-kickoff".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -219,11 +218,9 @@ After writing all files, confirm what was created and show a brief summary of th
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-kickoff` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Questions that confused the user or needed rephrasing
 - Resume formats that were hard to parse
 - Missing information that should have been asked earlier

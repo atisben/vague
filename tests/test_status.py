@@ -153,3 +153,8 @@ def test_status_table_shows_path_column(vague_home, make_memory):
     assert "Path" in result.output and "/srv/o-r" in result.output
     (obsidian,) = [line for line in result.output.splitlines() if "Obsidian" in line]
     assert " - " in obsidian
+
+
+def test_status_help_mentions_designs_not_plans():
+    result = runner.invoke(app, ["status", "--help"], terminal_width=200)
+    assert "in-flight designs" in result.stdout and "plans" not in result.stdout

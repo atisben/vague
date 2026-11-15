@@ -1,6 +1,8 @@
 ---
 name: iv-practice
 version: 1.0.0
+category: Interview prep
+summary: Drills and mock interviews with scoring.
 description: |
   Run drills and mock interviews with scoring, feedback, and progression tracking.
   Three tiers: Foundation (structure + content), Pressure (pushback + curveballs),
@@ -8,9 +10,6 @@ description: |
   gates advancement on demonstrated competence.
   Trigger: "practice interview", "mock interview", "drill", "debrief",
   "run a mock", "/iv-practice".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -255,11 +254,9 @@ sessions:
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-practice` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Questions that consistently trip up the candidate (pattern across sessions)
 - Scoring dimensions that plateau, which may indicate a ceiling without a new approach
 - Self-assessment accuracy trends

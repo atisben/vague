@@ -1,6 +1,8 @@
 ---
 name: iv-stories
 version: 1.0.0
+category: Interview prep
+summary: Build and drill your STAR storybank.
 description: |
   Build, refine, tag, and drill the candidate's storybank. Guides STAR story
   creation with earned-secret extraction, runs gap analysis against target role
@@ -8,9 +10,6 @@ description: |
   recall speed. State lives at $VAGUE_HOME/interview/ (global, not per-project).
   Trigger: "build stories", "storybank", "story gaps", "retrieval drill",
   "add a story", "/iv-stories".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -308,11 +307,9 @@ Append to `$IV_HOME/session-log.yaml`:
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-stories` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Story patterns the user struggles with (action vs. situation heavy, missing results)
 - Competency areas where the user has no experiences to draw from
 - Earned secrets that took many prompts to extract

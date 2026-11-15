@@ -1,15 +1,14 @@
 ---
 name: mgmt-setup
 version: 1.1.0
+category: Management
+summary: Set up your team, import a career ladder, add team members.
 description: |
   Bootstrap and maintain a manager's team state: import a company career ladder,
   define review cycles, and add/edit team members. Foundation for the mgmt-* pack.
   State lives at $VAGUE_HOME/team/ (global, not per-project).
   Trigger: "set up my team", "import career ladder", "add a team member",
   "onboard a report", "/mgmt-setup".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -381,9 +380,3 @@ After setup, tell the manager what to do next:
 > - `/mgmt-log` — capture 1:1 notes, wins, concerns, and blind spots for a report.
 > - `/mgmt-review` — run a growth-focused development review (ladder as context).
 > Add more people any time with `/mgmt-setup member`."
-
----
-
-## Observation Protocol
-
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about mgmt-setup` (see the Memory guideline).

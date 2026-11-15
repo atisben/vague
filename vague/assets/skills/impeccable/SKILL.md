@@ -1,6 +1,8 @@
 ---
 name: impeccable
 version: 1.0.0
+category: Design
+summary: 'Design, critique, audit, or polish a web UI: a design brief kept in memory, three HTML mockups to pick from, then read-only reviewer subagents check the build.'
 description: |
   Design, redesign, critique, audit, polish or animate a web frontend: landing pages,
   dashboards, app UI, components. Works from a design brief kept in vague memory,
@@ -8,11 +10,6 @@ description: |
   the result to two read-only reviewers (finish and motion). Critiques and audits are
   saved to the Obsidian vault. Adapted from pbakaus/impeccable.
   Trigger: "impeccable", "critique this UI", "polish the design", "audit the UI", "design a new page", "make it look better", "/impeccable".
-sdk_commands:
-  - vague context
-  - vague memory-log
-  - vague memory-search
-  - vague design-check
 hooks:
   PostToolUse:
     - matcher: "Edit|Write"

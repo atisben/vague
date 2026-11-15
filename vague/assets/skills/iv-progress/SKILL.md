@@ -1,15 +1,14 @@
 ---
 name: iv-progress
 version: 1.0.0
+category: Interview prep
+summary: Trends, calibration, readiness verdict.
 description: |
   Analyze practice trends, calibrate self-assessment, track company pipeline,
   and assess interview readiness. Reads all interview state and produces a
   comprehensive progress report with a readiness verdict.
   Trigger: "interview progress", "how am I doing", "readiness check",
   "interview status", "am I ready", "/iv-progress".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -236,11 +235,9 @@ Write the updated file back.
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-progress` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Score patterns that the current tier system doesn't capture well
 - Storybank coverage metrics that miss important competency areas
 - Calibration patterns that need more nuanced classification

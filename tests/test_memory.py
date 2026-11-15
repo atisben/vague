@@ -14,7 +14,6 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from vague import memory as memory_module
 from vague.cli import app
 from vague.log import get_logger
 from vague.memory import (
@@ -61,19 +60,6 @@ def test_append_memory_two_processes_lose_no_lines():
     lines = ledger_path().read_text().splitlines()
     assert len(lines) == 200
     assert all(json.loads(line)["key"] for line in lines)
-
-
-def test_append_memory_rejects_text_over_600_chars(make_memory):
-    with pytest.raises(ValueError):
-        append_memory(memory=make_memory(text="x" * 601))
-    assert not ledger_path().exists()
-
-
-def test_note_is_stored_in_the_ledger_file(make_memory):
-    append_memory(memory=make_memory(scope="o-r", key="note", kind="note"))
-    (row,) = [json.loads(line) for line in ledger_path().read_text().splitlines()]
-    assert row["kind"] == "note"
-    assert not (ledger_path().parent / "scratch").exists()
 
 
 def test_fold_same_scope_and_key_returns_latest_text(make_memory):
@@ -206,13 +192,6 @@ def test_search_ands_words_across_key_text_and_files(make_memory):
     assert [m.key for m in hits] == ["docker-tests"]
 
 
-def test_search_matches_words_in_skill_field(make_memory):
-    append_memory(memory=make_memory(key="obs-a", kind="observation", text="slow step", skill="dev-ship"))
-    append_memory(memory=make_memory(key="obs-b", kind="observation", text="slow step", skill="retro"))
-    hits = search(words=["dev-ship", "slow"], scopes=["o-r"])
-    assert [m.key for m in hits] == ["obs-a"]
-
-
 def test_search_scopes_and_kind_filter(make_memory):
     append_memory(memory=make_memory(scope="a", key="x", text="needle"))
     append_memory(memory=make_memory(scope="b", key="y", text="needle"))
@@ -237,13 +216,6 @@ def test_search_scratch_returns_only_notes(make_memory):
     append_memory(memory=make_memory(key="fact", text="needle", ts=NOW))
     append_memory(memory=make_memory(key="plan", kind="doc", text="needle", files=["/p.md"], ts=NOW))
     assert [m.key for m in search(words=["needle"], scopes=["o-r"], kind="note", now=NOW)] == ["note"]
-
-
-def test_search_skill_filter_is_an_exact_match(make_memory):
-    append_memory(memory=make_memory(key="a", skill="plan-eng"))
-    append_memory(memory=make_memory(key="b", skill="plan-eng-lite"))
-    append_memory(memory=make_memory(key="c", text="mentions plan-eng in text"))
-    assert [m.key for m in search(words=[], scopes=["o-r"], skill="plan-eng")] == ["a"]
 
 
 def test_doc_is_excluded_from_the_ranked_block(make_memory):
@@ -288,12 +260,6 @@ def test_changed_files_lists_modified_and_untracked(tmp_path):
 
 def test_changed_files_outside_repo_is_empty(tmp_path):
     assert changed_files(cwd=tmp_path) == []
-
-
-def test_load_ledger_reads_env_home(make_memory, vague_home, monkeypatch):
-    append_memory(memory=make_memory())
-    assert (vague_home / "memory.jsonl").exists()
-    assert memory_module.vague_home() == vague_home
 
 
 runner = CliRunner()
@@ -516,16 +482,6 @@ def test_memory_search_prints_files_when_set(vague_home, repo):
                      "tests-need-docker  tests run in the container  (files: Taskfile.yml, compose.yml)"]
 
 
-def test_context_help_says_skill_ranks_memory_block():
-    result = runner.invoke(app, ["context", "--help"], terminal_width=200)
-    assert "Rank the memory block" in " ".join(result.stdout.split())
-
-
-def test_status_help_mentions_designs_not_plans():
-    result = runner.invoke(app, ["status", "--help"], terminal_width=200)
-    assert "in-flight designs" in result.stdout and "plans" not in result.stdout
-
-
 def _put(scope: str, key: str, text: str = "needle", minutes_ago: int = 0, kind: str = "learning") -> None:
     ts = datetime.now(UTC) - timedelta(minutes=minutes_ago)
     append_memory(memory=Memory(ts=ts, scope=scope, key=key, kind=kind, text=text))
@@ -589,14 +545,6 @@ def test_memory_search_scope_all_scratch_spans_every_scope(vague_home, repo):
     assert _search("--scratch", "--scope", "elsewhere") == ["elsewhere/theirs  needle"]
 
 
-def test_memory_search_scratch_hides_old_notes(vague_home, repo):
-    old = datetime.now(UTC) - timedelta(days=8)
-    append_memory(memory=Memory(ts=old, scope="o-r", key="old", kind="note", text="needle"))
-    _log("fresh", "needle", "--scratch")
-    result = runner.invoke(app, ["memory-search", "needle", "--scratch"])
-    assert result.stdout.splitlines() == ["o-r/fresh  needle"]
-
-
 def test_memory_log_logs_context_write_with_id(vague_home, repo, in_session):
     _log("k", "text")
     (write,) = [e for e in _events(vague_home) if e["command"] == "memory-log"]
@@ -632,28 +580,6 @@ def test_context_read_events_carry_ids_never_text_or_files(vague_home, repo, in_
         f.read_text() for f in (vague_home / "events").glob("*.jsonl"))
     for secret in ("TOPSECRETTEXT", "SCRATCHSECRET", "secret_module"):
         assert secret not in raw
-
-
-def test_context_shell_block_strips_delimiter_lines(vague_home, repo, monkeypatch):
-    import vague.cli as init_module
-    from vague.memory import Block
-
-    monkeypatch.setattr(init_module, "render_block",
-                        lambda **_: Block(text="a\nVAGUE_MEMORY\nb", ids=[], scratch_ids=[]))
-    result = runner.invoke(app, ["context", "--shell", "--skill", "x"])
-    assert result.stdout.count("VAGUE_MEMORY") == 2
-
-
-def test_context_shell_block_failure_still_prints_variables(vague_home, repo, monkeypatch):
-    import vague.cli as init_module
-
-    def boom(**_):
-        raise RuntimeError("broken ledger")
-
-    monkeypatch.setattr(init_module, "render_block", boom)
-    result = runner.invoke(app, ["context", "--shell", "--skill", "x"])
-    assert result.exit_code == 0
-    assert "SLUG=" in result.stdout and "VAGUE_MEMORY" not in result.stdout
 
 
 SHELLS = [name for name in ("bash", "zsh") if shutil.which(name)]

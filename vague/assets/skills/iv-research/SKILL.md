@@ -1,6 +1,8 @@
 ---
 name: iv-research
 version: 1.0.0
+category: Interview prep
+summary: Research a company, decode a JD, score the fit.
 description: |
   Company intelligence gathering, job description analysis, and fit assessment
   for interview prep. Researches company stage, culture, interview process,
@@ -9,9 +11,6 @@ description: |
   not per-project).
   Trigger: "research {company}", "decode this JD", "is this role a fit",
   "company research", "/iv-research".
-sdk_commands:
-  - vague context
-  - vague memory-log
 allowed-tools:
   - Bash
   - Read
@@ -336,11 +335,9 @@ Present the research brief to the user in this format:
 
 ---
 
-## Observation Protocol
+## Feedback to watch for
 
-Log feedback about this skill with `vague memory-log <key> "<issue → suggestion>" --about iv-research` (see the Memory guideline).
-
-Watch especially for:
+Log skill feedback, as the preamble hint shows, when you see:
 - Searches that returned low-quality or outdated results
 - Companies where public information is scarce (stealth startups, private companies)
 - JD patterns not covered by the hidden requirements framework
