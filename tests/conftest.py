@@ -109,7 +109,7 @@ def skill_dir(tmp_path):
 
     The defaults pass every skill rule, so a test names only the field or line it breaks.
     """
-    from vague.sdk.core.frontmatter import write_md
+    import frontmatter as frontmatter_lib
 
     def _make(name="demo-skill", fields=None, omit=(), body=None, root=None):
         defaults = {
@@ -117,7 +117,6 @@ def skill_dir(tmp_path):
             "version": "1.0.0",
             "description": "A test skill",
             "sdk_commands": ["vague context"],
-            "requires_slug": True,
             "allowed-tools": ["Bash"],
         }
         frontmatter = {k: v for k, v in {**defaults, **(fields or {})}.items() if k not in omit}
@@ -125,7 +124,9 @@ def skill_dir(tmp_path):
             body = f'## Preamble\n\n```bash\neval "$(vague context --shell --skill {name})"\n```\n'
         directory = (root or tmp_path) / name
         directory.mkdir(parents=True, exist_ok=True)
-        write_md(path=directory / "SKILL.md", data=frontmatter, body=body)
+        (directory / "SKILL.md").write_text(
+            frontmatter_lib.dumps(frontmatter_lib.Post(body, **frontmatter)), encoding="utf-8"
+        )
         return directory
 
     return _make

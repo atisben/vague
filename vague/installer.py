@@ -11,7 +11,7 @@ from pathlib import Path
 
 import typer
 
-from vague.config import claude_dirs, profile_name_for, vague_home
+from vague.config import claude_dirs, profile_name_for
 from vague.sdk.core.frontmatter import FrontmatterError, read_md
 
 RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
@@ -24,11 +24,8 @@ RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
 
 MARKER_START = "<!-- vague:start -->"
 MARKER_END = "<!-- vague:end -->"
-LEGACY_MARKER_START = "<!-- bastack:start -->"
-LEGACY_MARKER_END = "<!-- bastack:end -->"
 
 CLAUDE_RUNTIME = "claude"
-LEGACY_CLAUDE_D = "claude.d"
 
 
 def _effective_runtime_dirs() -> dict[str, tuple[str | None, str, str | None]]:
@@ -78,12 +75,6 @@ def _detect_runtimes() -> list[str]:
         if Path(base_dir).expanduser().exists():
             found.append(key)
     return found
-
-
-def _detect_runtime() -> str:
-    """Legacy single-runtime detection. Returns first detected or 'generic'."""
-    runtimes = _detect_runtimes()
-    return runtimes[0] if runtimes else "generic"
 
 
 def _get_assets_dir() -> Path:
@@ -273,22 +264,17 @@ def _update_instruction_file(runtime: str, skills_path: Path) -> None:
             typer.echo(f"Warning: cannot read {instruction_file} (permission denied)", err=True)
             return
 
-        # Replace existing vague block
-        for start_marker, end_marker in [
-            (MARKER_START, MARKER_END),
-            (LEGACY_MARKER_START, LEGACY_MARKER_END),
-        ]:
-            span = _find_marker_span(content, start_marker, end_marker)
-            if span is not None:
-                start_idx, end_idx = span
-                content = content[:start_idx] + wrapped_block + content[end_idx:]
-                try:
-                    instruction_file.write_text(content)
-                except PermissionError:
-                    typer.echo(f"Warning: cannot write {instruction_file} (permission denied)", err=True)
-                    return
-                typer.echo(f"Updated {instruction_file}", err=True)
+        span = _find_marker_span(content, MARKER_START, MARKER_END)
+        if span is not None:
+            start_idx, end_idx = span
+            content = content[:start_idx] + wrapped_block + content[end_idx:]
+            try:
+                instruction_file.write_text(content)
+            except PermissionError:
+                typer.echo(f"Warning: cannot write {instruction_file} (permission denied)", err=True)
                 return
+            typer.echo(f"Updated {instruction_file}", err=True)
+            return
 
         # No markers found — append
         if content and not content.endswith("\n\n"):
@@ -325,30 +311,26 @@ def _remove_instruction_block(runtime: str) -> None:
         typer.echo(f"Warning: cannot read {instruction_file} (permission denied)", err=True)
         return
 
-    for start_marker, end_marker in [
-        (MARKER_START, MARKER_END),
-        (LEGACY_MARKER_START, LEGACY_MARKER_END),
-    ]:
-        span = _find_marker_span(content, start_marker, end_marker)
-        if span is not None:
-            start_idx, end_idx = span
-            # Remove block and surrounding blank lines
-            before = content[:start_idx].rstrip("\n")
-            after = content[end_idx:].lstrip("\n")
-            separator = "\n\n" if before and after else ""
-            content = before + separator + after
-            if content and not content.endswith("\n"):
-                content += "\n"
-            try:
-                instruction_file.write_text(content)
-            except PermissionError:
-                typer.echo(f"Warning: cannot write {instruction_file} (permission denied)", err=True)
-                return
-            typer.echo(f"Cleaned {instruction_file}", err=True)
-            return
+    span = _find_marker_span(content, MARKER_START, MARKER_END)
+    if span is None:
+        return
+    start_idx, end_idx = span
+    # Remove block and surrounding blank lines
+    before = content[:start_idx].rstrip("\n")
+    after = content[end_idx:].lstrip("\n")
+    separator = "\n\n" if before and after else ""
+    content = before + separator + after
+    if content and not content.endswith("\n"):
+        content += "\n"
+    try:
+        instruction_file.write_text(content)
+    except PermissionError:
+        typer.echo(f"Warning: cannot write {instruction_file} (permission denied)", err=True)
+        return
+    typer.echo(f"Cleaned {instruction_file}", err=True)
 
 
-def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> int:
+def _install_to_runtime(runtime: str, assets: Path) -> int:
     """Install skills and instruction block to a single runtime. Returns count installed."""
     _, skills_target_str, _ = _effective_runtime_dirs()[runtime]
     skills_target = Path(skills_target_str).expanduser()
@@ -501,20 +483,6 @@ def remove_hooks(settings_path: Path) -> bool:
     return changed
 
 
-def _warn_legacy_claude_d() -> None:
-    """Point users of the old fragment overlay at its replacement.
-
-    The directory is deliberately left alone: it may hold the user's only copy
-    of private instructions, so it is neither read nor deleted.
-    """
-    legacy_dir = vague_home() / LEGACY_CLAUDE_D
-    if legacy_dir.exists():
-        typer.echo(
-            f"Note: {legacy_dir} is no longer read. Move its content into your CLAUDE.md, outside the vague markers.",
-            err=True,
-        )
-
-
 BANNER = r"""
 '||'  '|'
  '|.  .'   ....     ... . ... ...    ....
@@ -574,11 +542,9 @@ def cmd_install(
         typer.echo("Aborted.", err=True)
         raise typer.Exit(0)
 
-    _warn_legacy_claude_d()
-
     total = 0
     for rt in runtimes:
-        total += _install_to_runtime(rt, assets, skill_names)
+        total += _install_to_runtime(rt, assets)
 
     vague_path = shutil.which("vague")
     if vague_path is None:

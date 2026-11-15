@@ -14,7 +14,6 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
-requires_slug: false
 allowed-tools:
   - Bash
   - Read

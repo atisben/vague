@@ -36,21 +36,6 @@ def _instruction_files() -> list[Path]:
     ]
 
 
-def test_no_file_passes_the_removed_all_flag_to_memory_search():
-    pattern = re.compile(r"memory-search[^\n`|]*\s--all\b")
-    files = [*_instruction_files(), *sorted((REPO_ROOT / "docs").glob("*.html"))]
-    hits = [str(p.relative_to(REPO_ROOT)) for p in files if pattern.search(p.read_text(encoding="utf-8"))]
-    assert not hits, f"files still pass --all to memory-search, use --scope all: {hits}"
-
-
-def test_no_file_references_the_removed_learn_skill():
-    pattern = re.compile(r"/learn\b")
-    hits = [
-        str(p.relative_to(REPO_ROOT)) for p in _instruction_files() if pattern.search(p.read_text(encoding="utf-8"))
-    ]
-    assert not hits, f"files still route to the deleted /learn skill: {hits}"
-
-
 def test_guidelines_have_memory_section():
     guidelines = (_get_assets_skills_dir().parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
     assert "\n## Memory\n" in guidelines
@@ -113,11 +98,6 @@ def test_retro_reads_the_session_log_and_the_observations():
     text = (_get_assets_skills_dir() / "retro" / "SKILL.md").read_text(encoding="utf-8")
     assert "vague memory-search --kind observation" in text
     assert ".jsonl" in text, "the session log is the primary source a retro reads"
-
-
-def test_renamed_and_retired_skills_are_gone():
-    names = {d.name for d in skill_dirs(repo_root=REPO_ROOT)}
-    assert not names & {"dev-develop", "meta"}
 
 
 def test_adapted_upstream_skills_ship_license_and_notice():

@@ -13,7 +13,6 @@ sdk_commands:
   - vague memory-log
   - vague memory-search
   - vague design-check
-requires_slug: true
 runtimes:
   - claude
 hooks:

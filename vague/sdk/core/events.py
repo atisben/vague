@@ -52,8 +52,7 @@ class Event(BaseModel):
     runtime: str
     agent_id: str | None = None
     skill: str | None = None
-    # "migrated" is kept so events written by the removed `vague migrate` still validate when read.
-    source: Literal["tool", "slash", "migrated"] | None = None
+    source: Literal["tool", "slash"] | None = None
     path: str | None = None
     command: str | None = None
     # `scope/key` names of the memories served or written. Names, never memory text.

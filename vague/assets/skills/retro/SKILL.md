@@ -13,7 +13,6 @@ sdk_commands:
   - vague skill-list
   - vague memory-log
   - vague memory-search
-requires_slug: true
 allowed-tools:
   - Bash
   - Read
@@ -33,7 +32,7 @@ eval "$(vague context --shell --skill retro)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 
-**Proactive invocation:** Suggest it at the end of a session that was harder than it should have been, or when the user mentions friction with a skill. If PROACTIVE is "False", say: "I think /retro might help. Want me to run it?"
+**Proactive invocation:** Suggest it at the end of a session that was harder than it should have been, or when the user mentions friction with a skill.
 
 ---
 

@@ -15,38 +15,7 @@ from pydantic import ValidationError
 from vague.models import SkillManifest
 from vague.sdk.core.frontmatter import FrontmatterError, read_md
 
-REQUIRED_FIELDS = ("name", "version", "description", "sdk_commands", "requires_slug", "allowed-tools")
-
-# A reference to one of these is a broken instruction: the command no longer exists.
-REMOVED_COMMANDS = (
-    "init",
-    "learnings-log",
-    "learnings-search",
-    "observations-log",
-    "observations-list",
-    "observations-update",
-    "timeline-log",
-    "plan-list",
-    "plan-status",
-    "plan-complete",
-    "state-get",
-    "state-set",
-    "memory-review",
-    "memory-search --all",
-    "skill-validate",
-    "skill-audit",
-)
-
-# Old bash tooling that predates the vague CLI.
-BS_PATTERNS = (
-    r"\bbs-config\b",
-    r"\bbs-learnings-log\b",
-    r"\bbs-learnings-search\b",
-    r"\bbs-slug\b",
-    r"\bbs-timeline-log\b",
-    r"\bbs-analytics\b",
-    r'source\s+["\']?.*_preamble\.sh',
-)
+REQUIRED_FIELDS = ("name", "version", "description", "sdk_commands", "allowed-tools")
 
 # Skills whose deliverable is a file the user must find later. Each logs it as a doc memory, which is how
 # `vague status`, the preamble's document index and the usage graph learn the file exists.
@@ -62,10 +31,12 @@ _STATE_DIR_PATTERN = re.compile(
 _SAVED_LEARNING_PATTERN = re.compile(r"memory-log\b(?![^\n]*--doc\b)[^\n]*?[\"'](?:Saved|Drew)\b")
 _DOC_LOG_PATTERN = re.compile(r"vague memory-log\b[^\n]*--doc\b")
 
-_REMOVED_PATTERN = re.compile(rf"\bvague ({'|'.join(re.escape(c) for c in REMOVED_COMMANDS)})(?![\w-])")
 _CODE_PATTERN = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)
 # `vague` only counts at the start of a shell command, so prose like "the vague repo" is ignored.
-_COMMAND_PATTERN = re.compile(r"(?:^|\$\(|\||&&|;)\s*vague ([a-z][a-z0-9-]*)", re.MULTILINE)
+# A command ends in a letter or digit, so a wildcard like `vague memory-*` is not read as a command.
+_COMMAND_PATTERN = re.compile(r"(?:^|\$\(|\||&&|;)\s*vague ([a-z](?:[a-z0-9-]*[a-z0-9])?)(?![\w-])", re.MULTILINE)
+# A fence tagged `text` shows sample output, such as the MEMORY block, not commands to run.
+_TEXT_FENCE_PATTERN = re.compile(r"```text\n.*?```", re.DOTALL)
 
 
 # A Markdown link target: `[text](target)` or `[text](target "title")`.
@@ -110,15 +81,10 @@ def registered_commands() -> frozenset[str]:
 def vague_commands_in(text: str) -> set[str]:
     """Each `vague <command>` written in code (fenced blocks or inline code)."""
     return {
-        command for code in _CODE_PATTERN.findall(text) for command in _COMMAND_PATTERN.findall(code.strip("`"))
+        command
+        for code in _CODE_PATTERN.findall(_TEXT_FENCE_PATTERN.sub("", text))
+        for command in _COMMAND_PATTERN.findall(code.strip("`"))
     }
-
-
-def removed_commands_in(text: str) -> list[str]:
-    """Removed vague commands and legacy bash tooling the text still mentions."""
-    hits = [f"vague {c}" for c in sorted(set(_REMOVED_PATTERN.findall(text)))]
-    hits += [match for pattern in BS_PATTERNS for match in sorted(set(re.findall(pattern, text)))]
-    return hits
 
 
 def frontmatter_commands(frontmatter: dict) -> set[str]:
@@ -225,7 +191,6 @@ def check_skill(skill_dir: Path) -> list[str]:
         except ValidationError as e:
             findings.append(f"{skill_md}: frontmatter: invalid manifest: {e}")
 
-    findings += [f"{skill_md}: removed-command: `{hit}` no longer exists" for hit in removed_commands_in(text=text)]
     findings += memory_convention_findings(path=skill_md, text=text)
     if name in FILE_WRITING_SKILLS and not _DOC_LOG_PATTERN.search(text):
         findings.append(f"{skill_md}: deliverable-doc-memory: a file-writing skill must log what it wrote with "
@@ -273,7 +238,10 @@ def check_repo(repo_root: Path) -> list[str]:
 
     for path in _instruction_files(repo_root=repo_root):
         text = path.read_text(encoding="utf-8")
-        findings += [f"{path}: removed-command: `{hit}` no longer exists" for hit in removed_commands_in(text=text)]
+        findings += [
+            f"{path}: unknown-command: `vague {c}` is not a vague command"
+            for c in sorted(vague_commands_in(text=text) - registered_commands())
+        ]
         findings += memory_convention_findings(path=path, text=text)
 
     names = [d.name for d in dirs]

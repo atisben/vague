@@ -2,7 +2,6 @@
 
 import json
 
-import pytest
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app
@@ -32,17 +31,6 @@ def test_skill_check_reports_a_path_outside_any_skill(tmp_path):
     result = runner.invoke(sdk_app, ["skill-check", str(tmp_path)])
     assert result.exit_code == 1
     assert "SKILL.md" in result.output
-
-
-@pytest.mark.parametrize("command", [
-    "vague learnings-log '{}'", "vague learnings-search docker", "vague observations-log '{}'",
-    "vague timeline-log '{}'", "CONTEXT=$(vague init)", "bs-learnings-log '{}'",
-])
-def test_skill_check_flags_removed_commands(skill_dir, command):
-    preamble = '```bash\neval "$(vague context --shell --skill demo-skill)"\n```\n'
-    result = runner.invoke(sdk_app, ["skill-check", str(skill_dir(body=f"{preamble}```bash\n{command}\n```\n"))])
-    assert result.exit_code == 1
-    assert "removed" in result.output
 
 
 def test_skill_check_flags_preamble_without_skill_flag(skill_dir):

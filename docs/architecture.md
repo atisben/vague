@@ -33,7 +33,7 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 │      agent runs eval "$(vague context --shell --skill dev-ship)"        │
 │                              ▼                                          │
 │  3. Preamble output          (tool output, ≤ 1,500 tokens of memory)    │
-│     SLUG=acme-api  BRANCH=feat/payments  PROACTIVE=True  TELEMETRY=local│
+│     SLUG=acme-api  BRANCH=feat/payments  TELEMETRY=local                │
 │     vague memory · scope acme-api · 2 memories                          │
 │     Memories (most relevant first):                                     │
 │     - [payments-stripe] Use Stripe webhooks for async confirmation.     │
@@ -85,7 +85,7 @@ Ranking is deterministic: shared files with the uncommitted changes first, then 
 
 ```
 ~/.vague/
-├── config.md                 ← frontmatter: proactive, telemetry
+├── config.md                 ← frontmatter: telemetry
 ├── memory.jsonl              ← one ledger, all projects (append-only): learnings, observations, notes, doc pointers
 ├── events/YYYY-MM.jsonl      ← skill starts, memory reads/writes with `ids`
 ├── team/                     ← mgmt-* state
@@ -107,10 +107,6 @@ The `scope` of a memory is the project slug:
 | Outside a repo | Folder name of the current directory |
 | `$HOME` or `/` | None: `memory-log` refuses unless `--global` is passed |
 
-```bash
-vague slug         # prints SLUG=owner-repo and BRANCH=main
-```
-
 ---
 
 ## Skill Lifecycle
@@ -122,7 +118,7 @@ Every skill follows this pattern:
    └── appends a skill_start event to ~/.vague/events/YYYY-MM.jsonl
 
 1. eval "$(vague context --shell --skill {name})"
-   └── sets SLUG/BRANCH/PROACTIVE/TELEMETRY
+   └── sets SLUG/BRANCH/TELEMETRY
    └── prints the MEMORY block, logs a context_read event with the served ids
 
 2. [skill does its work — reads files, writes code, asks questions]
