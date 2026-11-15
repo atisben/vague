@@ -174,7 +174,7 @@ class TestSyncPreservesUserContent:
             assert linked
             assert all(entry.is_symlink() for entry in linked)
 
-    def test_every_runtime_gets_the_same_full_block(self, two_profiles, guidelines_file, tmp_path, monkeypatch):
+    def test_every_runtime_gets_the_full_block(self, two_profiles, guidelines_file, tmp_path, monkeypatch):
         work, personal, _ = two_profiles
         cursor = tmp_path / ".cursor"
         (cursor / "rules").mkdir(parents=True)
@@ -199,7 +199,10 @@ class TestSyncPreservesUserContent:
         for content in contents:
             assert "Always explain with a diagram." in content
             assert "## Skill Routing" in content
-        assert contents[0] == contents[1] == contents[2]
+        # Claude profiles share one block. Cursor's lists only the skills it gets: no Claude-only ones.
+        assert contents[0] == contents[1]
+        assert "`/impeccable`" in contents[0]
+        assert "`/impeccable`" not in contents[2]
 
     def test_text_outside_the_markers_is_byte_identical(self, two_profiles, guidelines_file):
         work, _, _ = two_profiles

@@ -1,5 +1,7 @@
 """Pydantic models for vague."""
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -14,3 +16,5 @@ class SkillManifest(BaseModel):
     description: str
     sdk_commands: list[str] = []
     requires_slug: bool = True
+    # Empty means every runtime. The installer reads it to keep Claude-only skills out of cursor and windsurf.
+    runtimes: list[Literal["claude", "cursor", "windsurf", "generic"]] = []

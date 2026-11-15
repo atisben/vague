@@ -1,12 +1,12 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 21 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
 ## Overview
 
-- **21 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
+- **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **One memory ledger** in `~/.vague/memory.jsonl` holds every learning and observation, scoped to a project or `global`. Every skill preamble prints a ranked slice of it (at most 1,500 tokens).
 - **Mechanical telemetry:** a Claude Code hook logs each skill start to `~/.vague/events/`, feeding `vague status` with zero agent cooperation.
 - **Installs into your runtime** of choice: Claude Code, Cursor, or Windsurf.
@@ -44,6 +44,9 @@ Then use any slash command in your AI tool.
 | `/diagram` | Build a mind map or an architecture overview as a self-contained HTML diagram. |
 | `/vault-excalidraw` | Draw an architecture, flow, map or timeline as a Mermaid flowchart in a vault note, then import it into Excalidraw as editable shapes. |
 | `/slides` | Build an animated HTML slide deck (fixed 16:9 stage) from notes or a .pptx: pick a style from three live previews, then export to PDF. |
+| `/impeccable` | Design, critique, audit, or polish a web UI: a design brief kept in memory, three HTML mockups to pick from, then read-only reviewer subagents check the build. Claude Code only. |
+
+`/impeccable` and its two reviewer agents (`impeccable-finish-reviewer`, `impeccable-motion-reviewer`) are vendored and adapted from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) under Apache-2.0 (see `vague/assets/skills/impeccable/NOTICE.md`). They need subagents, so `vague install` links them into Claude Code runtimes only, never Cursor or Windsurf.
 
 ### Execution
 | Command | When to use |
@@ -97,6 +100,7 @@ Idea
           └─ /vault export  → diagram embedded in an Obsidian note
       └─ /vault-excalidraw  → Mermaid note in the vault, imported into Excalidraw
       └─ /slides            → HTML slide deck (PDF optional)
+      └─ /impeccable        → UI brief, HTML mockups, build review (Claude Code only)
 
           └─ /dev-develop   → implement
               └─ /dev-ship  → tests + PR
