@@ -120,7 +120,7 @@ All data lives in `~/.vague/`:
 
 ```
 ~/.vague/
-├── config.md
+├── config.env                ← KEY=value: VAGUE_CLAUDE_DIRS, telemetry
 ├── memory.jsonl              ← one ledger, all projects (append-only): learnings, observations, notes, doc pointers
 ├── events/YYYY-MM.jsonl      ← skill starts and memory reads/writes (powers `vague status`)
 ├── team/                     ← mgmt-* state

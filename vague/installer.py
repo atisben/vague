@@ -12,6 +12,7 @@ from pathlib import Path
 import typer
 
 from vague.config import claude_dirs, profile_name_for
+from vague.paths import atomic_write
 from vague.sdk.core.frontmatter import FrontmatterError, read_md
 
 RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
@@ -402,13 +403,6 @@ def _load_settings(path: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
-def _save_settings(path: Path, settings: dict) -> None:
-    # Write beside the file then rename, so a crash never leaves half a settings file.
-    tmp = path.with_name(path.name + ".vague-tmp")
-    tmp.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-    tmp.replace(path)
-
-
 def install_hooks(settings_path: Path, command: str) -> bool:
     """Reconcile vague's hooks in a Claude settings.json with `HOOKS`. True when the file changed.
 
@@ -454,8 +448,7 @@ def install_hooks(settings_path: Path, command: str) -> bool:
         groups.append(group)
         changed = True
     if changed:
-        settings_path.parent.mkdir(parents=True, exist_ok=True)
-        _save_settings(settings_path, settings)
+        atomic_write(path=settings_path, text=json.dumps(settings, indent=2) + "\n")
     return changed
 
 
@@ -479,7 +472,7 @@ def remove_hooks(settings_path: Path) -> bool:
     if not hooks:
         del settings["hooks"]
     if changed:
-        _save_settings(settings_path, settings)
+        atomic_write(path=settings_path, text=json.dumps(settings, indent=2) + "\n")
     return changed
 
 

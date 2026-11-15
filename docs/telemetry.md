@@ -69,7 +69,7 @@ Fields that depend on the event:
 
 `root` is the checkout or worktree path and `main_root` is the main checkout, so a worktree event links to its repo by `main_root` while `root` tells the worktrees apart. Outside a repo, or on a bare repo, both paths are `cwd`. Git resolves symlinks in these paths, so they may differ from `cwd` (`/private/var` vs `/var` on macOS). Use `main_root` for identity, not `repo`.
 
-`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl` or `config.md`. For the ledger, `path` is the constant relative name `memory.jsonl`. For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
+`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl` or `config.env`. For the ledger, `path` is the constant relative name `memory.jsonl`. For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
 
 `file_write` names the path Claude wrote with its Write or Edit tool, never the contents. A skill sends no end signal, so the last skill started in the session owns every later write. A write in a session with no skill start logs nothing. The hook reads only the current month file to find that skill, so a session that crosses a month boundary loses attribution.
 
@@ -77,7 +77,7 @@ Fields that depend on the event:
 - **Outside Claude Code the session is `unknown`.** The `session` value comes from `$CLAUDE_CODE_SESSION_ID`, which Claude Code sets for its Bash tool and which equals the hook payload's `session_id`. A command run in a plain terminal or by another agent still writes its line, with `session: "unknown"`, so the usage graph stays complete.
 - **`ids` names the memories.** The `memory-*` commands and the preamble add `ids`, a list of `scope/key` names of the memories served or written. Keys are names chosen by the model, never memory text or the memory's `files`.
 - **Reads of a missing file are skipped,** and the same file is logged once per command and kind. `vague status` logs no reads: it serves no memory text.
-- `telemetry: off` disables all events, and a failure to write one never changes a command's output or exit code.
+- `telemetry=off` disables all events, and a failure to write one never changes a command's output or exit code.
 
 #### Not logged
 
@@ -108,7 +108,7 @@ vague skill-check: 1 finding(s) in retro
 /Users/me/vague/vague/assets/skills/retro/SKILL.md: frontmatter: missing required field `description`
 ```
 
-The check runs even with `telemetry: off`, because it is a guard, not telemetry. The event is still logged first, so a failing check never drops the `file_write` line.
+The check runs even with `telemetry=off`, because it is a guard, not telemetry. The event is still logged first, so a failing check never drops the `file_write` line.
 
 #### Wiring the hook
 
@@ -138,6 +138,7 @@ The `PostToolUse` matcher `Skill|Write|Edit` limits the hook to Skill, Write and
 vague config-set telemetry local   # log locally (default)
 vague config-set telemetry off     # no logging at all
 vague config-get telemetry         # check current value
+# config-set writes one line, telemetry=<value>, in ~/.vague/config.env
 ```
 
 When `telemetry` is `"off"`:

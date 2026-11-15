@@ -342,7 +342,7 @@ def test_events_outside_claude_code_use_unknown_session(home, repo):
 
 
 def test_telemetry_off_writes_memory_but_no_events(home, repo, in_session):
-    (home / "config.md").write_text("---\ntelemetry: 'off'\n---\n")
+    (home / "config.env").write_text("telemetry=off\n")
     assert _log("k", "text").exit_code == 0
     runner.invoke(sdk_app, ["memory-search", "text"])
     runner.invoke(sdk_app, ["context", "--shell", "--skill", "x"])

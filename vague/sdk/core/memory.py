@@ -13,14 +13,16 @@ Four kinds share the one file:
 from __future__ import annotations
 
 import os
-import subprocess
 from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal, NamedTuple, get_args
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ValidationError, field_validator
 
+from vague import git as git_cli
+from vague import jsonl
+from vague.paths import vague_home
 from vague.sdk.core.logging import get_logger
 from vague.sdk.core.slug import get_git_context
 
@@ -66,10 +68,6 @@ class Block(NamedTuple):
     scratch_ids: list[str]
 
 
-def vague_home() -> Path:
-    return Path(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
-
-
 def ledger_path() -> Path:
     return vague_home() / "memory.jsonl"
 
@@ -79,31 +77,22 @@ def one_line(text: str | None) -> str:
 
 
 def append_memory(memory: Memory) -> Path:
-    """Append one line in a single O_APPEND write, without a lock, the same guarantee events.py relies on."""
+    """Append one line without a lock: concurrent writers never interleave (see jsonl.append)."""
     if memory.text is not None and len(memory.text) > MAX_TEXT:
         raise ValueError(f"text is {len(memory.text)} characters, the limit is {MAX_TEXT}")
     path = ledger_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
-    try:
-        os.write(fd, (memory.model_dump_json(exclude_none=True) + "\n").encode("utf-8"))
-    finally:
-        os.close(fd)
+    jsonl.append(path=path, line=memory.model_dump_json(exclude_none=True))
     return path
 
 
 def read_lines(path: Path) -> list[Memory]:
-    """Every parseable line, in file order. A torn line from a crash is skipped, not fatal."""
-    if not path.exists():
-        return []
+    """Every valid memory, in file order. A torn or invalid line is skipped with a warning, not fatal."""
     memories = []
-    # A torn line can end inside a multi-byte character.
-    for number, line in enumerate(path.read_bytes().decode("utf-8", errors="replace").splitlines(), start=1):
+    for row in jsonl.read(path=path):
         try:
-            memories.append(Memory.model_validate_json(line))
-        except ValueError as e:
-            if line.strip():
-                get_logger().warning("skipping unparseable memory line %s:%d: %s", path, number, e)
+            memories.append(Memory.model_validate(row))
+        except ValidationError as e:
+            get_logger().warning("skipping invalid memory in %s: %s", path, e)
     return memories
 
 
@@ -162,13 +151,8 @@ def changed_files(cwd: Path | None = None) -> list[str]:
     if not git.in_repo:
         return []
     found: set[str] = set()
-    for args in (["diff", "--name-only", "HEAD"], ["ls-files", "--others", "--exclude-standard"]):
-        try:
-            result = subprocess.run(["git", *args], capture_output=True, text=True, cwd=git.root, timeout=5)
-        except (OSError, subprocess.SubprocessError):
-            continue
-        if result.returncode == 0:
-            found.update(line for line in result.stdout.splitlines() if line)
+    for args in (("diff", "--name-only", "HEAD"), ("ls-files", "--others", "--exclude-standard")):
+        found.update(line for line in (git_cli.run(*args, cwd=git.root) or "").splitlines() if line)
     return sorted(found)
 
 

@@ -78,7 +78,7 @@ def test_log_event_payload_unrelated_to_vague_usage_writes_nothing(home, payload
 
 
 def test_log_event_telemetry_off_writes_nothing(home):
-    (home / "config.md").write_text("---\ntelemetry: 'off'\n---\n")
+    (home / "config.env").write_text("telemetry=off\n")
     result = runner.invoke(sdk_app, ["log-event"], input=_skill_payload())
     assert result.exit_code == 0
     assert not (home / "events").exists()
@@ -208,7 +208,7 @@ def test_check_failure_still_logs_event_and_exits_0(home, bundled_root, skill_di
 
 
 def test_telemetry_off_skips_event_but_runs_check(home, bundled_root, skill_dir, hook_payload):
-    (home / "config.md").write_text("---\ntelemetry: 'off'\n---\n")
+    (home / "config.env").write_text("telemetry=off\n")
     directory = skill_dir(name="broken", omit=("description",), root=bundled_root)
 
     result = runner.invoke(sdk_app, ["log-event"], input=_edit(hook_payload, directory / "SKILL.md"))

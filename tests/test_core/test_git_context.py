@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from vague import git as git_module
 from vague.sdk.core import slug as slug_module
 from vague.sdk.core.events import parse_hook_payload
 from vague.sdk.core.slug import get_git_context
@@ -144,7 +145,7 @@ def test_context_git_missing_falls_back_without_raising(tmp_path, monkeypatch):
     def boom(*args, **kwargs):
         raise FileNotFoundError("git")
 
-    monkeypatch.setattr(slug_module.subprocess, "run", boom)
+    monkeypatch.setattr(git_module.subprocess, "run", boom)
     ctx = get_git_context(cwd=tmp_path)
     assert ctx.in_repo is False
     assert ctx.root == tmp_path
@@ -156,7 +157,7 @@ def test_context_git_timeout_falls_back_without_raising(tmp_path, monkeypatch):
     def slow(*args, **kwargs):
         raise subprocess.TimeoutExpired(cmd="git", timeout=5)
 
-    monkeypatch.setattr(slug_module.subprocess, "run", slow)
+    monkeypatch.setattr(git_module.subprocess, "run", slow)
     assert get_git_context(cwd=tmp_path).root == tmp_path
 
 
@@ -204,7 +205,7 @@ def test_event_spawns_at_most_two_git_processes(tmp_path, monkeypatch, in_git, e
         calls.append(args[0])
         return real_run(*args, **kwargs)
 
-    monkeypatch.setattr(slug_module.subprocess, "run", counting)
+    monkeypatch.setattr(git_module.subprocess, "run", counting)
     _event(target)
     assert len(calls) == expected_calls
 
@@ -240,9 +241,9 @@ def test_scope_in_home_or_root_is_none(tmp_path, monkeypatch):
     assert slug_module.get_scope(cwd=tmp_path, use_global=True) == "global"
 
 
-def test_get_slug_remoteless_worktree_uses_main_checkout_name(tmp_path):
+def test_repo_slug_remoteless_worktree_uses_main_checkout_name(tmp_path):
     repo = _make_repo(tmp_path, name="main-checkout")
     wt = tmp_path / "wt-elsewhere"
     _git(repo, "worktree", "add", "-b", "feature", str(wt))
-    assert slug_module.get_slug(cwd=wt) == "main-checkout"
-    assert slug_module.get_slug(cwd=repo) == "main-checkout"
+    assert slug_module.get_repo_slug(context=get_git_context(cwd=wt)) == "main-checkout"
+    assert slug_module.get_repo_slug(context=get_git_context(cwd=repo)) == "main-checkout"

@@ -13,7 +13,8 @@ from __future__ import annotations
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
+
+from vague.paths import vague_home
 
 _LEVELS = {
     "debug": logging.DEBUG,
@@ -24,10 +25,6 @@ _LEVELS = {
 }
 _OFF = {"", "off", "none", "0", "false"}
 _LOGGER_NAME = "vague"
-
-
-def _home() -> Path:
-    return Path(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
 
 
 def get_logger() -> logging.Logger:
@@ -47,7 +44,7 @@ def get_logger() -> logging.Logger:
     fmt = logging.Formatter("%(asctime)s pid=%(process)d %(levelname)s %(name)s %(message)s")
 
     try:
-        log_path = _home() / "logs" / "vague.log"
+        log_path = vague_home() / "logs" / "vague.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
         fh = RotatingFileHandler(log_path, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
         fh.setFormatter(fmt)

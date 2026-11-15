@@ -6,13 +6,12 @@ Its path is the latest non-empty `main_root`, so a project that moved shows wher
 
 from __future__ import annotations
 
-import subprocess
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+from vague import git
 from vague.sdk.core.events import event_ts, read_events
-from vague.sdk.core.logging import get_logger
 from vague.sdk.core.memory import Memory, load_ledger
 
 GIT_TIMEOUT_S = 2
@@ -64,25 +63,12 @@ def _project_row(slug: str, events: list[tuple[datetime, dict]], memories: int, 
         repo = Path(path)
         if repo.is_dir():
             row["path_state"] = "live"
-            row["branch"] = _git(repo, "branch", "--show-current")
-            porcelain = _git(repo, "status", "--porcelain")
+            row["branch"] = git.run("branch", "--show-current", cwd=repo, timeout=GIT_TIMEOUT_S)
+            porcelain = git.run("status", "--porcelain", cwd=repo, timeout=GIT_TIMEOUT_S)
             row["dirty"] = bool(porcelain) if porcelain is not None else None
         else:
             row["path_state"] = "stale"
     return row
-
-
-def _git(repo: Path, *args: str) -> str | None:
-    try:
-        result = subprocess.run(
-            ["git", "-C", str(repo), *args],
-            capture_output=True, text=True, timeout=GIT_TIMEOUT_S,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except Exception as e:
-        get_logger().debug("status: git %s failed for %s: %s", args, repo, e)
-    return None
 
 
 def _count_inflight_designs(ledger: list[Memory], scope: str, last_ship: datetime | None) -> int:

@@ -8,12 +8,12 @@ import sys
 
 import typer
 
+from vague.config import get_config
 from vague.models import ConfigModel
-from vague.sdk.core.config import get_config
 from vague.sdk.core.events import log_context_access
 from vague.sdk.core.logging import get_logger
 from vague.sdk.core.memory import changed_files, ledger_path, render_block
-from vague.sdk.core.slug import get_branch, get_scope, get_slug
+from vague.sdk.core.slug import get_git_context, get_repo_slug, get_scope
 
 _DELIMITER = "VAGUE_MEMORY"
 
@@ -26,8 +26,8 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
     same fields as one JSON object. --skill only ranks the memory block.
     """
     try:
-        slug = get_slug()
-        branch = get_branch()
+        git = get_git_context()
+        slug, branch = get_repo_slug(context=git), git.branch
         config = get_config()
     except Exception as e:
         print(f"Warning: vague context error: {e}", file=sys.stderr)

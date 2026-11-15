@@ -14,7 +14,6 @@ session where no skill started is not logged at all. Nothing leaves the machine.
 
 from __future__ import annotations
 
-import json
 import os
 import re
 from datetime import UTC, datetime
@@ -23,8 +22,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from vague.models import ConfigModel
-from vague.sdk.core.frontmatter import read_md
+from vague import jsonl
+from vague.config import load_config
+from vague.hooks import edited_file
+from vague.paths import vague_home
 from vague.sdk.core.logging import get_logger
 from vague.sdk.core.slug import GitContext, get_git_context, get_repo_slug
 
@@ -62,8 +63,7 @@ class Event(BaseModel):
 def events_path(now: datetime | None = None) -> Path:
     """Monthly file, so no single log grows without bound."""
     moment = now or datetime.now(UTC)
-    home = Path(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
-    return home / "events" / f"{moment:%Y-%m}.jsonl"
+    return vague_home() / "events" / f"{moment:%Y-%m}.jsonl"
 
 
 def _runtime() -> str:
@@ -77,16 +77,9 @@ def _session_skill(session_id: str, now: datetime | None = None) -> str | None:
     A skill sends no end signal, so the latest start owns every later write. A session
     that crosses a month boundary loses attribution: reading one file keeps the hook cheap.
     """
-    path = events_path(now=now)
-    if not path.exists():
-        return None
     skill = None
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        try:
-            row = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(row, dict) and row.get("session") == session_id and row.get("event") == "skill_start":
+    for row in jsonl.read(path=events_path(now=now)):
+        if row.get("session") == session_id and row.get("event") == "skill_start":
             skill = row.get("skill") or skill
     return skill if isinstance(skill, str) else None
 
@@ -113,14 +106,11 @@ def _classify(payload: dict[str, Any], now: datetime | None = None) -> dict[str,
         if isinstance(skill, str) and skill and not failed:
             return {"event": "skill_start", "skill": skill, "source": "tool"}
 
-    if tool in ("Write", "Edit"):
-        file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
-        if not isinstance(file_path, str) or not file_path:
-            return None
+    path = edited_file(payload=payload)
+    if path is not None:
         skill = _session_skill(session_id=str(payload.get("session_id") or "unknown"), now=now)
         if skill:
-            path = _normalize_path(path=file_path, cwd=str(payload.get("cwd") or ""))
-            return {"event": "file_write", "skill": skill, "path": path}
+            return {"event": "file_write", "skill": skill, "path": str(path)}
 
     return None
 
@@ -158,20 +148,8 @@ def parse_hook_payload(payload: dict[str, Any], now: datetime | None = None) -> 
 
 
 def append_event(event: Event) -> None:
-    """Append one line in a single write.
-
-    One os.write on an O_APPEND fd lands contiguously on local filesystems, so
-    concurrent hooks do not interleave their lines and need no lock. Only a
-    write beyond PIPE_BUF is not guaranteed atomic, and one line stays far below it.
-    """
-    path = events_path(now=event.ts)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    data = (event.model_dump_json(exclude_none=True) + "\n").encode("utf-8")
-    fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
-    try:
-        os.write(fd, data)
-    finally:
-        os.close(fd)
+    """Append one line without a lock: concurrent hooks never interleave (see jsonl.append)."""
+    jsonl.append(path=events_path(now=event.ts), line=event.model_dump_json(exclude_none=True))
 
 
 # State of the current `vague` process. begin_command() resets it, so a
@@ -190,13 +168,8 @@ def begin_command(command: str | None) -> None:
 
 
 def _telemetry_off() -> bool:
-    """Same rule as config.get_config, but silent: a bad config.md must not add stderr noise here."""
-    home = Path(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
-    try:
-        data = read_md(home / "config.md")
-        return ConfigModel(**{k: v for k, v in data.items() if k in ConfigModel.model_fields}).telemetry == "off"
-    except Exception:
-        return False
+    # load_config, not get_config: get_config logs a context read, which would call back here.
+    return load_config().get("telemetry") == "off"
 
 
 def _git_for_cwd() -> tuple[GitContext, str]:
@@ -214,8 +187,7 @@ def _git_for_cwd() -> tuple[GitContext, str]:
 
 def _memory_name(resolved: str) -> str | None:
     """`memory.jsonl` for the memory ledger, so the event names the store, not the machine."""
-    home = os.path.realpath(os.environ.get("VAGUE_HOME", Path.home() / ".vague"))
-    name = os.path.relpath(resolved, home)
+    name = os.path.relpath(resolved, os.path.realpath(vague_home()))
     return name if name == "memory.jsonl" else None
 
 
@@ -266,14 +238,7 @@ def log_context_access(
 
 def read_events() -> list[dict]:
     """Every parseable event row across the monthly files, oldest file first."""
-    rows = []
-    for path in sorted(events_path().parent.glob("*.jsonl")):
-        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-            try:
-                rows.append(json.loads(line))
-            except ValueError:
-                continue
-    return [row for row in rows if isinstance(row, dict)]
+    return [row for path in sorted(events_path().parent.glob("*.jsonl")) for row in jsonl.read(path=path)]
 
 
 def event_ts(value: object) -> datetime | None:
