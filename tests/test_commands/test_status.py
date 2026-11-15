@@ -77,21 +77,32 @@ def test_status_uses_latest_event_for_path_and_activity(vague_home, tmp_path):
     assert row["last_event"]["skill"] == "dev-develop"
 
 
-def test_status_counts_inflight_designs_after_last_ship(vague_home):
-    import os
+def test_inflight_designs_counts_doc_memories(vague_home, make_memory):
     from datetime import datetime
 
+    from vague.sdk.core.memory import append_memory
+
     _event(vague_home, repo="planned", ts="2026-10-01T10:00:00+00:00", skill="dev-ship")
+
+    def doc(key, ts, **over):
+        fields = {"scope": "planned", "key": key, "kind": "doc", "skill": "plan-eng", "files": ["/p.md"],
+                  "ts": datetime.fromisoformat(ts), **over}
+        append_memory(memory=make_memory(**fields))
+
+    doc(key="eng-plan-old", ts="2026-09-01T00:00:00+00:00")
+    doc(key="eng-plan-feat-a", ts="2026-10-02T00:00:00+00:00")
+    doc(key="eng-plan-feat-b", ts="2026-10-03T00:00:00+00:00")
+    doc(key="eng-plan-feat-b", ts="2026-10-04T00:00:00+00:00")
+    doc(key="ceo-plan", ts="2026-10-02T00:00:00+00:00", skill="plan-ideation")
+    doc(key="fact", ts="2026-10-02T00:00:00+00:00", kind="learning")
+    doc(key="dropped", ts="2026-10-02T00:00:00+00:00")
+    doc(key="dropped", ts="2026-10-05T00:00:00+00:00", text=None, status="forgotten")
+    doc(key="elsewhere", ts="2026-10-02T00:00:00+00:00", scope="other")
     designs = vague_home / "projects" / "planned" / "designs"
     designs.mkdir(parents=True)
-    shipped, pending = designs / "shipped.md", designs / "pending.md"
-    shipped.write_text("# old")
-    pending.write_text("# new")
-    for doc, ts in ((shipped, "2026-09-01T00:00:00+00:00"), (pending, "2026-10-02T00:00:00+00:00")):
-        stamp = datetime.fromisoformat(ts).timestamp()
-        os.utime(doc, (stamp, stamp))
+    (designs / "stray.md").write_text("# not counted")
 
-    assert _rows()["planned"]["inflight_designs"] == 1
+    assert _rows()["planned"]["inflight_designs"] == 2
 
 
 def test_status_counts_active_memories_for_scope(vague_home, make_memory):

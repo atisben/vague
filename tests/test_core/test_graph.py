@@ -237,8 +237,17 @@ def test_file_written_and_named_in_memory_is_one_node():
 
 
 def test_file_write_outside_the_repo_lands_in_the_vault_area():
-    write = _event(event="file_write", skill="vault", path="/Users/me/Obsidian/7. Code/Note.md", source=None)
+    write = _event(event="file_write", skill="vault", path="/Users/me/Obsidian/6. Atomic Notes/Note.md", source=None)
     graph = build_graph(events=[write], memories=[], vault_root="/Users/me/Obsidian")
 
     node = _file_node(graph)
-    assert (node["area"], node["relative"]) == ("vault", "7. Code/Note.md")
+    assert (node["area"], node["relative"]) == ("vault", "6. Atomic Notes/Note.md")
+
+
+def test_doc_memory_file_node_is_marked_as_deliverable():
+    doc = _memory(key="eng-plan-main", kind="doc", files=["/plans/p.md"], skill="plan-eng")
+    fact = _memory(key="fact", files=["src/a.py"])
+    graph = build_graph(events=[], memories=[doc, fact])
+    files = {n["label"]: n for n in graph["nodes"] if n["type"] == "file"}
+    assert files["p.md"]["deliverable"] is True
+    assert not files["a.py"].get("deliverable")

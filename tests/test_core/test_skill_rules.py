@@ -138,3 +138,57 @@ def test_skill_dir_for_resolves_dir_and_nested_file(skill_dir, tmp_path):
     assert skill_dir_for(path=directory / "SKILL.md") == directory.resolve()
     assert skill_dir_for(path=nested) == directory.resolve()
     assert skill_dir_for(path=tmp_path) is None
+
+
+def _fake_docs_repo(tmp_path, skill_dir, guidelines="", skill_body=""):
+    repo = _fake_repo(tmp_path, skill_dir, names=["alpha"],
+                      readme="1 markdown-based LLM skills: /alpha", claude_md="1 skills: `/alpha`")
+    if skill_body:
+        skill_dir(name="alpha", root=repo / "vague" / "assets" / "skills", body=_preamble("alpha") + skill_body)
+    path = repo / "vague" / "assets" / "claude" / "guidelines.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(guidelines, encoding="utf-8")
+    return repo
+
+
+@pytest.mark.parametrize("line", [
+    'PLAN=$(ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md)',
+    "~/.vague/projects/{slug}/retros/",
+    'ls "${VAGUE_HOME:-$HOME/.vague}"/projects/*/diagrams/*.html',
+    "writes to ~/.vague/projects/.../designs",
+])
+def test_check_repo_reports_reference_to_projects_state_dir(tmp_path, skill_dir, line):
+    in_skill = _fake_docs_repo(tmp_path / "a", skill_dir, skill_body=f"\n```bash\n{line}\n```\n")
+    in_guidelines = _fake_docs_repo(tmp_path / "b", skill_dir, guidelines=f"Plans live in `{line}`.\n")
+    assert any("SKILL.md: reference-to-projects-state-dir" in f for f in check_repo(repo_root=in_skill))
+    assert any("guidelines.md: reference-to-projects-state-dir" in f for f in check_repo(repo_root=in_guidelines))
+
+
+def test_check_repo_ignores_project_paths_outside_vague_state(tmp_path, skill_dir):
+    repo = _fake_docs_repo(tmp_path, skill_dir, guidelines="Designs live in `~/projects/personal/designs/`.\n")
+    assert check_repo(repo_root=repo) == []
+
+
+@pytest.mark.parametrize("line", [
+    'vague memory-log <kebab-key> "Saved <name>." --files "<absolute path>" --skill <current skill>',
+    'vague memory-log excalidraw-x "Drew X as a Mermaid note." --files "<path>" --skill vault-excalidraw',
+])
+def test_check_repo_reports_saved_learning_convention_in_guidelines(tmp_path, skill_dir, line):
+    repo = _fake_docs_repo(tmp_path, skill_dir, guidelines=f"| deliverable | `{line}` |\n")
+    findings = check_repo(repo_root=repo)
+    assert any("guidelines.md: saved-learning-convention" in f for f in findings), findings
+
+    fixed = _fake_docs_repo(tmp_path / "fixed", skill_dir, guidelines=f"| deliverable | `{line} --doc` |\n")
+    assert check_repo(repo_root=fixed) == []
+
+
+def test_file_writing_skills_log_their_deliverable_with_doc(skill_dir):
+    fields = {"sdk_commands": ["vague context", "vague memory-log"]}
+    learning = '\n```bash\nvague memory-log deck-x "Deck." --files "/d.html"\n```\n'
+    without = skill_dir(name="slides", fields=fields, body=_preamble("slides") + learning)
+    assert any("deliverable-doc-memory" in f for f in check_skill(skill_dir=without))
+
+    with_doc = skill_dir(name="retro", fields=fields, body=_preamble("retro")
+                         + '\n```bash\nvague memory-log retro-x "Retro." --doc --files "/r.md" --skill retro\n```\n')
+    assert check_skill(skill_dir=with_doc) == []
+    assert not any("deliverable-doc-memory" in f for f in check_skill(skill_dir=skill_dir(name="triage")))

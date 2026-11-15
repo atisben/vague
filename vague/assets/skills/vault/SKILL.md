@@ -1,6 +1,6 @@
 ---
 name: vault
-version: 1.3.0
+version: 1.4.0
 description: |
   Obsidian vault operations: save notes, export artifacts (HTML diagrams, SVG,
   images) as embedded notes, search, and retrieve content.
@@ -11,6 +11,7 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: false
 allowed-tools:
   - Bash
@@ -48,7 +49,7 @@ This is the layout at the time of writing. The `FOLDERS` list the preamble print
 | `7. Attachments/` | Images, SVG, HTML | **yes, attachments** |
 | `8. Excalidraw/` | Drawings the Excalidraw plugin owns | no |
 
-**Never create a folder.** Do not run `mkdir` under `$VAULT`. Every destination must appear in the `FOLDERS` list. There is no `7. Code/`, `Attachments/` or `Notes/`. If no folder fits, use `6. Atomic Notes/` and tell the user.
+**Never create a folder.** Do not run `mkdir` under `$VAULT`. Every destination must appear in the `FOLDERS` list. Code walkthroughs, engineering reviews and architecture notes go in `6. Atomic Notes/` with an `architecture` or `review` tag. If no folder fits, use `6. Atomic Notes/` and tell the user.
 
 ---
 
@@ -95,9 +96,7 @@ If A: read the existing file, append or merge new content, write back. Done.
 
 ### Step 2 — Infer folder
 
-**Caller-specified folder:** if the invoker passed an explicit target folder (for example
-another skill invoking `/vault save … folder "<folder>/"`), check it against the `FOLDERS`
-list.
+**Caller-specified folder:** if the invoker passed an explicit target folder (see [Saving for another skill](#saving-for-another-skill)), check it against the `FOLDERS` list.
 
 - It exists: use it verbatim and skip the table below. Do the same for caller-supplied tags in Step 3.
 - It does not exist: do **not** create it. Ask via AskUserQuestion: A) save to `6. Atomic Notes/`, B) the user names an existing folder.
@@ -168,17 +167,44 @@ Confirm: "Saved to `$FOLDER/$TITLE.md`." Then [record the write](#record-the-wri
 
 ## Record the Write
 
-The usage graph shows which files a vague skill wrote and which project asked for them. It only knows a file when the skill reports it. Telemetry never logs Write or Edit calls, so this step is the only record. After every note, attachment or edit you write, run:
+Every note this skill writes gets a `doc` pointer in the memory ledger. The pointer makes the note findable with `vague memory-search --kind doc`, and the usage graph reads it to show which project asked for the file. Telemetry never logs Write or Edit calls, so this step is the only record. After every note, attachment or edit you write, run:
 
 ```bash
-vague memory-log vault-<title-slug> "Saved <Title> to <folder>." --files "<absolute path>" --skill vault
+vague memory-log vault-<title-slug> "<one-line summary of the note>" --doc --files "<absolute path>" --skill vault
 ```
 
-- `<title-slug>`: the title in lowercase ASCII with hyphens, for example `vault-perf-review-jane-h1-2026`. Re-using the key for an updated note replaces the earlier line.
+- `<title-slug>`: the title in lowercase ASCII with hyphens, for example `vault-perf-review-jane-h1-2026`. Re-using the key for an updated note replaces the earlier pointer.
+- `<one-line summary>`: what the note is about, in one sentence. Never paste note content.
 - `<absolute path>`: the full path of the file you wrote. A path with a comma or a space is fine inside the quotes. Pass `--files` once per file for an attachment.
 - Run it from the project the user is working in. That project becomes the note's owner in the graph.
-- Never put note content in the text. Name the file and what you did.
-- Tell the user in the same breath: "Logged the vault write for the usage graph."
+- Tell the user in the same breath: "Logged a doc pointer to the note."
+- **Skip this step when another skill called you.** That skill logs its own pointer under its own key (see [Saving for another skill](#saving-for-another-skill)).
+
+---
+
+## Saving for Another Skill
+
+Skills such as `/plan-eng`, `/plan-ideation`, `/retro` and `/diagram` save their documents through this skill. The caller names the destination in the arguments:
+
+```
+/vault save "<Title>" folder "<folder>/" tags "<tag1>,<tag2>"
+/vault export "<source path>" title "<Title>" folder "<folder>/" tags "<tag1>,<tag2>"
+```
+
+Each argument changes one step of Save mode:
+
+| Argument | Effect | The rule it keeps |
+|---|---|---|
+| `folder` | Step 2 uses it verbatim | It must appear in the `FOLDERS` list. A missing folder is never created: Step 2 asks the user instead. |
+| `tags` | Step 3 uses them without the confirmation question | Tags stay lowercase with underscores |
+| `title` (or the quoted title after `save`) | Step 4 uses it without the confirmation question | The filename holds no date |
+| none of the above | The step runs as usual | n/a |
+
+The dedup check in Step 1 still runs. When the match has the same title, update that note without asking: the caller is saving a newer version of its own document. Skip [Record the Write](#record-the-write). End by printing the absolute path of every file written, so the caller can log its pointer:
+
+```
+VAULT_NOTE: <absolute path of the note>
+```
 
 ---
 
@@ -197,10 +223,10 @@ Turns a file artifact into a vault note that displays it. For an editable drawin
 
 ### Step 1 — Pick the artifact
 
-If `$ARGUMENTS` gives a path, use it. Otherwise list the most recent diagrams and ask which one via AskUserQuestion:
+If `$ARGUMENTS` gives a path, use it. Otherwise ask the user for the path via AskUserQuestion. A `/diagram` draft lives in `/tmp/vague-diagrams/`:
 
 ```bash
-ls -t "${VAGUE_HOME:-$HOME/.vague}"/projects/*/diagrams/*.html 2>/dev/null | head -5
+ls -t /tmp/vague-diagrams/*.html 2>/dev/null | head -5
 ```
 
 Stop with an explanation if the file type is not in the table above.

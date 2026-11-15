@@ -96,10 +96,10 @@ git log --since="$SINCE" --oneline 2>/dev/null | grep -iE '^[a-f0-9]+ test' | wc
 ```bash
 eval "$(vague context --shell --skill retro)" >/dev/null
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-ls -t "$VAGUE_HOME/projects/$SLUG/retros/"*.md 2>/dev/null | head -1 || echo "NO_PRIOR_RETRO"
+vague memory-search --kind doc --skill retro || echo "NO_PRIOR_RETRO"
 ```
 
-If a prior retro exists, read its summary table for trend comparison.
+Each line prints as `scope/key  [skill]  text  (files: <path>)`, newest first, with keys `retro-<YYYY-MM-DD>`. If a prior retro exists, read the vault note at its path and use its summary table for trend comparison.
 
 ---
 
@@ -179,15 +179,22 @@ Then:
 
 ## Step 8: Save the Retro
 
-```bash
-eval "$(vague context --shell --skill retro)" >/dev/null
-VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-mkdir -p "$VAGUE_HOME/projects/$SLUG/retros"
-RETRO_FILE="$VAGUE_HOME/projects/$SLUG/retros/retro-$(date +%Y-%m-%d).md"
-# Write the retro content to $RETRO_FILE
-```
+The retro is a vault note, and a `doc` pointer in the ledger keeps it findable for the next retro's trend comparison. Save it in two steps.
 
-Tell the user: "Retro saved to `$RETRO_FILE`."
+1. Save the note through the `/vault` skill (see its "Saving for Another Skill" section). The retro from Step 7 is the note's content. Use `6. Atomic Notes/Alma/` and add the `alma` tag for Alma work:
+
+   ```
+   /vault save "Retro <SLUG> <YYYY-MM-DD>" folder "6. Atomic Notes/" tags "engineering,review,retro"
+   ```
+
+2. Point the ledger at the note:
+
+   ```bash
+   eval "$(vague context --shell --skill retro)" >/dev/null
+   vague memory-log "retro-$(date +%Y-%m-%d)" "<the tweetable summary line>" --doc --files "<VAULT_NOTE path>" --skill retro
+   ```
+
+Tell the user: "Retro saved to `<VAULT_NOTE path>`."
 
 ---
 

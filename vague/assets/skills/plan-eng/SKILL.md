@@ -10,6 +10,7 @@ benefits-from:
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: true
 allowed-tools:
   - Read
@@ -33,13 +34,13 @@ VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```bash
 eval "$(vague context --shell --skill plan-eng)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*.md 2>/dev/null | head -5 || echo "NO_DESIGN_DOCS"
-ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*ceo*.md 2>/dev/null | head -1 || echo "NO_CEO_PLAN"
+vague memory-search --kind doc --skill plan-ideation || echo "NO_DESIGN_DOCS"
+vague memory-search --kind doc --skill plan-eng || echo "NO_ENG_PLAN"
 [ -f CLAUDE.md ] && cat CLAUDE.md || echo "NO_CLAUDE_MD"
 git log --oneline -5 2>/dev/null || true
 ```
 
-Read the most recent design doc. If a CEO plan exists, read it too — scope decisions and deferred items from the CEO review should inform architecture choices. Ask the user to confirm which plan to review.
+Each search line prints as `scope/key  [skill]  text  (files: <path>)`, newest first. The path is a vault note. Read the newest `design-doc-*` note. If a `ceo-plan-*` note exists, read it too — scope decisions and deferred items from the CEO review should inform architecture choices. An `eng-plan-*` key for this branch means an earlier plan exists: revise that note rather than starting over. Ask the user to confirm which plan to review.
 
 ---
 
@@ -161,16 +162,12 @@ Reject any item here that does not map back to a test in Section 3.
 
 ## Write the Engineering Plan
 
-Save to:
-```
-$VAGUE_HOME/projects/$SLUG/designs/{slug}-{branch}-eng-{YYYYMMDD}.md
-```
+The plan is a vault note titled `Eng Plan - [Feature Name]`. Its structure goes in the `<content>` part of the vault template, without its own H1. The `## Next Steps` checkboxes become the template's `# Next Actions` list.
 
 Structure:
 ```markdown
-# Engineering Plan: [Feature Name]
-
 **Date:** [ISO date]
+**Repo / branch:** $SLUG / $BRANCH
 **Based on:** [source doc(s)]
 
 ## Architecture Diagram
@@ -223,12 +220,29 @@ Each item must reference the failing test from the Test Layer it makes pass.
 ## Reviewer Concerns
 [Unresolved issues after review]
 
-## Next Steps
+# Next Actions
 - [ ] /diagram (architecture overview, if the plan touches several components)
 - [ ] /dev-develop to implement
+- [ ] /dev-ship
 ```
 
-Show to user, support revision loops, then save.
+Show to user, support revision loops, then save it in two steps.
+
+1. Save the note through the `/vault` skill (see its "Saving for Another Skill" section). Use `6. Atomic Notes/Alma/` and add the `alma` tag for Alma work:
+
+   ```
+   /vault save "Eng Plan - [Feature Name]" folder "6. Atomic Notes/" tags "engineering,architecture,code"
+   ```
+
+2. Point the ledger at the note. The key carries the branch, so a newer plan on the same branch replaces the older pointer:
+
+   ```bash
+   eval "$(vague context --shell --skill plan-eng)" >/dev/null
+   BRANCH_KEY=$(printf '%s' "$BRANCH" | tr -c 'A-Za-z0-9._-' '-')
+   vague memory-log "eng-plan-$BRANCH_KEY" "<one-line summary of the plan>" --doc --files "<VAULT_NOTE path>" --skill plan-eng
+   ```
+
+   `BRANCH_KEY` replaces the `/` in a branch name, because a key cannot hold one.
 
 ---
 
@@ -240,6 +254,6 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 
 ## Handoff
 
-> "Engineering plan saved. You're ready to build. Run `/dev-develop` to implement, or `/diagram` first to draw the architecture overview."
+> "Engineering plan saved to the vault. You're ready to build. Run `/dev-develop` to implement, or `/diagram` first to draw the architecture overview."
 
 Log any non-obvious architectural insight the review found, with the `--files` it touches.

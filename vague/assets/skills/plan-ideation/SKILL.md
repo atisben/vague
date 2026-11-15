@@ -11,6 +11,7 @@ description: |
 sdk_commands:
   - vague context
   - vague memory-log
+  - vague memory-search
 requires_slug: true
 allowed-tools:
   - Bash
@@ -55,7 +56,7 @@ We are here to make something people want. Building is not the performance of bu
 
 ## HARD GATE
 
-**Do NOT write, scaffold, or suggest code under any circumstance.** This skill outputs one thing: a design document saved to `$VAGUE_HOME/projects/$SLUG/designs/`.
+**Do NOT write, scaffold, or suggest code under any circumstance.** This skill outputs one thing: a design document saved as a vault note, with a `doc` pointer in the memory ledger (see [Saving a Document](#saving-a-document)).
 
 ---
 
@@ -64,12 +65,14 @@ We are here to make something people want. Building is not the performance of bu
 ```bash
 eval "$(vague context --shell --skill plan-ideation)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-ls "$VAGUE_HOME/projects/$SLUG/designs/" 2>/dev/null || echo "NO_PRIOR_DESIGNS"
+vague memory-search --kind doc --skill plan-ideation || echo "NO_PRIOR_DESIGNS"
 [ -f CLAUDE.md ] && head -50 CLAUDE.md || echo "NO_CLAUDE_MD"
 git log --oneline -10 2>/dev/null || echo "NO_GIT"
 ```
 
-**Scope Review shortcut:** if the user asks to "think bigger", "expand scope", or review the scope of an existing plan, and a design doc exists in `designs/`, go straight to **Phase 2C**. If several docs exist, ask which one to review.
+Each search line prints as `scope/key  [skill]  text  (files: <path>)`, newest first. The path is a vault note. Keys start with `design-doc-` (a design doc) or `ceo-plan-` (a scope review).
+
+**Scope Review shortcut:** if the user asks to "think bigger", "expand scope", or review the scope of an existing plan, and a `design-doc-*` pointer exists, go straight to **Phase 2C**. If several docs exist, ask which one to review.
 
 Otherwise, ask the user (one question):
 > What are you trying to build, and what's driving you to build it now?
@@ -186,10 +189,10 @@ CEO/founder-mode review of a plan that already exists. This mode replaces Phases
 Read the chosen design doc. Also check for an engineering plan:
 
 ```bash
-ls -t "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md 2>/dev/null | head -1 || echo "NO_ENG_PLAN"
+vague memory-search --kind doc --skill plan-eng || echo "NO_ENG_PLAN"
 ```
 
-If one exists, read it and warn: "An engineering plan already exists: [filename]. Scope changes from this review may invalidate it. I'll flag any conflicts."
+If one exists, read the vault note at its path and warn: "An engineering plan already exists: [note title]. Scope changes from this review may invalidate it. I'll flag any conflicts."
 
 ### The 10-star question
 
@@ -253,14 +256,12 @@ POLISH/TESTS (hour 6+): What will they wish they'd planned for?
 
 ### Write the scope doc
 
-Save to `$VAGUE_HOME/projects/$SLUG/designs/{slug}-{branch}-ceo-{YYYYMMDD}.md`:
+Save it as the vault note `Scope Review - [Feature Name]` with the doc key `ceo-plan-<branch>` (see [Saving a Document](#saving-a-document)). The structure goes in the note's `<content>`, without its own H1. Its `## Next Steps` checkboxes become the template's `# Next Actions` list:
 
 ```markdown
-# Scope Review: [Feature Name]
-
 **Date:** [ISO date]
 **Mode:** [EXPANSION | SELECTIVE | HOLD | REDUCTION]
-**Based on:** [source design doc filename]
+**Based on:** [source design doc note title]
 
 ## 10-Star Vision
 ## Scope Decisions
@@ -274,7 +275,7 @@ Save to `$VAGUE_HOME/projects/$SLUG/designs/{slug}-{branch}-ceo-{YYYYMMDD}.md`:
 ## Reviewer Concerns
 [Unresolved issues — visible to downstream skills]
 
-## Next Steps
+# Next Actions
 - [ ] Run /plan-eng to lock in architecture
 ```
 
@@ -288,15 +289,14 @@ Show it to the user, support revision loops, then save. Hand off with:
 ```bash
 eval "$(vague context --shell --skill plan-ideation)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
-ls "$VAGUE_HOME/projects/$SLUG/designs/" 2>/dev/null | head -10 || true
-ls "$VAGUE_HOME/projects/$SLUG/designs/"*eng*.md 2>/dev/null | head -1 || echo "NO_ENG_PLAN"
-ls "$VAGUE_HOME/projects/$SLUG/designs/"*ceo*.md 2>/dev/null | head -1 || echo "NO_CEO_PLAN"
+vague memory-search --kind doc --skill plan-ideation || echo "NO_PRIOR_DESIGNS"
+vague memory-search --kind doc --skill plan-eng || echo "NO_ENG_PLAN"
 ```
 
-If prior design docs exist, grep them for keyword overlap with the current idea. Surface any matches:
-> "I found a prior design doc that might be related: [filename]. Want me to read it for context?"
+Each line ends with `(files: <path>)`, the vault note it points to. If prior design docs (`design-doc-*`) exist, grep those notes for keyword overlap with the current idea. Surface any matches:
+> "I found a prior design doc that might be related: [note title]. Want me to read it for context?"
 
-**If engineering or CEO plans already exist:** Warn the user: "There are existing plans for this project: [filenames]. Starting a new plan-ideation session may produce a design doc that conflicts with them. Should I read them first for context, or are you exploring a fresh direction?"
+**If engineering (`eng-plan-*`) or CEO (`ceo-plan-*`) plans already exist:** Warn the user: "There are existing plans for this project: [note titles]. Starting a new plan-ideation session may produce a design doc that conflicts with them. Should I read them first for context, or are you exploring a fresh direction?"
 
 ---
 
@@ -373,7 +373,7 @@ Count the signals. This calibrates the closing message (see Phase 6).
 
 ## Phase 5: Design Doc
 
-Write to: `$VAGUE_HOME/projects/$SLUG/designs/{slug}-{branch}-design-{YYYYMMDD-HHMMSS}.md`
+Save it as the vault note `Design - {title}` with the doc key `design-doc-<branch>` (see [Saving a Document](#saving-a-document)). The template below goes in the note's `<content>`, without its own `# Design:` H1, which the vault heading replaces.
 
 ### Startup mode template
 
@@ -381,7 +381,7 @@ Write to: `$VAGUE_HOME/projects/$SLUG/designs/{slug}-{branch}-design-{YYYYMMDD-H
 # Design: {title}
 
 Generated by /plan-ideation on {date}  |  Branch: {branch}  |  Mode: Startup  |  Status: DRAFT
-Supersedes: {prior filename — omit if first design on this branch}
+Supersedes: {prior design note title — omit if first design on this branch}
 
 ## Problem Statement
 {one paragraph — what problem, for whom, why now}
@@ -438,7 +438,7 @@ self-awareness most founders skip."}
 # Design: {title}
 
 Generated by /plan-ideation on {date}  |  Branch: {branch}  |  Mode: Builder  |  Status: DRAFT
-Supersedes: {prior filename — omit if first design}
+Supersedes: {prior design note title — omit if first design}
 
 ## Problem Statement
 {from Phase 2B}
@@ -477,9 +477,36 @@ Supersedes: {prior filename — omit if first design}
 {observational, mentor-like. Quote their words. 2-4 bullets.}
 ```
 
-Show the doc to the user and ask for approval. Support revision loops. Save final version after approval.
+Show the doc to the user and ask for approval. Support revision loops. Save the final version after approval (see [Saving a Document](#saving-a-document)).
 
 Log any non-obvious insight about the problem space.
+
+---
+
+## Saving a Document
+
+Both documents this skill writes, the design doc (Phase 5) and the scope doc (Phase 2C), are saved the same way.
+
+| Document | Vault title | Doc key |
+|---|---|---|
+| Design doc | `Design - {title}` | `design-doc-<branch>` |
+| Scope doc | `Scope Review - [Feature Name]` | `ceo-plan-<branch>` |
+
+1. Save the note through the `/vault` skill (see its "Saving for Another Skill" section). Use `6. Atomic Notes/Alma/` and add the `alma` tag for Alma work:
+
+   ```
+   /vault save "Design - {title}" folder "6. Atomic Notes/" tags "decision,design"
+   ```
+
+2. Point the ledger at the note. The key carries the branch, so a newer doc on the same branch replaces the older pointer. `BRANCH_KEY` replaces the `/` in a branch name, because a key cannot hold one:
+
+   ```bash
+   eval "$(vague context --shell --skill plan-ideation)" >/dev/null
+   BRANCH_KEY=$(printf '%s' "$BRANCH" | tr -c 'A-Za-z0-9._-' '-')
+   vague memory-log "design-doc-$BRANCH_KEY" "<one-line summary of the doc>" --doc --files "<VAULT_NOTE path>" --skill plan-ideation
+   ```
+
+   For a scope doc, use the key `"ceo-plan-$BRANCH_KEY"`.
 
 ---
 

@@ -65,7 +65,8 @@ The MEMORY block fills its budget in this order:
 
 | Part | Content | Cap |
 |---|---|---|
-| Scratch | Notes from this scope's agents, last 7 days | 300 tokens |
+| Notes | `note` lines from this scope's agents (`--scratch`), last 7 days | 300 tokens |
+| Docs | The newest 5 `doc` pointers, as key and path | 5 lines |
 | Full lines | `- [key] text` for this scope plus `global`, ranked | 1,200 tokens, global at most a third |
 | Index lines | `- [key]` only, for the next memories in rank order | 300 tokens |
 | Pointer | `+N more: vague memory-search <words>` | 1 line |
@@ -85,18 +86,15 @@ Ranking is deterministic: shared files with the uncommitted changes first, then 
 ```
 ~/.vague/
 ├── config.md                 ← frontmatter: proactive, telemetry
-├── memory.jsonl              ← every learning and observation, all projects (append-only)
-├── scratch/<scope>.jsonl     ← shared working notes per project, hidden after 7 days
+├── memory.jsonl              ← one ledger, all projects (append-only): learnings, observations, notes, doc pointers
 ├── events/YYYY-MM.jsonl      ← skill starts, memory reads/writes with `ids`
-├── projects/<owner-repo>/    ← documents, not memory
-│   ├── designs/              ← design docs, eng plans, HTML output
-│   ├── diagrams/             ← /diagram output
-│   └── retros/               ← retro-YYYY-MM-DD.md
 ├── team/                     ← mgmt-* state
 └── interview/                ← iv-* state
 ```
 
-Every write to `memory.jsonl`, `scratch/` and `events/` is one `os.write` on an `O_APPEND` file descriptor. No lock is taken. A torn last line is skipped with a warning.
+Documents never live here. A skill saves its document as an Obsidian vault note (or a file in the working directory, for a deck) and logs a `doc` pointer to it in `memory.jsonl`.
+
+Every write to `memory.jsonl` and `events/` is one `os.write` on an `O_APPEND` file descriptor. No lock is taken. A torn last line is skipped with a warning.
 
 ### Project Scope
 
@@ -138,7 +136,7 @@ Step 0 is **mechanical telemetry**: a Claude Code hook records each skill start,
 `vague context` is the **keystone**: it never fails. Missing config returns defaults. A missing git remote falls back to the folder name. A broken ledger drops the MEMORY block, and the variables still print.
 
 `vague status` reads the events log and the memory ledger: one row per `repo`
-seen in events, its latest `main_root` path, last activity, design docs newer
+seen in events, its latest `main_root` path, last activity, design `doc` pointers newer
 than the last `dev-ship` start ("in-flight plans"), active memory counts — and renders the cross-project dashboard that `/triage`
 runs as Step 0.
 
@@ -158,9 +156,9 @@ runs as Step 0.
 | `ts` | UTC time of the write, set by the CLI |
 | `scope` | A project slug, or `global` |
 | `key` | Kebab-case name, unique within its scope |
-| `kind` | `learning`, or `observation` when written with `--about` |
+| `kind` | `learning` (default), `observation` (`--about`), `note` (`--scratch`, hidden after 7 days) or `doc` (`--doc`, a pointer to a document a skill wrote) |
 | `text` | The fact, at most 600 characters |
-| `files` | Repo-relative paths the fact touches, used for ranking |
+| `files` | Paths the fact touches, used for ranking. For a `doc`, the absolute path of the document |
 | `skill` | For a learning, the skill that wrote it. For an observation, the skill it is about |
 | `status` | `active`, `forgotten`, `actioned` or `declined` |
 
@@ -178,21 +176,21 @@ no artifact, it reads git state and routes to the skill below that fits.
 ```
 /triage         → triage; routes to any skill below (no artifact written)
 
-/plan-ideation      → writes design doc to ~/.vague/projects/{slug}/designs/
-                       ("think bigger" on an existing doc writes a scope review doc)
-/plan-eng           → reads scope review + design doc, writes engineering plan
+/plan-ideation      → writes a design doc vault note, logs doc key design-doc-<branch>
+                       ("think bigger" on an existing doc writes a scope review, key ceo-plan-<branch>)
+/plan-eng           → reads scope review + design doc, writes an eng plan vault note, key eng-plan-<branch>
 
-/diagram            → reads code or notes, writes HTML diagram to ~/.vague/projects/{slug}/diagrams/
+/diagram            → reads code or notes, drafts HTML, exports it via /vault export, key diagram-<name>
 /vault export       → copies an artifact into ~/Obsidian/7. Attachments/, writes a note that embeds it
 /vault-excalidraw   → writes a Mermaid flowchart into a vault note, copies it for Excalidraw's Mermaid import
 /slides             → reads notes or a .pptx, writes a self-contained HTML deck to the user's cwd
 
 /dev-develop        → implements the plan
 /dev-ship           → runs tests, reviews the diff, commits, opens PR
-/retro              → reads events + git log, writes retro-YYYY-MM-DD.md
+/retro              → reads events + git log, writes a retro vault note, key retro-<YYYY-MM-DD>
 ```
 
-Each skill that writes a doc announces the output path and suggests the next skill.
+Each skill that writes a doc announces the output path, logs a `doc` pointer with `vague memory-log <key> "<summary>" --doc --files <path>`, and suggests the next skill. The next skill finds it with `vague memory-search --kind doc --skill <writer>`: `/dev-develop` and `/dev-ship` read the `eng-plan-<branch>` note this way.
 
 ---
 

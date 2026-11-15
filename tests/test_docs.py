@@ -53,7 +53,7 @@ def test_no_file_references_the_removed_learn_skill():
 def test_guidelines_have_memory_section():
     guidelines = (_get_assets_skills_dir().parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
     assert "\n## Memory\n" in guidelines
-    for flag in ("--global", "--about", "--scratch", "--files", "--skill"):
+    for flag in ("--global", "--about", "--scratch", "--doc", "--files", "--skill"):
         assert flag in guidelines, f"guidelines Memory section should explain {flag}"
 
 
@@ -97,17 +97,7 @@ def test_slides_skill_lists_every_bold_template():
 
 def test_dev_develop_briefs_hand_memory_to_subagents():
     text = (_get_assets_skills_dir() / "dev-develop" / "SKILL.md").read_text(encoding="utf-8")
-    assert "--scratch" in text, "subagents never run the preamble, so their brief must explain the scratchpad"
-
-
-# Skills whose deliverable is a file the user must be able to find later, so the usage graph can show it.
-FILE_WRITING_SKILLS = ("vault", "vault-excalidraw", "slides")
-
-
-def test_file_writing_skills_record_the_files_they_write():
-    for name in FILE_WRITING_SKILLS:
-        text = (_get_assets_skills_dir() / name / "SKILL.md").read_text(encoding="utf-8")
-        assert re.search(r"memory-log .*--files", text), f"{name} must log the files it writes with --files"
+    assert "--scratch" in text, "subagents never run the preamble, so their brief must explain note memories"
 
 
 def test_guidelines_tell_skills_to_record_files_written_outside_the_repo():

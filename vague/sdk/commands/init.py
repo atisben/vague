@@ -12,7 +12,7 @@ from vague.models import ConfigModel
 from vague.sdk.core.config import get_config
 from vague.sdk.core.events import log_context_access
 from vague.sdk.core.logging import get_logger
-from vague.sdk.core.memory import changed_files, ledger_path, render_block, scratch_path
+from vague.sdk.core.memory import changed_files, ledger_path, render_block
 from vague.sdk.core.slug import get_branch, get_scope, get_slug
 
 _DELIMITER = "VAGUE_MEMORY"
@@ -63,10 +63,9 @@ def _memory_lines(skill: str | None) -> list[str] | None:
         scope = get_scope()
         block = render_block(scope=scope, skill=skill, changed_files=changed_files())
         content = [line for line in block.text.splitlines() if line != _DELIMITER]
-        if block.ids:
-            log_context_access(kind="read", path=ledger_path(), ids=block.ids)
-        if block.scratch_ids and scope:
-            log_context_access(kind="read", path=scratch_path(scope=scope), ids=block.scratch_ids)
+        # One call: notes and learnings share the ledger, and a second read of the same file is deduplicated.
+        if block.ids or block.scratch_ids:
+            log_context_access(kind="read", path=ledger_path(), ids=[*block.scratch_ids, *block.ids])
         return content
     except Exception as e:
         get_logger().warning("memory block failed: %s", e)

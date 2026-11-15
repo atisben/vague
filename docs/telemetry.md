@@ -7,12 +7,18 @@ vague telemetry is **100% local**. Nothing is sent to any server.
 ## What Is Logged
 
 ### memory.jsonl
-Written to `~/.vague/memory.jsonl` by `vague memory-log`. It is not telemetry: it holds what the model chose to remember. Each line is one memory with 8 fields: `ts`, `scope` (a project slug or `global`), `key`, `kind` (`learning` or `observation`), `text`, `files`, `skill` and `status`. Lines are only appended. A reader keeps the latest line per `scope` and `key`.
+Written to `~/.vague/memory.jsonl` by `vague memory-log`. It is not telemetry: it holds what the model chose to remember. Each line is one memory with 8 fields: `ts`, `scope` (a project slug or `global`), `key`, `kind` (`learning`, `observation`, `note` or `doc`), `text`, `files`, `skill` and `status`. Lines are only appended. A reader keeps the latest line per `scope` and `key`.
 
-The preamble prints at most 1,500 tokens of it, for this scope plus `global`. Observations never load in the preamble. Only `/meta` reads them. It never leaves your machine.
+The four kinds share the ledger:
 
-### scratch/<scope>.jsonl
-Written to `~/.vague/scratch/<scope>.jsonl` by `vague memory-log --scratch`. It uses the same record and the same fold as the ledger. Agents on one project share it, and notes older than 7 days are hidden from the preamble and from search.
+| Kind | Written with | Lifetime |
+|---|---|---|
+| `learning` | `vague memory-log <key> "<fact>"` | Forever |
+| `observation` | `--about <skill>` | Until `/meta` actions it |
+| `note` | `--scratch`: a working note agents on one project share | Hidden from the preamble and from search after 7 days |
+| `doc` | `--doc --files <absolute path>`: a pointer to a document a skill wrote | Forever |
+
+The preamble prints at most 1,500 tokens of it, for this scope plus `global`, including the newest 5 `doc` pointers. Observations never load in the preamble. Only `/meta` reads them. It never leaves your machine.
 
 ### events/YYYY-MM.jsonl
 Written to `~/.vague/events/YYYY-MM.jsonl` (one file per month, one JSON line per event). It records vague usage only: which skill started, which files Claude wrote while a skill ran, and which memories a `vague` command served or wrote.
@@ -63,7 +69,7 @@ Fields that depend on the event:
 
 `root` is the checkout or worktree path and `main_root` is the main checkout, so a worktree event links to its repo by `main_root` while `root` tells the worktrees apart. Outside a repo, or on a bare repo, both paths are `cwd`. Git resolves symlinks in these paths, so they may differ from `cwd` (`/private/var` vs `/var` on macOS). Use `main_root` for identity, not `repo`.
 
-`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl`, a `scratch/<scope>.jsonl`, `config.md`, or the assets directory for `skill-add`. For the ledger and scratchpads, `path` is the constant relative name (`memory.jsonl` or `scratch/<scope>.jsonl`). For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
+`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl`, `config.md`, or the assets directory for `skill-add`. For the ledger, `path` is the constant relative name `memory.jsonl`. For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
 
 `file_write` names the path Claude wrote with its Write or Edit tool, never the contents. A skill sends no end signal, so the last skill started in the session owns every later write. A write in a session with no skill start logs nothing. The hook reads only the current month file to find that skill, so a session that crosses a month boundary loses attribution.
 
@@ -122,7 +128,7 @@ The `PostToolUse` matcher `Skill|Write|Edit` limits the hook to Skill, Write and
 #### Known limits
 
 - **No skill-end signal.** No hook fires when a skill finishes. A reader infers the end: a run lasts until its last vague event or the next skill start.
-- **Only Write and Edit count as file writes.** A file a skill creates through Bash or NotebookEdit logs no `file_write` event. A skill can still report such a file by passing `--files` to `vague memory-log`, and the file then reaches the usage graph. The path may be inside the repo (stored repo-relative) or outside it (stored absolute, for example an Obsidian note). `vague ui` flags files under `~/Obsidian` (override with `VAGUE_VAULT`) and lists them in "Written to Obsidian". Only skills that choose to report appear.
+- **Only Write and Edit count as file writes.** A file a skill creates through Bash or NotebookEdit logs no `file_write` event. A skill can still report such a file with `vague memory-log <key> "<summary>" --doc --files <path>`, and the file then reaches the usage graph. The path may be inside the repo (stored repo-relative) or outside it (stored absolute, for example an Obsidian note). `vague ui` flags files under `~/Obsidian` (override with `VAGUE_VAULT`) and lists them in "Written to Obsidian". Only skills that choose to report appear.
 
 ---
 
@@ -135,7 +141,7 @@ vague config-get telemetry         # check current value
 ```
 
 When `telemetry` is `"off"`:
-- `memory.jsonl` and the scratchpad are still written (they're structural, not telemetry)
+- `memory.jsonl` is still written, notes and doc pointers included (it is structural, not telemetry)
 - `vague log-event` writes nothing to `events/`
 - `vague log-event` still runs the skill check on bundled skill edits
 

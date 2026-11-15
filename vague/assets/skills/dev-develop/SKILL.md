@@ -64,11 +64,11 @@ eval "$(vague context --shell --skill dev-develop)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 echo "SLUG=$SLUG  BRANCH=$BRANCH  VAGUE_HOME=$VAGUE_HOME"
 ls -1
-DESIGNS_DIR="$VAGUE_HOME/projects/$SLUG/designs"
-PLAN_FILE=$(ls -t "$DESIGNS_DIR"/*eng*.md "$DESIGNS_DIR"/*.md 2>&1 | grep -v 'No such' | head -1)
-echo "PLAN_FILE: ${PLAN_FILE:-NONE}"
+vague memory-search --kind doc --skill plan-eng || echo "PLAN: NONE"
 [ -f CLAUDE.md ] && head -40 CLAUDE.md || true
 ```
+
+Each search line prints as `scope/key  [skill]  text  (files: <path>)`, newest first. The plan for this branch has the key `eng-plan-<branch>`, with every `/` in the branch replaced by `-`. Take the path of that line, or of the newest line when no key matches. That path is `$PLAN_FILE`, a vault note.
 
 If `$PLAN_FILE` exists, read it — it's your implementation spec.
 
@@ -121,7 +121,7 @@ Every agent brief MUST include:
 6. **Memory** — a subagent never runs the preamble, so it sees no memory unless you pass it:
    - Paste the MEMORY lines from your preamble that touch this phase's files into the brief's "Learnings" section.
    - Tell the subagent to share a finding that sibling agents need with
-     `vague memory-log <key> "<note>" --scratch --skill dev-develop`. Scratch notes are hidden after 7 days and are not a lock.
+     `vague memory-log <key> "<note>" --scratch --skill dev-develop`. This writes a `note` into the memory ledger. Notes are hidden after 7 days and are not a lock.
    - Run `vague memory-search --scratch` before the next phase to read what the subagents left.
 
 ### Example Delegation
@@ -228,7 +228,7 @@ If the verification agent reports issues, spawn fix agents for each issue. Then 
 
 ## Step 6: Log Learnings
 
-Promote what matters from the phases. Log a non-obvious pitfall a phase hit, or a scratch note (see Step 3) that will still hold next week. The preamble printed the command.
+Promote what matters from the phases. Log a non-obvious pitfall a phase hit, or a scratch note (see Step 3) that will still hold next week. The preamble printed the command. Give a promoted note a new key: a key cannot switch from `note` to another kind.
 
 ---
 

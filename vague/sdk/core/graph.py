@@ -9,6 +9,7 @@ Pure functions, no I/O: the server feeds them rows and the tests feed them dicts
 A file comes from a memory's `files` or from a `file_write` event, and carries the skill that
 named or wrote it. A file with a known location is keyed on its resolved absolute path, so one
 file named in a memory and written in an event is one node.
+A file named by a `doc` memory is a deliverable a skill wrote, and carries `deliverable: true`.
 
 Skills are not nodes. A skill touches everything, so as a node it would pull unrelated
 projects together. `skill_usage` reports them separately.
@@ -164,12 +165,14 @@ def build_graph(
         )
         graph.link(project, memory_id, "has_memory")
         file_ids = []
+        # A doc's files are what the skill produced. A learning's files are only the code the fact concerns.
+        deliverable = {"deliverable": True} if memory.get("kind") == "doc" else {}
         for relative in dict.fromkeys(memory.get("files") or []):
             absolute, shown, area = _locate(relative, root=root, vault_root=vault_root)
             file_id = _file_id(scope=scope, stored=relative, absolute=absolute)
             graph.node(
                 file_id, "file", PurePosixPath(relative).name, scope, moment, relative=shown, path=absolute,
-                area=area, skill=memory.get("skill"),
+                area=area, skill=memory.get("skill"), **deliverable,
             )
             graph.link(memory_id, file_id, "touches")
             graph.link(project, file_id, "has_file")

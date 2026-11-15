@@ -90,7 +90,7 @@ Memories (most relevant first):
 - [n-plus-one] Always eager-load associations on list queries.
 ```
 
-The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/sdk/core/memory.py`. The block holds recent scratch notes, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
+The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/sdk/core/memory.py`. The block holds recent notes (`--scratch`), the newest 5 `doc` pointers as key and path, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
 
 `vague context` never fails: missing config returns defaults, a missing git remote falls back to the folder name, and a broken ledger drops the block.
 
@@ -120,9 +120,22 @@ Skills write memory only through `vague memory-log`. Two shared sources already 
 |---|---|
 | The fact holds in every repo | `--global` |
 | Feedback about a skill, read by `/meta` | `--about <skill>` (always global) |
-| A working note for other agents on this project, hidden after 7 days | `--scratch` |
+| A working note for other agents on this project, hidden after 7 days | `--scratch` (kind `note`) |
+| A pointer to a document the skill wrote | `--doc --files <absolute path>` (kind `doc`) |
 | Correct a fact | Re-use its key |
 | Retire a memory | `--status forgotten`, or `actioned` / `declined` for an observation |
+
+A key cannot switch between `note` and another kind. A `learning` may become a `doc`.
+
+### Writing a Document
+
+A skill that writes a document (a plan, a retro, a diagram, a deck) never stores it under `~/.vague/`. Follow these steps:
+
+1. Save the document as a vault note through `/vault save "<Title>" folder "<folder>/" tags "<tags>"` (see the vault skill's "Saving for Another Skill" section), or write it to the user's working directory.
+2. Point the ledger at it: `vague memory-log <doc-key> "<one-line summary>" --doc --files "<absolute path>" --skill <name>`.
+3. Put the branch or date in the key (`eng-plan-<branch>`, `retro-<YYYY-MM-DD>`), so a newer document replaces the older pointer. Replace each `/` in a branch with `-`, because a key cannot hold one.
+
+A later skill finds the document with `vague memory-search --kind doc --skill <writer>` and reads the path in the `(files: …)` part of the line. `/plan-eng` writes `eng-plan-<branch>`, and `/dev-develop` and `/dev-ship` read it this way.
 
 **Only log genuine discoveries.** A good test: would this save time in a future session?
 
