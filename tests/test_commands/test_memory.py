@@ -319,14 +319,6 @@ def test_memory_search_scope_all_scratch_spans_every_scope(home, repo):
     assert _search("--scratch", "--scope", "elsewhere") == ["elsewhere/theirs  needle"]
 
 
-def test_memory_search_old_all_flag_is_rejected(home, repo):
-    assert runner.invoke(sdk_app, ["memory-search", "needle", "--all"]).exit_code == 2
-
-
-def test_memory_review_command_is_gone(home, repo):
-    assert runner.invoke(sdk_app, ["memory-review"]).exit_code == 2
-
-
 def test_memory_search_scratch_hides_old_notes(home, repo):
     old = datetime.now(UTC) - timedelta(days=8)
     append_memory(memory=Memory(ts=old, scope="o-r", key="old", kind="note", text="needle"))

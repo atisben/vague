@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import json
-import shutil
-import sys
 from pathlib import Path
 
 import typer
 
-from vague.sdk.core.events import log_context_access
 from vague.sdk.core.skill_rules import check_repo, check_skill, default_repo_root, skill_dir_for
 
 
@@ -62,23 +59,3 @@ def cmd_skill_check(paths: list[str]) -> None:
         typer.echo(f"FAILED: {len(findings)} finding(s)")
         raise typer.Exit(1)
     typer.echo("OK: no findings")
-
-
-def cmd_skill_add(skill_dir: str) -> None:
-    """Copy external skill to vague assets."""
-    src = Path(skill_dir)
-    if not src.exists():
-        print(f"Error: {skill_dir} does not exist", file=sys.stderr)
-        raise typer.Exit(1)
-
-    skill_md = src / "SKILL.md"
-    if not skill_md.exists():
-        print(f"Error: SKILL.md not found in {skill_dir}", file=sys.stderr)
-        raise typer.Exit(1)
-
-    dest = _get_assets_skills_dir() / src.name
-    if dest.exists():
-        shutil.rmtree(dest)
-    shutil.copytree(src, dest)
-    log_context_access(kind="write", path=dest)
-    typer.echo(f"OK: copied {src.name} to assets/skills/")

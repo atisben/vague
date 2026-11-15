@@ -13,7 +13,7 @@ def test_context_json_returns_context_fields(vague_home):
     result = runner.invoke(sdk_app, ["context"])
     assert result.exit_code == 0
     data = json.loads(result.output)
-    assert set(data) == {"slug", "branch", "proactive", "telemetry", "memory"}
+    assert set(data) == {"slug", "branch", "telemetry", "memory"}
 
 
 def test_context_json_does_not_fail_without_git(tmp_path, monkeypatch):
@@ -24,17 +24,11 @@ def test_context_json_does_not_fail_without_git(tmp_path, monkeypatch):
     assert "slug" in json.loads(result.output)
 
 
-def test_init_command_is_gone(vague_home):
-    result = runner.invoke(sdk_app, ["init"])
-    assert result.exit_code != 0
-
-
 def test_context_shell_skill_prints_context_and_writes_nothing(vague_home, git_repo, monkeypatch):
     monkeypatch.chdir(git_repo)
     result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "dev-develop"])
     assert result.exit_code == 0
-    for prefix in ("SLUG=", "BRANCH=", "PROACTIVE=", "TELEMETRY="):
-        assert prefix in result.output
+    assert [line.split("=", 1)[0] for line in result.output.splitlines()[:3]] == ["SLUG", "BRANCH", "TELEMETRY"]
     assert not (vague_home / "projects").exists()
     assert not (vague_home / "analytics").exists()
 

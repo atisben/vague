@@ -12,7 +12,6 @@ sdk_commands:
   - vague context
   - vague status
   - vague memory-log
-requires_slug: true
 allowed-tools:
   - Bash
   - Read
@@ -26,7 +25,7 @@ allowed-tools:
 eval "$(vague context --shell --skill triage)"
 ```
 
-If `PROACTIVE` is `"False"`, only run when explicitly invoked. Otherwise auto-invoke when the user describes their plate without naming a specific skill ("here's what I'm dealing with today", "where should I start").
+Auto-invoke when the user describes their plate without naming a specific skill ("here's what I'm dealing with today", "where should I start").
 
 ---
 

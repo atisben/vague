@@ -9,18 +9,12 @@ from typing import Annotated
 import typer
 
 from vague.installer import cmd_install, cmd_uninstall
-from vague.sdk.commands.commit import cmd_commit
 from vague.sdk.commands.config import cmd_config_get, cmd_config_set
 from vague.sdk.commands.design import cmd_design_check
 from vague.sdk.commands.events import cmd_log_event
 from vague.sdk.commands.init import cmd_context
 from vague.sdk.commands.memory import cmd_memory_log, cmd_memory_search
-from vague.sdk.commands.skill import (
-    cmd_skill_add,
-    cmd_skill_check,
-    cmd_skill_list,
-)
-from vague.sdk.commands.slug import cmd_slug
+from vague.sdk.commands.skill import cmd_skill_check, cmd_skill_list
 from vague.sdk.commands.status import cmd_status
 from vague.sdk.commands.ui import cmd_ui
 from vague.sdk.core.events import begin_command
@@ -82,7 +76,7 @@ def uninstall(
 @sdk_app.command("context")
 def context(
     shell: Annotated[
-        bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/PROACTIVE=/TELEMETRY= lines.")
+        bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/TELEMETRY= lines.")
     ] = False,  # noqa: E501
     skill: Annotated[
         str | None, typer.Option("--skill", help="Rank the memory block for this skill.")
@@ -158,12 +152,6 @@ def ui(
     cmd_ui(port=port, open_browser=not no_open)
 
 
-@sdk_app.command("slug")
-def slug() -> None:
-    """Output SLUG=... and BRANCH=..."""
-    cmd_slug()
-
-
 @sdk_app.command("log-event")
 def log_event() -> None:
     """Record a Claude Code hook event (reads hook JSON on stdin)."""
@@ -184,15 +172,6 @@ def design_check(
     cmd_design_check(paths=paths or [], hook=hook)
 
 
-@sdk_app.command("commit")
-def commit(
-    message: str,
-    files: Annotated[list[str], typer.Option("--files", "-f")] = [],  # noqa: B006  Typer reads this default to build the option; not mutated.
-) -> None:
-    """Stage and commit files. Outputs SHA or 'nothing-to-commit'."""
-    cmd_commit(message, files)
-
-
 @sdk_app.command("skill-list")
 def skill_list(
     validate: Annotated[bool, typer.Option("--validate")] = False,
@@ -205,12 +184,6 @@ def skill_list(
 def skill_check(paths: Annotated[list[str] | None, typer.Argument()] = None) -> None:
     """Check skills against the skill rules; no path checks every skill and the docs. Exits 1 on any finding."""
     cmd_skill_check(paths=paths or [])
-
-
-@sdk_app.command("skill-add")
-def skill_add(skill_dir: str) -> None:
-    """Copy external skill to vague assets."""
-    cmd_skill_add(skill_dir)
 
 
 def main() -> None:

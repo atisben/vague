@@ -40,7 +40,6 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
         typer.echo(json.dumps({
             "slug": slug,
             "branch": branch,
-            "proactive": config.proactive,
             "telemetry": config.telemetry,
             "memory": "\n".join(memory or []),
         }))
@@ -49,7 +48,6 @@ def cmd_context(shell: bool = False, skill: str | None = None) -> None:
     lines = [
         f"SLUG={shlex.quote(slug)}",
         f"BRANCH={shlex.quote(branch)}",
-        f"PROACTIVE={shlex.quote(str(config.proactive))}",
         f"TELEMETRY={shlex.quote(str(config.telemetry))}",
     ]
     # The quoted heredoc delimiter stops the shell from expanding `$` or backticks in memory text.

@@ -35,11 +35,6 @@ def read_md(path: Path) -> dict:
     return dict(_load(path).metadata)
 
 
-def write_md(path: Path, data: dict, body: str = "") -> None:
-    """Write frontmatter + body atomically. Creates parent dirs."""
-    _atomic_write(path, frontmatter.dumps(frontmatter.Post(body, **data)))
-
-
 def update_md(path: Path, updater: Callable[[dict], dict]) -> None:
     """Read-modify-write the frontmatter, keeping the body."""
     post = _load(path) if path.exists() else frontmatter.Post("")

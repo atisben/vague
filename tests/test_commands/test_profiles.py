@@ -9,7 +9,6 @@ from vague.installer import (
     RUNTIME_DIRS,
     _build_skill_section,
     _effective_runtime_dirs,
-    _get_assets_dir,
     _get_guidelines_file,
     _get_instructions_block,
     _resolve_requested_runtimes,
@@ -55,9 +54,6 @@ class TestEffectiveRuntimeDirs:
             "~/.cursor/skills/",
             "~/.cursor/rules/vague.mdc",
         )
-
-    def test_copilot_is_not_a_runtime(self, two_profiles):
-        assert "copilot" not in _effective_runtime_dirs()
 
     def test_falls_back_to_default_when_unconfigured(self, vague_home_dir, monkeypatch):
         monkeypatch.setenv("VAGUE_HOME", str(vague_home_dir))
@@ -118,30 +114,6 @@ class TestInstructionsBlockAssembly:
 
         assert block == _build_skill_section()
         assert block.startswith("# vague")
-
-    def test_skill_section_does_not_need_instructions_template(self):
-        assert not (_get_assets_dir() / "templates" / "instructions-block.md").exists()
-        assert "## Skill Routing" in _build_skill_section()
-
-    def test_leftover_claude_d_base_is_never_included(self, two_profiles, guidelines_file):
-        _, _, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "base.md").write_text("# PRIVATE_BASE_CONTENT\n")
-        (claude_d / "work.md").write_text("# PRIVATE_WORK_CONTENT\n")
-
-        block = _get_instructions_block()
-
-        assert "PRIVATE_BASE_CONTENT" not in block
-        assert "PRIVATE_WORK_CONTENT" not in block
-
-
-class TestClaudeInitRemoved:
-    def test_claude_init_command_no_longer_exists(self):
-        result = runner.invoke(sdk_app, ["claude-init"])
-        assert result.exit_code != 0
-        assert "No such command" in result.output
-
 
 class TestSyncPreservesUserContent:
     def test_content_outside_the_fence_survives(self, two_profiles):
@@ -218,23 +190,3 @@ class TestSyncPreservesUserContent:
         assert content.startswith(header + MARKER_START)
         assert content.endswith(MARKER_END + footer)
         assert "OUTDATED" not in content
-
-    def test_leftover_claude_d_is_not_rendered_and_triggers_warning(self, two_profiles, guidelines_file):
-        work, _, home = two_profiles
-        claude_d = home / "claude.d"
-        claude_d.mkdir()
-        (claude_d / "base.md").write_text("# PRIVATE_BASE_CONTENT\n")
-        (work / "CLAUDE.md").write_text("")
-
-        result = runner.invoke(sdk_app, ["install", "--runtime", "claude:work"], input="y\n")
-
-        assert result.exit_code == 0
-        assert "PRIVATE_BASE_CONTENT" not in (work / "CLAUDE.md").read_text()
-        assert f"{claude_d} is no longer read" in result.output
-        assert (claude_d / "base.md").read_text() == "# PRIVATE_BASE_CONTENT\n"
-
-    def test_no_legacy_warning_without_claude_d(self, two_profiles, guidelines_file):
-        result = runner.invoke(sdk_app, ["install", "--runtime", "claude:work"], input="y\n")
-
-        assert result.exit_code == 0
-        assert "no longer read" not in result.output

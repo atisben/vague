@@ -181,10 +181,6 @@ paths, anything private — goes in that profile's own `CLAUDE.md`, *outside*
 the markers. Install leaves it byte-for-byte untouched, and `vague uninstall`
 removes the marked region without touching the rest of the file.
 
-If you used the older `~/.vague/claude.d/` fragments, they are no longer read.
-`vague install` prints a reminder while the directory exists; move its content
-into your `CLAUDE.md` outside the markers, then delete it yourself.
-
 > **Careful where a profile lives.** Claude Code reads `CLAUDE_CONFIG_DIR`,
 > but it *also* scans every parent directory of your project for
 > `CLAUDE.md` and `.claude/CLAUDE.md`. A profile at `~/.claude` therefore
@@ -200,8 +196,8 @@ into your `CLAUDE.md` outside the markers, then delete it yourself.
 vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + the MEMORY block
 vague status                            # cross-project dashboard: branches, in-flight plans
 vague ui                                # usage graph on localhost: projects, branches, skills, memories, files
-vague config-get proactive              # read config value
-vague config-set proactive false        # write config value
+vague config-get telemetry              # read config value
+vague config-set telemetry off          # write config value
 vague memory-log <key> "<text>" --files a,b --skill dev-ship  # log a learning (--global: every repo)
 vague memory-log <key> "<issue → fix>" --about dev-ship       # log feedback about a skill
 vague memory-log <key> "<note>" --scratch --skill dev-implement  # leave a note for other agents (hidden after 7 days)
@@ -210,8 +206,6 @@ vague memory-log <key> --status forgotten                     # hide a memory
 vague memory-search [words...]          # memories containing every word (no words: all), newest first
 vague memory-search --scope all         # every scope; also --scope global or --scope <project>
 vague memory-search --kind doc --skill plan-eng  # filter by kind (learning|observation|note|doc) and skill
-vague slug                              # print SLUG= and BRANCH=
-vague commit "msg" --files f1 f2        # atomic git commit
 vague skill-check [paths...]            # check skills against the rules (no path: every skill + README/CLAUDE.md)
 vague install --runtime claude:work     # install/sync one Claude profile
 ```
@@ -286,8 +280,8 @@ tail -f ~/.vague/logs/vague.log
 ```
 
 ```text
-2026-06-04 14:45:19 pid=19944 INFO vague start command=slug
-2026-06-04 14:45:19 pid=19944 INFO vague end command=slug exit=0 duration_ms=26.6
+2026-06-04 14:45:19 pid=19944 INFO vague start command=context
+2026-06-04 14:45:19 pid=19944 INFO vague end command=context exit=0 duration_ms=26.6
 ```
 
 Set `export VAGUE_LOG=debug` in your shell profile so every `vague` process the

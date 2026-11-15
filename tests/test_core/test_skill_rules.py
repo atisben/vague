@@ -2,7 +2,14 @@
 
 import pytest
 
-from vague.sdk.core.skill_rules import check_repo, check_skill, default_repo_root, skill_dir_for, skill_dirs
+from vague.sdk.core.skill_rules import (
+    check_repo,
+    check_skill,
+    default_repo_root,
+    skill_dir_for,
+    skill_dirs,
+    vague_commands_in,
+)
 
 
 def _preamble(name: str) -> str:
@@ -21,17 +28,6 @@ def test_check_skill_reports_missing_frontmatter_field(skill_dir):
 def test_check_skill_reports_missing_skill_md(tmp_path):
     findings = check_skill(skill_dir=tmp_path)
     assert findings and "SKILL.md" in findings[0]
-
-
-@pytest.mark.parametrize("line", [
-    "vague learnings-log '{}'", "vague learnings-search docker", "vague observations-log '{}'",
-    "vague timeline-log '{}'", "CONTEXT=$(vague init)", "vague skill-validate ./x",
-    "vague skill-audit ./x", "vague memory-search --all", "bs-config get proactive",
-    'source "$(dirname "$0")/../_preamble.sh"',
-])
-def test_check_skill_reports_removed_command(skill_dir, line):
-    findings = check_skill(skill_dir=skill_dir(body=_preamble("demo-skill") + f"\n```bash\n{line}\n```\n"))
-    assert any("removed" in f for f in findings), findings
 
 
 def test_check_skill_requires_own_name_in_preamble(skill_dir):
@@ -141,12 +137,20 @@ def test_check_repo_includes_skill_findings(tmp_path, skill_dir):
     assert any("version" in f for f in check_repo(repo_root=repo))
 
 
-def test_check_repo_reports_removed_command_in_docs(tmp_path, skill_dir):
+def test_check_repo_reports_unknown_command_in_docs(tmp_path, skill_dir):
     repo = _fake_repo(
         tmp_path, skill_dir, names=["alpha"],
-        readme="1 markdown-based LLM skills: /alpha\n\n    vague skill-audit ./x\n", claude_md="1 skills: `/alpha`",
+        readme="1 markdown-based LLM skills: /alpha\n\n```bash\nvague skill-audit ./x\n```\n",
+        claude_md="1 skills: `/alpha`",
     )
-    assert any("README.md" in f and "skill-audit" in f for f in check_repo(repo_root=repo))
+    assert any(
+        "README.md" in f and "unknown-command" in f and "skill-audit" in f for f in check_repo(repo_root=repo)
+    )
+
+
+def test_vague_commands_in_skips_sample_output_and_wildcards():
+    text = "```text\nvague memory · scope o-r · 4 memories\n```\nEvery `vague memory-*` command.\n`vague status`\n"
+    assert vague_commands_in(text=text) == {"status"}
 
 
 def test_skill_dir_for_resolves_dir_and_nested_file(skill_dir, tmp_path):

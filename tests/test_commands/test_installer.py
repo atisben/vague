@@ -6,8 +6,6 @@ import pytest
 from typer.testing import CliRunner
 
 from vague.installer import (
-    LEGACY_MARKER_END,
-    LEGACY_MARKER_START,
     MARKER_END,
     MARKER_START,
     _detect_runtimes,
@@ -99,21 +97,6 @@ class TestUpdateInstructionFile:
         assert "new content" in content
         assert "# Config" in content
         assert "# Footer" in content
-
-    def test_replaces_legacy_bastack_markers(self, fake_runtimes, monkeypatch):
-        tmp_path, patched = fake_runtimes
-        instruction_file = Path(patched["claude"][2])
-        instruction_file.write_text(f"# Config\n\n{LEGACY_MARKER_START}\nlegacy stuff\n{LEGACY_MARKER_END}\n")
-
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda runtime=None: "migrated content")
-
-        _update_instruction_file("claude", Path(patched["claude"][1]))
-
-        content = instruction_file.read_text()
-        assert "legacy stuff" not in content
-        assert "migrated content" in content
-        assert MARKER_START in content
-        assert LEGACY_MARKER_START not in content
 
     def test_skips_when_file_missing(self, fake_runtimes, monkeypatch):
         """Non-fatal when instruction file doesn't exist."""
@@ -207,18 +190,6 @@ class TestRemoveInstructionBlock:
         assert "vague stuff" not in content
         assert "# Config" in content
         assert "# Footer" in content
-
-    def test_removes_legacy_block(self, fake_runtimes, monkeypatch):
-        tmp_path, patched = fake_runtimes
-        instruction_file = Path(patched["claude"][2])
-        instruction_file.write_text(f"# Config\n\n{LEGACY_MARKER_START}\nlegacy\n{LEGACY_MARKER_END}\n")
-
-        _remove_instruction_block("claude")
-
-        content = instruction_file.read_text()
-        assert LEGACY_MARKER_START not in content
-        assert "legacy" not in content
-
 
 class TestCmdInstall:
     def test_install_to_specific_runtime(self, fake_runtimes, vague_home):

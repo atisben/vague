@@ -69,7 +69,7 @@ Fields that depend on the event:
 
 `root` is the checkout or worktree path and `main_root` is the main checkout, so a worktree event links to its repo by `main_root` while `root` tells the worktrees apart. Outside a repo, or on a bare repo, both paths are `cwd`. Git resolves symlinks in these paths, so they may differ from `cwd` (`/private/var` vs `/var` on macOS). Use `main_root` for identity, not `repo`.
 
-`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl`, `config.md`, or the assets directory for `skill-add`. For the ledger, `path` is the constant relative name `memory.jsonl`. For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
+`context_read` and `context_write` record which state file a `vague` subcommand read or wrote: `memory.jsonl` or `config.md`. For the ledger, `path` is the constant relative name `memory.jsonl`. For other files, `path` is absolute and symlink-resolved. For memory, `ids` names the memories served or written. `command` is the subcommand name, for example `memory-log`. A reader links a skill to the context it pulled in and wrote back by joining on `session`.
 
 `file_write` names the path Claude wrote with its Write or Edit tool, never the contents. A skill sends no end signal, so the last skill started in the session owns every later write. A write in a session with no skill start logs nothing. The hook reads only the current month file to find that skill, so a session that crosses a month boundary loses attribution.
 

@@ -11,11 +11,10 @@ A vague skill is a Markdown file at `{skill-dir}/{name}/SKILL.md` that an AI too
 name: my-skill
 version: 1.0.0
 description: |
-  One paragraph. What it does, when to use it, proactive trigger phrases.
+  One paragraph. What it does, when to use it, trigger phrases.
 sdk_commands:
   - vague context
   - vague memory-log
-requires_slug: true
 allowed-tools:
   - Bash
   - Read
@@ -64,7 +63,6 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 | `version` | Yes | Semantic version (`1.0.0`). Bump on breaking changes. |
 | `description` | Yes | Shown in the AI tool's skill picker. |
 | `sdk_commands` | Yes | List of `vague` commands this skill calls. |
-| `requires_slug` | Yes | `true` for most skills. `false` for global tools like `/vault`. |
 | `allowed-tools` | Yes | List only tools the skill actually uses. |
 | `benefits-from` | No | Array of skill names this one reads outputs from. |
 | `hooks` | No | Claude Code hooks active once the skill is invoked, keyed by event: `PostToolUse: [{matcher: "Edit\|Write", hooks: [{type: command, command: ...}]}]`. `vague skill-check` validates the shape. `/impeccable` uses it to run `vague design-check --hook`. |
@@ -76,12 +74,12 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 Every skill starts by loading project context in one process:
 
 ```bash
-eval "$(vague context --shell --skill my-skill)"   # sets SLUG, BRANCH, PROACTIVE, TELEMETRY
+eval "$(vague context --shell --skill my-skill)"   # sets SLUG, BRANCH, TELEMETRY
 ```
 
 The command also prints a MEMORY block, at most 1,500 tokens. `eval` runs a `cat` heredoc, so the block lands in the tool output, where the agent reads it before doing any work:
 
-```
+```text
 vague memory · scope owner-repo · 4 memories
 Scratch (shared by this scope's agents, last 7 days):
 - [docs-rewrite-in-progress] Agent B is rewriting docs/; leave them alone until it lands.
@@ -94,22 +92,6 @@ Memories (most relevant first):
 The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/sdk/core/memory.py`. The block holds recent notes (`--scratch`), the newest 5 `doc` pointers as key and path, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
 
 `vague context` never fails: missing config returns defaults, a missing git remote falls back to the folder name, and a broken ledger drops the block.
-
----
-
-## Proactive Behavior
-
-At the top of your skill's instructions, declare when it should be auto-invoked:
-
-```markdown
-**Proactive invocation:** Suggest when the user [describes situation].
-```
-
-Check `$PROACTIVE` before auto-invoking:
-```
-If PROACTIVE is "False", only run when the user explicitly types the slash command.
-If you would have auto-invoked, say: "I think /my-skill might help — want me to run it?"
-```
 
 ---
 
@@ -149,9 +131,8 @@ Skills do not log their own start or end. The `vague log-event` hook records eac
 ## Config
 
 ```bash
-vague config-get proactive      # "true" or "false"
-vague config-set proactive false
 vague config-get telemetry      # "local" or "off"
+vague config-set telemetry off
 ```
 
 ---
@@ -204,12 +185,11 @@ vague skill-check                    # check every bundled skill plus README.md 
 ```
 
 A skill passes the check when:
-- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `requires_slug`, `allowed-tools`)
-- No removed `vague` command, legacy `bs-*` tool, or sourced `_preamble.sh` script remains
+- All required frontmatter fields are present (`name`, `version`, `description`, `sdk_commands`, `allowed-tools`)
 - The preamble runs `vague context --shell --skill <own name>`
 - Every `vague <command>` it calls exists, and every `vague memory-*` command it calls is listed in `sdk_commands`
 
-With no path, the check also verifies that README.md and CLAUDE.md list every skill and state the real skill count. A pre-commit hook runs it on every commit that touches a skill, README.md, or CLAUDE.md.
+With no path, the check also verifies that README.md and CLAUDE.md list every skill and state the real skill count, and that every `vague <command>` the docs show exists. A pre-commit hook runs it on every commit that touches a skill, README.md, or CLAUDE.md.
 
 ---
 

@@ -12,7 +12,6 @@ sdk_commands:
   - vague context
   - vague memory-log
   - vague memory-search
-requires_slug: true
 allowed-tools:
   - Bash
   - Read
@@ -28,7 +27,7 @@ eval "$(vague context --shell --skill plan-ideation)"
 VAGUE_HOME="${VAGUE_HOME:-$HOME/.vague}"
 ```
 
-If `PROACTIVE` is `"False"`, only run when explicitly invoked. Otherwise, auto-invoke when the user is describing a new idea before any code exists.
+Auto-invoke when the user is describing a new idea before any code exists.
 
 ---
 
