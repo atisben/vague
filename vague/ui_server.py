@@ -9,16 +9,19 @@ import json
 import os
 import subprocess
 import sys
+import webbrowser
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from vague.sdk.core.events import read_events
-from vague.sdk.core.graph import activity_by_day, build_graph, skill_usage
-from vague.sdk.core.logging import get_logger
-from vague.sdk.core.memory import load_ledger
+import typer
+
+from vague.events import read_events
+from vague.graph import activity_by_day, build_graph, skill_usage
+from vague.log import get_logger
+from vague.memory import load_ledger
 
 
 def _page() -> bytes:
@@ -113,3 +116,21 @@ class Handler(BaseHTTPRequestHandler):
 
 def make_server(port: int = 8765) -> ThreadingHTTPServer:
     return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+
+
+def cmd_ui(port: int = 8765, open_browser: bool = True) -> None:
+    try:
+        httpd = make_server(port=port)
+    except OSError as e:
+        typer.echo(f"Cannot bind 127.0.0.1:{port}: {e}. Try --port.", err=True)
+        raise typer.Exit(1) from e
+    url = f"http://127.0.0.1:{httpd.server_port}"
+    typer.echo(f"vague ui on {url}  (Ctrl+C to stop)")
+    if open_browser:
+        webbrowser.open(url)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        typer.echo("stopped")
+    finally:
+        httpd.server_close()

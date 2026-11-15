@@ -1,1 +1,0 @@
-"""vague core logic modules."""

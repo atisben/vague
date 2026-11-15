@@ -121,7 +121,7 @@ Classify each candidate before proposing a fix:
 
 | The problem is… | The fix goes in… |
 |---|---|
-| **Mechanical**: a banned API, an import shape, a file-location rule | A deterministic check. In the vague repo: a rule in `vague/sdk/core/skill_rules.py` with a test. Elsewhere: a linter rule, a pre-commit hook, or a CI job, whichever is cheapest. |
+| **Mechanical**: a banned API, an import shape, a file-location rule | A deterministic check. In the vague repo: a rule in `vague/skill_rules.py` with a test. Elsewhere: a linter rule, a pre-commit hook, or a CI job, whichever is cheapest. |
 | An existing check that is unwired | Wiring it, not rebuilding it |
 | A **judgement call** no check could catch | The standards file `/dev-review` reads (`CODING_STANDARDS.md` or `CONTRIBUTING.md`). Propose creating one if none exists. |
 | A skill instruction | That skill's `SKILL.md` |

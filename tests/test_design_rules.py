@@ -1,17 +1,22 @@
-"""Tests for vague.sdk.core.design_rules: the regex detector for AI-design tells in UI source files."""
+"""Tests for vague/design_rules.py."""
 
 from __future__ import annotations
 
+import json
+import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
-from vague.sdk.core import design_rules
-from vague.sdk.core.design_rules import RULES, Finding, brand_fonts_from_memory, check, parse_brand_fonts
-from vague.sdk.core.memory import Memory, append_memory
+from vague import design_rules
+from vague.cli import app
+from vague.design_rules import RULES, Finding, brand_fonts_from_memory, check, parse_brand_fonts
+from vague.memory import Memory, append_memory
 
-FIXTURES = Path(__file__).parent.parent / "fixtures" / "design"
+FIXTURES = Path(__file__).parent / "fixtures" / "design"
+
 
 RULE_IDS = [
     "ai-color-palette",
@@ -24,8 +29,7 @@ RULE_IDS = [
     "side-tab",
 ]
 
-# Every rule has at least one bad and one good fixture.
-# Rules that read both CSS and utility classes have one pair per form.
+
 FIXTURE_PAIRS = [
     ("ai-color-palette", "html"),
     ("border-accent-on-rounded", "css"),
@@ -203,3 +207,138 @@ def test_brand_fonts_from_memory_never_raises(vague_home, monkeypatch):
 
     monkeypatch.setattr(design_rules, "search", explode)
     assert brand_fonts_from_memory(scope="acme-shop") == frozenset()
+
+
+runner = CliRunner()
+
+
+@pytest.fixture
+def project(tmp_path):
+    """A non-git project folder: its scope is its folder name."""
+    root = tmp_path / "acme-shop"
+    root.mkdir()
+    return root
+
+
+def _hook(payload: dict | str) -> object:
+    raw = payload if isinstance(payload, str) else json.dumps(payload)
+    return runner.invoke(app, ["design-check", "--hook"], input=raw)
+
+
+def _payload(file_path: str, cwd: Path, tool_name: str = "Write") -> dict:
+    return {
+        "hook_event_name": "PostToolUse", "tool_name": tool_name, "session_id": "s1", "cwd": str(cwd),
+        "tool_input": {"file_path": file_path},
+    }
+
+
+def test_hook_mode_exits_2_with_findings_on_stderr(vague_home, project):
+    page = project / "card.css"
+    shutil.copy(FIXTURES / "side-tab.bad.css", page)
+    result = _hook(_payload(file_path=str(page), cwd=project))
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    lines = result.stderr.splitlines()
+    assert lines[0] == "vague design-check: 1 finding(s) in card.css"
+    assert lines[1].startswith("card.css:4: side-tab: ")
+    assert "impeccable-disable-next-line" in lines[-1]
+
+
+@pytest.mark.parametrize("raw", ["clean", "", "   \n", "{not json", "[1, 2]", '{"cwd": "/x"}',
+                                 '{"tool_input": {"file_path": 7}}', "missing-file"])
+def test_hook_mode_exits_0_on_clean_file_empty_stdin_or_bad_json(vague_home, project, raw):
+    if raw == "clean":
+        page = project / "card.css"
+        shutil.copy(FIXTURES / "side-tab.good.css", page)
+        raw = json.dumps(_payload(file_path=str(page), cwd=project))
+    elif raw == "missing-file":
+        raw = json.dumps(_payload(file_path=str(project / "gone.css"), cwd=project))
+    result = _hook(raw)
+    assert result.exit_code == 0
+    assert result.stdout == ""
+    assert result.stderr == ""
+
+
+def test_hook_mode_ignores_non_ui_file(vague_home, project):
+    notes = project / "notes.md"
+    notes.write_text("border-left: 4px solid #6366f1;\n", encoding="utf-8")
+    result = _hook(_payload(file_path=str(notes), cwd=project))
+    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_hook_mode_resolves_relative_path_against_cwd(vague_home, project):
+    (project / "src").mkdir()
+    shutil.copy(FIXTURES / "side-tab.bad.css", project / "src" / "card.css")
+    result = _hook(_payload(file_path="src/card.css", cwd=project, tool_name="Edit"))
+    assert result.exit_code == 2
+    assert result.stderr.splitlines()[0] == "vague design-check: 1 finding(s) in src/card.css"
+
+
+def test_hook_mode_skips_brand_font_from_memory(vague_home, project):
+    page = project / "type.css"
+    shutil.copy(FIXTURES / "overused-font.bad.css", page)
+    assert _hook(_payload(file_path=str(page), cwd=project)).exit_code == 2
+
+    append_memory(memory=Memory(
+        ts=datetime.now(UTC), scope="acme-shop", key="design-type", kind="learning", skill="impeccable",
+        text="Brand fonts: Inter (body 400/500) and Fraunces (display 600).",
+    ))
+    result = _hook(_payload(file_path=str(page), cwd=project))
+    assert result.exit_code == 0, result.stderr
+    assert result.stderr == ""
+
+
+def test_hook_mode_exits_0_when_the_detector_raises(vague_home, project, monkeypatch):
+    from vague import design_rules
+
+    def explode(**_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(design_rules, "check", explode)
+    page = project / "card.css"
+    shutil.copy(FIXTURES / "side-tab.bad.css", page)
+    result = _hook(_payload(file_path=str(page), cwd=project))
+    assert (result.exit_code, result.stdout, result.stderr) == (0, "", "")
+
+
+def test_paths_mode_exits_1_on_findings(vague_home, project, monkeypatch):
+    monkeypatch.chdir(project)
+    shutil.copy(FIXTURES / "side-tab.bad.css", project / "card.css")
+    result = runner.invoke(app, ["design-check", "card.css"])
+    assert result.exit_code == 1
+    lines = result.stdout.splitlines()
+    assert lines[0].startswith("card.css:4: side-tab: ")
+    assert lines[-1] == "FAILED: 1 finding(s)"
+
+
+def test_paths_mode_exits_0_on_clean_dir(vague_home, project, monkeypatch):
+    monkeypatch.chdir(project)
+    shutil.copy(FIXTURES / "side-tab.good.css", project / "card.css")
+    result = runner.invoke(app, ["design-check", "."])
+    assert result.exit_code == 0
+    assert result.stdout.splitlines()[-1] == "OK: no findings"
+
+
+def test_paths_mode_recurses_into_directories_and_skips_vendor_dirs(vague_home, project, monkeypatch):
+    monkeypatch.chdir(project)
+    for sub in ("src/components", "node_modules/pkg", ".cache", "dist", "build"):
+        (project / sub).mkdir(parents=True)
+        shutil.copy(FIXTURES / "side-tab.bad.css", project / sub / "card.css")
+    (project / "src" / "notes.md").write_text("border-left: 4px solid #6366f1;\n", encoding="utf-8")
+    result = runner.invoke(app, ["design-check", "."])
+    assert result.exit_code == 1
+    finding_lines = [line for line in result.stdout.splitlines() if ": side-tab: " in line]
+    assert [line.split(":")[0] for line in finding_lines] == ["src/components/card.css"]
+
+
+def test_paths_mode_without_paths_is_a_usage_error(vague_home):
+    result = runner.invoke(app, ["design-check"])
+    assert result.exit_code == 2
+    assert "path" in result.stderr.lower()
+
+
+def test_paths_mode_missing_path_is_a_usage_error(vague_home, project, monkeypatch):
+    monkeypatch.chdir(project)
+    result = runner.invoke(app, ["design-check", "nope.css"])
+    assert result.exit_code == 2
+    assert "nope.css" in result.stderr

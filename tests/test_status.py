@@ -1,29 +1,29 @@
-"""Tests for vague status."""
+"""Tests for vague/status.py."""
 
 import json
 
 from typer.testing import CliRunner
 
-from vague.sdk.cli import sdk_app
+from vague.cli import app
 
 runner = CliRunner()
 
 
 def test_status_empty_home(vague_home):
-    result = runner.invoke(sdk_app, ["status"])
+    result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
     assert "No projects yet" in result.output
 
 
 def test_status_json_empty(vague_home):
-    result = runner.invoke(sdk_app, ["status", "--json"])
+    result = runner.invoke(app, ["status", "--json"])
     assert result.exit_code == 0
     assert json.loads(result.output) == []
 
 
 def test_context_skill_writes_no_project_meta(vague_home, git_repo, monkeypatch):
     monkeypatch.chdir(git_repo)
-    result = runner.invoke(sdk_app, ["context", "--shell", "--skill", "dev-ship"])
+    result = runner.invoke(app, ["context", "--shell", "--skill", "dev-ship"])
     assert result.exit_code == 0
     assert "SLUG=" in result.output
     assert not (vague_home / "projects").exists()
@@ -33,7 +33,7 @@ def _event(home, repo, ts, main_root="", skill=None, event="skill_start"):
     """One event line, written the way the hook writes it."""
     from datetime import datetime
 
-    from vague.sdk.core.events import Event, append_event
+    from vague.events import Event, append_event
 
     append_event(event=Event(
         ts=datetime.fromisoformat(ts), session="s", event=event, cwd=main_root, repo=repo, branch="main",
@@ -43,7 +43,7 @@ def _event(home, repo, ts, main_root="", skill=None, event="skill_start"):
 
 
 def _rows():
-    result = runner.invoke(sdk_app, ["status", "--json"])
+    result = runner.invoke(app, ["status", "--json"])
     assert result.exit_code == 0, result.output
     return {r["slug"]: r for r in json.loads(result.output)}
 
@@ -80,7 +80,7 @@ def test_status_uses_latest_event_for_path_and_activity(vague_home, tmp_path):
 def test_inflight_designs_counts_doc_memories(vague_home, make_memory):
     from datetime import datetime
 
-    from vague.sdk.core.memory import append_memory
+    from vague.memory import append_memory
 
     _event(vague_home, repo="planned", ts="2026-10-01T10:00:00+00:00", skill="dev-ship")
 
@@ -106,7 +106,7 @@ def test_inflight_designs_counts_doc_memories(vague_home, make_memory):
 
 
 def test_status_counts_active_memories_for_scope(vague_home, make_memory):
-    from vague.sdk.core.memory import append_memory
+    from vague.memory import append_memory
 
     _event(vague_home, repo="o-r", ts="2026-10-01T10:00:00+00:00")
     append_memory(memory=make_memory(key="a"))
@@ -118,11 +118,11 @@ def test_status_counts_active_memories_for_scope(vague_home, make_memory):
 
 
 def test_status_table_shows_memories_column(vague_home, make_memory):
-    from vague.sdk.core.memory import append_memory
+    from vague.memory import append_memory
 
     _event(vague_home, repo="o-r", ts="2026-10-01T10:00:00+00:00", skill="plan-eng")
     append_memory(memory=make_memory(key="a"))
-    result = runner.invoke(sdk_app, ["status"])
+    result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
     assert "o-r" in result.output
     assert "Memories" in result.output
@@ -130,7 +130,7 @@ def test_status_table_shows_memories_column(vague_home, make_memory):
 
 
 def test_status_lists_ledger_scopes_without_events_but_not_global(vague_home, make_memory):
-    from vague.sdk.core.memory import append_memory
+    from vague.memory import append_memory
 
     _event(vague_home, repo="o-r", ts="2026-10-01T10:00:00+00:00", main_root="/nonexistent/o-r")
     append_memory(memory=make_memory(scope="Obsidian", key="a"))
@@ -144,11 +144,11 @@ def test_status_lists_ledger_scopes_without_events_but_not_global(vague_home, ma
 
 
 def test_status_table_shows_path_column(vague_home, make_memory):
-    from vague.sdk.core.memory import append_memory
+    from vague.memory import append_memory
 
     _event(vague_home, repo="o-r", ts="2026-10-01T10:00:00+00:00", main_root="/srv/o-r")
     append_memory(memory=make_memory(scope="Obsidian", key="a"))
-    result = runner.invoke(sdk_app, ["status"])
+    result = runner.invoke(app, ["status"])
     assert result.exit_code == 0
     assert "Path" in result.output and "/srv/o-r" in result.output
     (obsidian,) = [line for line in result.output.splitlines() if "Obsidian" in line]

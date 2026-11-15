@@ -2,25 +2,26 @@
 
 from __future__ import annotations
 
+import json
+import shlex
 import sys
 import time
 from typing import Annotated
 
 import typer
 
-from vague.installer import cmd_install, cmd_uninstall
-from vague.sdk.commands.config import cmd_config_get, cmd_config_set
-from vague.sdk.commands.design import cmd_design_check
-from vague.sdk.commands.events import cmd_log_event
-from vague.sdk.commands.init import cmd_context
-from vague.sdk.commands.memory import cmd_memory_log, cmd_memory_search
-from vague.sdk.commands.skill import cmd_skill_check, cmd_skill_list
-from vague.sdk.commands.status import cmd_status
-from vague.sdk.commands.ui import cmd_ui
-from vague.sdk.core.events import begin_command
-from vague.sdk.core.logging import get_logger
+from vague.config import ConfigModel, get_config, load_config, set_config_key
+from vague.design_rules import cmd_design_check
+from vague.events import begin_command, cmd_log_event, log_context_access
+from vague.git import get_git_context, get_repo_slug, get_scope
+from vague.install import cmd_install, cmd_uninstall
+from vague.log import get_logger
+from vague.memory import changed_files, cmd_memory_log, cmd_memory_search, ledger_path, render_block
+from vague.skill_rules import cmd_skill_check, cmd_skill_list
+from vague.status import cmd_status
+from vague.ui_server import cmd_ui
 
-sdk_app = typer.Typer(
+app = typer.Typer(
     name="vague",
     help="Python CLI layer for LLM skill-based AI workflows.",
     no_args_is_help=True,
@@ -38,7 +39,7 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@sdk_app.callback()
+@app.callback()
 def _main(
     ctx: typer.Context,
     version: Annotated[
@@ -51,7 +52,7 @@ def _main(
     begin_command(command=ctx.invoked_subcommand)
 
 
-@sdk_app.command("install")
+@app.command("install")
 def install(
     runtime: Annotated[
         str | None,
@@ -62,7 +63,7 @@ def install(
     cmd_install(runtime=runtime)
 
 
-@sdk_app.command("uninstall")
+@app.command("uninstall")
 def uninstall(
     runtime: Annotated[
         str | None,
@@ -73,7 +74,25 @@ def uninstall(
     cmd_uninstall(runtime=runtime)
 
 
-@sdk_app.command("context")
+_DELIMITER = "VAGUE_MEMORY"
+
+
+def _memory_lines(skill: str | None) -> list[str] | None:
+    """The memory block lines for this scope, or None on any error so the preamble still prints."""
+    try:
+        scope = get_scope()
+        block = render_block(scope=scope, skill=skill, changed_files=changed_files())
+        content = [line for line in block.text.splitlines() if line != _DELIMITER]
+        # One call: notes and learnings share the ledger, and a second read of the same file is deduplicated.
+        if block.ids or block.scratch_ids:
+            log_context_access(kind="read", path=ledger_path(), ids=[*block.scratch_ids, *block.ids])
+        return content
+    except Exception as e:
+        get_logger().warning("memory block failed: %s", e)
+        return None
+
+
+@app.command("context")
 def context(
     shell: Annotated[
         bool, typer.Option("--shell", help="Emit eval-able SLUG=/BRANCH=/TELEMETRY= lines.")
@@ -82,11 +101,41 @@ def context(
         str | None, typer.Option("--skill", help="Rank the memory block for this skill.")
     ] = None,  # noqa: E501
 ) -> None:
-    """Print project context for skill preambles. JSON by default, shell vars with --shell."""
-    cmd_context(shell=shell, skill=skill)
+    """Print project context for skill preambles. JSON by default, shell vars with --shell.
+
+    A skill runs `eval "$(vague context --shell --skill <name>)"`. --skill only ranks the memory block.
+    """
+    try:
+        git = get_git_context()
+        slug, branch = get_repo_slug(context=git), git.branch
+        config = get_config()
+    except Exception as e:
+        print(f"Warning: vague context error: {e}", file=sys.stderr)
+        slug, branch = "unknown", "unknown"
+        config = ConfigModel()
+
+    memory = _memory_lines(skill=skill)
+
+    if not shell:
+        typer.echo(json.dumps({
+            "slug": slug,
+            "branch": branch,
+            "telemetry": config.telemetry,
+            "memory": "\n".join(memory or []),
+        }))
+        return
+
+    lines = [
+        f"SLUG={shlex.quote(slug)}",
+        f"BRANCH={shlex.quote(branch)}",
+        f"TELEMETRY={shlex.quote(str(config.telemetry))}",
+    ]
+    # The quoted heredoc delimiter stops the shell from expanding `$` or backticks in memory text.
+    heredoc = [f"cat <<'{_DELIMITER}'", *memory, _DELIMITER] if memory is not None else []
+    typer.echo("\n".join(lines + heredoc))
 
 
-@sdk_app.command("status")
+@app.command("status")
 def status(
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
@@ -94,19 +143,24 @@ def status(
     cmd_status(as_json=as_json)
 
 
-@sdk_app.command("config-get")
+@app.command("config-get")
 def config_get(key: str) -> None:
-    """Get a config value by key."""
-    cmd_config_get(key)
+    """Print a config value: the file's value, else the default, else 'null'."""
+    value = {**get_config().model_dump(), **load_config()}.get(key)
+    typer.echo("null" if value is None else str(value))
 
 
-@sdk_app.command("config-set")
+@app.command("config-set")
 def config_set(key: str, value: str) -> None:
-    """Set a config value."""
-    cmd_config_set(key, value)
+    """Set a config value in config.env."""
+    try:
+        set_config_key(key=key, value=value)
+    except OSError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        raise typer.Exit(1) from e
 
 
-@sdk_app.command("memory-log")
+@app.command("memory-log")
 def memory_log(
     key: str,
     text: Annotated[str | None, typer.Argument(help="The fact, at most 600 characters.")] = None,
@@ -130,7 +184,7 @@ def memory_log(
                    scratch=scratch, skill=skill, doc=doc)
 
 
-@sdk_app.command("memory-search")
+@app.command("memory-search")
 def memory_search(
     words: Annotated[list[str] | None, typer.Argument(help="Words to match; none lists every memory.")] = None,
     scope: Annotated[str | None, typer.Option(
@@ -143,7 +197,7 @@ def memory_search(
     cmd_memory_search(words=words or [], scope=scope, kind=kind, scratch=scratch, skill=skill)
 
 
-@sdk_app.command("ui")
+@app.command("ui")
 def ui(
     port: Annotated[int, typer.Option("--port", help="Port on 127.0.0.1.")] = 8765,
     no_open: Annotated[bool, typer.Option("--no-open", help="Do not open the browser.")] = False,
@@ -152,13 +206,13 @@ def ui(
     cmd_ui(port=port, open_browser=not no_open)
 
 
-@sdk_app.command("log-event")
+@app.command("log-event")
 def log_event() -> None:
     """Record a Claude Code hook event (reads hook JSON on stdin)."""
     cmd_log_event()
 
 
-@sdk_app.command("design-check")
+@app.command("design-check")
 def design_check(
     paths: Annotated[list[str] | None, typer.Argument(help="UI files or directories to scan (recursive).")] = None,
     hook: Annotated[bool, typer.Option(
@@ -172,7 +226,7 @@ def design_check(
     cmd_design_check(paths=paths or [], hook=hook)
 
 
-@sdk_app.command("skill-list")
+@app.command("skill-list")
 def skill_list(
     validate: Annotated[bool, typer.Option("--validate")] = False,
 ) -> None:
@@ -180,7 +234,7 @@ def skill_list(
     cmd_skill_list(validate=validate)
 
 
-@sdk_app.command("skill-check")
+@app.command("skill-check")
 def skill_check(paths: Annotated[list[str] | None, typer.Argument()] = None) -> None:
     """Check skills against the skill rules; no path checks every skill and the docs. Exits 1 on any finding."""
     cmd_skill_check(paths=paths or [])
@@ -189,7 +243,7 @@ def skill_check(paths: Annotated[list[str] | None, typer.Argument()] = None) -> 
 def main() -> None:
     """Entrypoint wrapper that logs each invocation (command, duration, outcome).
 
-    Logging is off unless VAGUE_LOG is set. See vague/sdk/core/logging.py.
+    Logging is off unless VAGUE_LOG is set. See vague/log.py.
     """
     logger = get_logger()
     argv = sys.argv[1:]
@@ -197,7 +251,7 @@ def main() -> None:
     start = time.perf_counter()
     logger.info("start command=%s", command)
     try:
-        sdk_app()
+        app()
     except SystemExit as exc:
         code = exc.code if isinstance(exc.code, int) else (0 if exc.code is None else 1)
         elapsed = (time.perf_counter() - start) * 1000

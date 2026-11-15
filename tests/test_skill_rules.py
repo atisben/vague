@@ -1,11 +1,17 @@
-"""Tests for the shared skill rules behind `vague skill-check`."""
+"""Tests for vague/skill_rules.py."""
+
+import json
 
 import pytest
+from typer.testing import CliRunner
 
-from vague.sdk.core.skill_rules import (
+from vague.cli import app
+from vague.skill_rules import (
+    FrontmatterError,
     check_repo,
     check_skill,
     default_repo_root,
+    read_md,
     skill_dir_for,
     skill_dirs,
     vague_commands_in,
@@ -70,7 +76,7 @@ def test_check_skill_passes_on_every_bundled_skill():
 def test_impeccable_frontmatter_declares_the_design_check_hook():
     import re
 
-    from vague.sdk.core.frontmatter import read_md
+    from vague.skill_rules import read_md
 
     skill_md = default_repo_root() / "vague" / "assets" / "skills" / "impeccable" / "SKILL.md"
     frontmatter = read_md(path=skill_md)
@@ -288,3 +294,77 @@ def test_check_repo_lets_a_notice_name_dropped_upstream_agents(tmp_path, skill_d
     notice = repo / "vague" / "assets" / "skills" / "shiny" / "NOTICE.md"
     notice.write_text("Dropped agents: `shiny-documenter`.\n", encoding="utf-8")
     assert not [f for f in check_repo(repo_root=repo) if "missing-agent" in f]
+
+
+def test_read_md_nonexistent(tmp_path):
+    result = read_md(tmp_path / "nonexistent.md")
+    assert result == {}
+
+
+def test_frontmatter_error_on_corrupt(tmp_path):
+    path = tmp_path / "corrupt.md"
+    # Write corrupt frontmatter
+    path.write_text("---\nkey: [\nbad yaml\n---\n")
+    with pytest.raises(FrontmatterError):
+        read_md(path)
+
+
+runner = CliRunner()
+
+
+def test_skill_check_passes_on_valid_skill(skill_dir):
+    result = runner.invoke(app, ["skill-check", str(skill_dir())])
+    assert result.exit_code == 0
+    assert "OK" in result.output
+
+
+def test_skill_check_exits_1_on_findings(skill_dir):
+    result = runner.invoke(app, ["skill-check", str(skill_dir(omit=("description",)))])
+    assert result.exit_code == 1
+    assert "description" in result.output
+
+
+def test_skill_check_accepts_a_file_inside_the_skill(skill_dir):
+    directory = skill_dir(omit=("version",))
+    result = runner.invoke(app, ["skill-check", str(directory / "SKILL.md")])
+    assert result.exit_code == 1
+    assert "version" in result.output
+
+
+def test_skill_check_reports_a_path_outside_any_skill(tmp_path):
+    result = runner.invoke(app, ["skill-check", str(tmp_path)])
+    assert result.exit_code == 1
+    assert "SKILL.md" in result.output
+
+
+def test_skill_check_flags_preamble_without_skill_flag(skill_dir):
+    result = runner.invoke(
+        app, ["skill-check", str(skill_dir(body='```bash\neval "$(vague context --shell)"\n```\n'))]
+    )
+    assert result.exit_code == 1
+    assert "--skill demo-skill" in result.output
+
+
+def test_skill_check_without_paths_checks_all_skills_and_docs(tmp_path, skill_dir, monkeypatch):
+    skill_dir(name="alpha", root=tmp_path / "vague" / "assets" / "skills")
+    (tmp_path / "README.md").write_text("1 markdown-based LLM skills", encoding="utf-8")
+    (tmp_path / "CLAUDE.md").write_text("1 skills: `/alpha`", encoding="utf-8")
+    monkeypatch.setattr("vague.skill_rules.default_repo_root", lambda: tmp_path)
+
+    result = runner.invoke(app, ["skill-check"])
+
+    assert result.exit_code == 1
+    assert "README.md" in result.output and "alpha" in result.output
+
+
+def test_skill_check_without_paths_passes_on_this_repo():
+    result = runner.invoke(app, ["skill-check"])
+    assert result.exit_code == 0, result.output
+    assert "OK" in result.output
+
+
+def test_skill_list_returns_json(vague_home):
+    result = runner.invoke(app, ["skill-list"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert isinstance(data, list)

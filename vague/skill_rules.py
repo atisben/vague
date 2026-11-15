@@ -6,14 +6,52 @@ can share them.
 
 from __future__ import annotations
 
+import json
 import re
 from functools import cache
 from pathlib import Path
+from typing import Literal
 
-from pydantic import ValidationError
+import frontmatter
+import typer
+from pydantic import BaseModel, ValidationError
 
-from vague.models import SkillManifest
-from vague.sdk.core.frontmatter import FrontmatterError, read_md
+
+class FrontmatterError(Exception):
+    pass
+
+
+def read_md(path: Path) -> dict:
+    """Read frontmatter from a .md file. Returns {} if file doesn't exist."""
+    if not path.exists():
+        return {}
+    try:
+        return dict(frontmatter.load(str(path)).metadata)
+    except Exception as e:
+        raise FrontmatterError(f"Failed to parse frontmatter in {path}: {e}") from e
+
+
+class SkillHookCommand(BaseModel):
+    type: Literal["command"]
+    command: str
+
+
+class SkillHookMatcher(BaseModel):
+    # Claude Code reads `matcher` as a regex over the tool name; absent means every tool.
+    matcher: str = ""
+    hooks: list[SkillHookCommand]
+
+
+class SkillManifest(BaseModel):
+    name: str
+    version: str
+    description: str
+    sdk_commands: list[str] = []
+    # Empty means every runtime. The installer reads it to keep Claude-only skills out of cursor and windsurf.
+    runtimes: list[Literal["claude", "cursor", "windsurf", "generic"]] = []
+    # Claude Code skill hooks, keyed by event (`PostToolUse`): active only while the skill is loaded.
+    hooks: dict[str, list[SkillHookMatcher]] = {}
+
 
 REQUIRED_FIELDS = ("name", "version", "description", "sdk_commands", "allowed-tools")
 
@@ -47,7 +85,7 @@ _INLINE_CODE_PATTERN = re.compile(r"`([^`\n]+)`")
 
 def default_repo_root() -> Path:
     """The repo holding this package: README.md, CLAUDE.md and vague/assets/skills/ live there."""
-    return Path(__file__).resolve().parents[3]
+    return Path(__file__).resolve().parents[1]
 
 
 def skill_dirs(repo_root: Path) -> list[Path]:
@@ -71,11 +109,9 @@ def skill_dir_for(path: Path) -> Path | None:
 @cache
 def registered_commands() -> frozenset[str]:
     # Imported here because the CLI imports this module through the skill commands.
-    import typer
+    from vague.cli import app
 
-    from vague.sdk.cli import sdk_app
-
-    return frozenset(typer.main.get_command(sdk_app).commands)
+    return frozenset(typer.main.get_command(app).commands)
 
 
 def vague_commands_in(text: str) -> set[str]:
@@ -257,3 +293,40 @@ def check_repo(repo_root: Path) -> list[str]:
     if not re.search(rf"(?<!\d){len(names)} skills", claude_text):
         findings.append(f"{claude_md}: skill-count: must state `{len(names)} skills`")
     return findings
+
+
+def cmd_skill_list(validate: bool = False) -> None:
+    """Print the bundled skills as JSON, with each skill's findings under --validate."""
+    results = []
+    for skill_dir in skill_dirs(repo_root=default_repo_root()):
+        entry: dict = {"name": skill_dir.name, "path": str(skill_dir / "SKILL.md")}
+        if validate:
+            errors = check_skill(skill_dir=skill_dir)
+            entry["valid"] = not errors
+            entry["errors"] = errors
+        results.append(entry)
+
+    typer.echo(json.dumps(results))
+
+
+def cmd_skill_check(paths: list[str]) -> None:
+    """Check the given skills, or every bundled skill and the docs listing them when no path is given."""
+    if paths:
+        findings: list[str] = []
+        checked: set[Path] = set()
+        for raw in paths:
+            directory = skill_dir_for(path=Path(raw))
+            if directory is None:
+                findings.append(f"{raw}: structure: no SKILL.md at or above this path")
+            elif directory not in checked:
+                checked.add(directory)
+                findings += check_skill(skill_dir=directory)
+    else:
+        findings = check_repo(repo_root=default_repo_root())
+
+    for finding in findings:
+        typer.echo(finding)
+    if findings:
+        typer.echo(f"FAILED: {len(findings)} finding(s)")
+        raise typer.Exit(1)
+    typer.echo("OK: no findings")

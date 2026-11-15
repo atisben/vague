@@ -25,7 +25,7 @@ from itertools import combinations
 from pathlib import PurePosixPath
 from typing import Any
 
-from vague.sdk.core.events import event_ts
+from vague.events import event_ts
 
 MIN_HUE_GAP = 24
 

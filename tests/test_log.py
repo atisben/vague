@@ -1,10 +1,10 @@
-"""Tests for local logging (vague/sdk/core/logging.py)."""
+"""Tests for vague/log.py."""
 
 import os
 
 import pytest
 
-from vague.sdk.core.logging import get_logger, reset_logging
+from vague.log import get_logger, reset_logging
 
 
 @pytest.fixture(autouse=True)

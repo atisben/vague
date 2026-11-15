@@ -89,7 +89,7 @@ Memories (most relevant first):
 - [n-plus-one] Always eager-load associations on list queries.
 ```
 
-The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/sdk/core/memory.py`. The block holds recent notes (`--scratch`), the newest 5 `doc` pointers as key and path, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
+The second line of the block is a logging hint, `To log a learning: vague memory-log <key> "<fact>" --skill <name> …`, built by `logging_hint` in `vague/memory.py`. The block holds recent notes (`--scratch`), the newest 5 `doc` pointers as key and path, then full lines for this scope plus `global` (global takes at most a third). When the budget runs out, it switches to key-only index lines and ends with a `vague memory-search` pointer. Ranking is deterministic: memories whose `files` overlap the uncommitted changes first, then memories written by the same `--skill`, then the newest. Observations never load here.
 
 `vague context` never fails: missing config returns defaults, a missing git remote falls back to the folder name, and a broken ledger drops the block.
 

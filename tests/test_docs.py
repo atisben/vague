@@ -1,17 +1,16 @@
 """Drift guards: docs must list every bundled skill, and skills may only call commands that exist.
 
-The skill and doc rules live in vague.sdk.core.skill_rules so `vague skill-check` and the
+The skill and doc rules live in vague.skill_rules so `vague skill-check` and the
 pre-commit hook enforce the same thing. The tests below cover what those rules do not.
 """
 
 import re
 from pathlib import Path
 
-from vague.sdk.commands.skill import _get_assets_skills_dir
-from vague.sdk.core.frontmatter import read_md
-from vague.sdk.core.skill_rules import check_repo, check_skill, skill_dirs
+from vague.skill_rules import check_repo, check_skill, read_md, skill_dirs
 
 REPO_ROOT = Path(__file__).parent.parent
+SKILLS_DIR = REPO_ROOT / "vague" / "assets" / "skills"
 
 
 def test_repo_passes_every_skill_rule():
@@ -25,7 +24,7 @@ def test_every_bundled_skill_passes_check_skill():
 
 def _instruction_files() -> list[Path]:
     """Every file that tells an agent or a reader which vague commands to run."""
-    assets = _get_assets_skills_dir().parent
+    assets = SKILLS_DIR.parent
     return [
         *sorted(assets.glob("skills/*/SKILL.md")),
         assets / "templates" / "SKILL.template.md",
@@ -37,14 +36,14 @@ def _instruction_files() -> list[Path]:
 
 
 def test_guidelines_have_memory_section():
-    guidelines = (_get_assets_skills_dir().parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
+    guidelines = (SKILLS_DIR.parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
     assert "\n## Memory\n" in guidelines
     for flag in ("--global", "--about", "--scratch", "--doc", "--files", "--skill"):
         assert flag in guidelines, f"guidelines Memory section should explain {flag}"
 
 
 def _bold_pack_dir() -> Path:
-    return _get_assets_skills_dir() / "slides" / "bold-template-pack"
+    return SKILLS_DIR / "slides" / "bold-template-pack"
 
 
 def _bold_index() -> dict:
@@ -82,33 +81,33 @@ def test_slides_skill_lists_every_bold_template():
 
 
 def test_dev_implement_briefs_hand_memory_to_subagents():
-    text = (_get_assets_skills_dir() / "dev-implement" / "SKILL.md").read_text(encoding="utf-8")
+    text = (SKILLS_DIR / "dev-implement" / "SKILL.md").read_text(encoding="utf-8")
     assert "--scratch" in text, "subagents never run the preamble, so their brief must explain note memories"
 
 
 def test_dev_implement_isolates_parallel_implementers_and_ends_with_dev_review():
     # Parallel implementers in one checkout share an index and HEAD, so each one gets its own worktree.
-    text = (_get_assets_skills_dir() / "dev-implement" / "SKILL.md").read_text(encoding="utf-8")
+    text = (SKILLS_DIR / "dev-implement" / "SKILL.md").read_text(encoding="utf-8")
     assert "git worktree add" in text
     assert "integration branch" in text
     assert "/dev-review" in text
 
 
 def test_retro_reads_the_session_log_and_the_observations():
-    text = (_get_assets_skills_dir() / "retro" / "SKILL.md").read_text(encoding="utf-8")
+    text = (SKILLS_DIR / "retro" / "SKILL.md").read_text(encoding="utf-8")
     assert "vague memory-search --kind observation" in text
     assert ".jsonl" in text, "the session log is the primary source a retro reads"
 
 
 def test_adapted_upstream_skills_ship_license_and_notice():
     for name in ("dev-review", "dev-implement", "retro"):
-        skill = _get_assets_skills_dir() / name
+        skill = SKILLS_DIR / name
         assert "MIT License" in (skill / "LICENSE").read_text(encoding="utf-8"), name
         assert "mattpocock/skills" in (skill / "NOTICE.md").read_text(encoding="utf-8"), name
 
 
 def test_guidelines_tell_skills_to_record_files_written_outside_the_repo():
-    guidelines = (_get_assets_skills_dir().parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
+    guidelines = (SKILLS_DIR.parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
     assert "Obsidian" in guidelines.split("\n## Memory\n", 1)[1]
 
 
@@ -116,12 +115,12 @@ IMPECCABLE_AGENTS = ("impeccable-finish-reviewer", "impeccable-motion-reviewer")
 
 
 def _impeccable_dir() -> Path:
-    return _get_assets_skills_dir() / "impeccable"
+    return SKILLS_DIR / "impeccable"
 
 
 def _impeccable_files() -> list[Path]:
     """The vendored skill and its reviewer agents. NOTICE.md is exempt: it describes what upstream ships."""
-    agents_dir = _get_assets_skills_dir().parent / "agents"
+    agents_dir = SKILLS_DIR.parent / "agents"
     files = [p for p in sorted(_impeccable_dir().rglob("*.md")) if p.name != "NOTICE.md"]
     return [*files, *(agents_dir / f"{name}.md" for name in IMPECCABLE_AGENTS)]
 
@@ -161,7 +160,7 @@ def test_impeccable_memory_log_examples_fit_the_600_char_limit():
 
 
 def test_impeccable_reviewers_are_read_only_and_attributed():
-    agents_dir = _get_assets_skills_dir().parent / "agents"
+    agents_dir = SKILLS_DIR.parent / "agents"
     for name in IMPECCABLE_AGENTS:
         fallback = _impeccable_dir() / "reference" / "degraded" / f"{name.removeprefix('impeccable-')}.md"
         for path in (agents_dir / f"{name}.md", fallback):
@@ -177,6 +176,6 @@ def test_impeccable_reviewers_are_read_only_and_attributed():
 
 def test_dev_review_never_edits_files():
     # A review reports findings. Applying them belongs to the built-in `/code-review --fix` or the user.
-    frontmatter = read_md(path=_get_assets_skills_dir() / "dev-review" / "SKILL.md")
+    frontmatter = read_md(path=SKILLS_DIR / "dev-review" / "SKILL.md")
     assert {"Write", "Edit", "NotebookEdit"}.isdisjoint(frontmatter["allowed-tools"])
     assert "Agent" in frontmatter["allowed-tools"]

@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from vague.sdk.core.logging import get_logger
+from vague.log import get_logger
 
 
 def append(path: Path, line: str) -> None:

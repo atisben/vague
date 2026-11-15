@@ -13,7 +13,7 @@ import typer
 
 from vague.config import claude_dirs, profile_name_for
 from vague.paths import atomic_write
-from vague.sdk.core.frontmatter import FrontmatterError, read_md
+from vague.skill_rules import FrontmatterError, read_md
 
 RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
     # (base_dir, skills_dir, instruction_file)

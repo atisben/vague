@@ -1,35 +1,21 @@
 """Shared test fixtures."""
 
-import os
-
 import pytest
 
 
-@pytest.fixture
-def vague_home(tmp_path):
-    """Create a temporary VAGUE_HOME directory and set env var."""
-    home = tmp_path / ".vague"
-    home.mkdir()
-    os.environ["VAGUE_HOME"] = str(home)
-    yield home
-    del os.environ["VAGUE_HOME"]
-
-
 @pytest.fixture(autouse=True)
-def isolate_claude_env(tmp_path, monkeypatch):
-    """Keep the developer's own Claude profile config out of the test run.
+def vague_home(tmp_path, monkeypatch):
+    """Give every test its own empty VAGUE_HOME, and keep the developer's Claude profiles out.
 
-    Clearing the env vars is not enough: claude_dirs() also reads
-    $VAGUE_HOME/config.env, so an unset VAGUE_HOME would fall back to the real
-    ~/.vague and pick up whatever profiles the developer has configured.
-    Pointing VAGUE_HOME at an empty tmp dir closes both routes.
+    Clearing the profile env vars is not enough: claude_dirs() also reads
+    $VAGUE_HOME/config.env, so a real ~/.vague would leak configured profiles in.
     """
     for var in ("VAGUE_CLAUDE_DIRS", "CLAUDE_CONFIG_DIR"):
         monkeypatch.delenv(var, raising=False)
-
-    isolated_home = tmp_path / "isolated-vague-home"
-    isolated_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("VAGUE_HOME", str(isolated_home))
+    home = tmp_path / ".vague"
+    home.mkdir()
+    monkeypatch.setenv("VAGUE_HOME", str(home))
+    return home
 
 
 @pytest.fixture(autouse=True)
@@ -44,23 +30,11 @@ def clear_claude_session_id(monkeypatch):
 
 
 @pytest.fixture
-def vague_home_dir(tmp_path):
-    """Create a temporary VAGUE_HOME directory without touching the environment.
-
-    Tests that need the env var set should do so with monkeypatch, so the
-    lookup order under test stays explicit.
-    """
-    home = tmp_path / ".vague"
-    home.mkdir()
-    return home
-
-
-@pytest.fixture
 def make_memory():
     """Factory for Memory records with defaults, so a test names only the fields it cares about."""
     from datetime import UTC, datetime
 
-    from vague.sdk.core.memory import Memory
+    from vague.memory import Memory
 
     def _make(**fields):
         defaults = {
