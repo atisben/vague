@@ -74,7 +74,7 @@ class TestUpdateInstructionFile:
         # Provide a simple template
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda: "## Vague Skills\nRouting table here.",
+            lambda runtime=None: "## Vague Skills\nRouting table here.",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -90,7 +90,7 @@ class TestUpdateInstructionFile:
         instruction_file = Path(patched["claude"][2])
         instruction_file.write_text(f"# Config\n\n{MARKER_START}\nold content\n{MARKER_END}\n\n# Footer\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "new content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda runtime=None: "new content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -105,7 +105,7 @@ class TestUpdateInstructionFile:
         instruction_file = Path(patched["claude"][2])
         instruction_file.write_text(f"# Config\n\n{LEGACY_MARKER_START}\nlegacy stuff\n{LEGACY_MARKER_END}\n")
 
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "migrated content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda runtime=None: "migrated content")
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
 
@@ -117,13 +117,13 @@ class TestUpdateInstructionFile:
 
     def test_skips_when_file_missing(self, fake_runtimes, monkeypatch):
         """Non-fatal when instruction file doesn't exist."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda runtime=None: "content")
         # Don't create the instruction file — should not raise
         _update_instruction_file("claude", Path("/tmp/fake"))
 
     def test_skips_when_no_instruction_file_configured(self, fake_runtimes, monkeypatch):
         """Runtimes with instruction_file=None are skipped."""
-        monkeypatch.setattr("vague.installer._get_instructions_block", lambda: "content")
+        monkeypatch.setattr("vague.installer._get_instructions_block", lambda runtime=None: "content")
         _update_instruction_file("missing", Path("/tmp/fake"))
 
 
@@ -145,7 +145,7 @@ class TestMarkersMustOwnTheirLine:
 
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda: "NEW_GENERATED",
+            lambda runtime=None: "NEW_GENERATED",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -167,7 +167,7 @@ class TestMarkersMustOwnTheirLine:
 
         monkeypatch.setattr(
             "vague.installer._get_instructions_block",
-            lambda: "NEW_GENERATED",
+            lambda runtime=None: "NEW_GENERATED",
         )
 
         _update_instruction_file("claude", Path(patched["claude"][1]))
@@ -307,3 +307,88 @@ class TestCmdUninstall:
         result = runner.invoke(sdk_app, ["uninstall", "--runtime", "claude"])
         assert result.exit_code == 0
         assert "no vague skills" in result.output.lower()
+
+
+@pytest.fixture
+def fake_assets(tmp_path, monkeypatch):
+    """A bundled-assets tree with one skill for every runtime, one Claude-only skill and one agent."""
+    assets = tmp_path / "assets"
+    for name, runtimes in (("everywhere", ""), ("claude-only", "runtimes:\n  - claude\n")):
+        skill_md = assets / "skills" / name / "SKILL.md"
+        skill_md.parent.mkdir(parents=True)
+        skill_md.write_text(
+            f"---\nname: {name}\ndescription: |\n  Demo. Trigger: \"{name} please\".\n{runtimes}---\nbody\n",
+            encoding="utf-8",
+        )
+    agents = assets / "agents"
+    (agents / ".gitkeep").parent.mkdir(parents=True)
+    (agents / ".gitkeep").write_text("", encoding="utf-8")
+    (agents / "demo-reviewer.md").write_text("---\nname: demo-reviewer\n---\n", encoding="utf-8")
+    monkeypatch.setattr("vague.installer._get_assets_dir", lambda: assets)
+    return assets
+
+
+class TestClaudeOnlyAssets:
+    def test_claude_only_skill_is_not_linked_into_a_non_claude_runtime(self, fake_runtimes, fake_assets, vague_home):
+        _, patched = fake_runtimes
+        result = runner.invoke(sdk_app, ["install", "--runtime", "cursor"], input="y\n")
+        assert result.exit_code == 0, result.output
+        linked = sorted(p.name for p in Path(patched["cursor"][1]).iterdir())
+        assert linked == ["everywhere"]
+
+    def test_claude_only_skill_is_linked_into_every_claude_profile(self, tmp_path, fake_assets, vague_home,
+                                                                   monkeypatch):
+        work, personal = tmp_path / ".claude-work", tmp_path / ".claude-personal"
+        work.mkdir()
+        personal.mkdir()
+        monkeypatch.setenv("VAGUE_CLAUDE_DIRS", f"{work}:{personal}")
+        result = runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+        assert result.exit_code == 0, result.output
+        for profile in (work, personal):
+            assert sorted(p.name for p in (profile / "skills").iterdir()) == ["claude-only", "everywhere"]
+
+    def test_install_drops_a_stale_claude_only_link_from_a_non_claude_runtime(self, fake_runtimes, fake_assets,
+                                                                              vague_home):
+        _, patched = fake_runtimes
+        stale = Path(patched["cursor"][1]) / "claude-only"
+        stale.parent.mkdir(parents=True)
+        stale.symlink_to(fake_assets / "skills" / "claude-only", target_is_directory=True)
+        runner.invoke(sdk_app, ["install", "--runtime", "cursor"], input="y\n")
+        assert not stale.is_symlink()
+
+    def test_agents_are_linked_for_claude_runtimes_only(self, fake_runtimes, fake_assets, vague_home):
+        tmp_path, patched = fake_runtimes
+        for rt in ("claude", "cursor"):
+            result = runner.invoke(sdk_app, ["install", "--runtime", rt], input="y\n")
+            assert result.exit_code == 0, result.output
+
+        claude_agents = Path(patched["claude"][0]) / "agents"
+        assert sorted(p.name for p in claude_agents.iterdir()) == ["demo-reviewer.md"]
+        assert (claude_agents / "demo-reviewer.md").resolve() == (fake_assets / "agents" / "demo-reviewer.md").resolve()
+        assert not (Path(patched["cursor"][0]) / "agents").exists()
+
+    def test_uninstall_removes_vague_agents_and_keeps_the_users_own(self, fake_runtimes, fake_assets, vague_home):
+        _, patched = fake_runtimes
+        runner.invoke(sdk_app, ["install", "--runtime", "claude"], input="y\n")
+        agents_dir = Path(patched["claude"][0]) / "agents"
+        (agents_dir / "mine.md").write_text("---\nname: mine\n---\n", encoding="utf-8")
+
+        result = runner.invoke(sdk_app, ["uninstall", "--runtime", "claude"], input="y\n")
+
+        assert result.exit_code == 0, result.output
+        assert sorted(p.name for p in agents_dir.iterdir()) == ["mine.md"]
+
+    def test_routing_block_lists_claude_only_skills_for_claude_runtimes_only(self, fake_runtimes, fake_assets,
+                                                                             vague_home):
+        _, patched = fake_runtimes
+        for rt in ("claude", "cursor"):
+            instruction_file = Path(patched[rt][2])
+            instruction_file.parent.mkdir(parents=True, exist_ok=True)
+            instruction_file.write_text("# mine\n", encoding="utf-8")
+            runner.invoke(sdk_app, ["install", "--runtime", rt], input="y\n")
+
+        claude_block = Path(patched["claude"][2]).read_text(encoding="utf-8")
+        cursor_block = Path(patched["cursor"][2]).read_text(encoding="utf-8")
+        assert "`/claude-only`" in claude_block and "2 skills" in claude_block
+        assert "`/claude-only`" not in cursor_block and "1 skills" in cursor_block
+        assert "`/everywhere`" in cursor_block

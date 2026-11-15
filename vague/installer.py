@@ -12,6 +12,7 @@ from pathlib import Path
 import typer
 
 from vague.config import claude_dirs, profile_name_for, vague_home
+from vague.sdk.core.frontmatter import FrontmatterError, read_md
 
 RUNTIME_DIRS: dict[str, tuple[str | None, str, str | None]] = {
     # (base_dir, skills_dir, instruction_file)
@@ -115,6 +116,35 @@ def _remove_dangling_skill_links(skills_target: Path, skills_src: Path) -> None:
             entry.unlink()
 
 
+def _is_claude_runtime(runtime: str) -> bool:
+    """True for `claude` and every `claude:<profile>` key."""
+    return runtime.split(":")[0] == CLAUDE_RUNTIME
+
+
+def _skill_supports_runtime(skill_dir: Path, runtime: str) -> bool:
+    """Whether a skill belongs in this runtime, from the optional `runtimes` list in its SKILL.md.
+
+    A skill without the key goes everywhere. A skill that needs Claude-only features, such as
+    subagents, lists `runtimes: [claude]` so cursor and windsurf never see a skill they cannot run.
+    An unreadable SKILL.md counts as unrestricted: `vague skill-check` reports it, install does not.
+    """
+    try:
+        runtimes = read_md(path=skill_dir / "SKILL.md").get("runtimes")
+    except FrontmatterError:
+        return True
+    if not runtimes:
+        return True
+    return runtime.split(":")[0] in runtimes
+
+
+def _agent_files(assets: Path) -> list[Path]:
+    """vague's bundled subagent definitions. Only Claude runtimes read an `agents/` directory."""
+    agents_src = assets / "agents"
+    if not agents_src.is_dir():
+        return []
+    return sorted(f for f in agents_src.iterdir() if f.is_file() and f.suffix == ".md")
+
+
 def _parse_skill_trigger(skill_dir: Path) -> str | None:
     """Extract the Trigger: line from a skill's SKILL.md description."""
     skill_md = skill_dir / "SKILL.md"
@@ -161,15 +191,16 @@ def _find_marker_span(content: str, start_marker: str, end_marker: str) -> tuple
     return start_match.start(), end_match.end()
 
 
-def _get_instructions_block() -> str:
+def _get_instructions_block(runtime: str | None = None) -> str:
     """Assemble the managed block: public guidelines, then skill routing.
 
-    Every runtime gets the same block. Private, per-profile content belongs in
+    Every runtime gets the same guidelines; the routing table lists only the skills linked into that
+    runtime, so Claude-only skills stay out of cursor's rules. Private, per-profile content belongs in
     the user's own file outside the markers, which install never touches.
     A missing guidelines file degrades to the skill section alone rather than
     failing the install.
     """
-    skill_section = _build_skill_section()
+    skill_section = _build_skill_section(runtime=runtime)
     guidelines_file = _get_guidelines_file()
     guidelines = guidelines_file.read_text().strip() if guidelines_file.is_file() else ""
     if not guidelines:
@@ -177,10 +208,16 @@ def _get_instructions_block() -> str:
     return guidelines + "\n\n" + skill_section
 
 
-def _build_skill_section() -> str:
-    """Build the vague skill routing section from skill metadata."""
+def _build_skill_section(runtime: str | None = None) -> str:
+    """Build the vague skill routing section from skill metadata.
+
+    With a runtime, only the skills linked into it are listed, so cursor is never routed to a
+    Claude-only skill it does not have.
+    """
     skills_src = _get_assets_dir() / "skills"
     skill_dirs = sorted(d for d in skills_src.iterdir() if d.is_dir()) if skills_src.exists() else []
+    if runtime is not None:
+        skill_dirs = [d for d in skill_dirs if _skill_supports_runtime(d, runtime)]
     skill_count = len(skill_dirs)
 
     rows: list[str] = []
@@ -223,7 +260,7 @@ def _update_instruction_file(runtime: str, skills_path: Path) -> None:
     if not instruction_file.parent.exists():
         return
 
-    block_content = _get_instructions_block()
+    block_content = _get_instructions_block(runtime=runtime)
     if not block_content:
         return
 
@@ -325,26 +362,29 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
         if not skill_dir.is_dir():
             continue
         dest = skills_target / skill_dir.name
+        if not _skill_supports_runtime(skill_dir, runtime):
+            # A link from an install that predates the restriction would keep the skill visible.
+            if dest.is_symlink() and dest.resolve() == skill_dir.resolve():
+                dest.unlink()
+            continue
         _remove_existing(dest)
         dest.symlink_to(skill_dir.resolve(), target_is_directory=True)
         count += 1
 
     typer.echo(f"  {runtime}: {count} skill(s) symlinked → {skills_target}", err=True)
 
-    agents_src = assets / "agents"
-    if agents_src.exists() and any(f for f in agents_src.iterdir() if f.name != ".gitkeep"):
+    agent_files = _agent_files(assets)
+    if agent_files and _is_claude_runtime(runtime):
         agents_target = skills_target.parent / "agents"
         agents_target.mkdir(parents=True, exist_ok=True)
-        for agent_file in agents_src.iterdir():
-            if agent_file.name == ".gitkeep":
-                continue
+        for agent_file in agent_files:
             dest = agents_target / agent_file.name
             _remove_existing(dest)
             dest.symlink_to(agent_file.resolve())
-        typer.echo(f"  {runtime}: agents symlinked → {agents_target}", err=True)
+        typer.echo(f"  {runtime}: {len(agent_files)} agent(s) symlinked → {agents_target}", err=True)
 
     _update_instruction_file(runtime, skills_target)
-    if runtime.split(":")[0] == CLAUDE_RUNTIME:
+    if _is_claude_runtime(runtime):
         settings = skills_target.parent / "settings.json"
         if install_hooks(settings_path=settings, command=hook_command()):
             typer.echo(f"  {runtime}: usage hooks updated → {settings}", err=True)
@@ -523,6 +563,8 @@ def cmd_install(
         skills_target = Path(skills_target_str).expanduser()
         typer.echo(f"\n  [{rt}] {skills_target}")
         for name in skill_names:
+            if not _skill_supports_runtime(skills_src / name, rt):
+                continue
             dest = skills_target / name
             status = " (overwrite)" if dest.exists() else ""
             typer.echo(f"    - {name}{status}")
@@ -553,6 +595,16 @@ def _get_vague_skill_names() -> set[str]:
     if not skills_src.exists():
         return set()
     return {d.name for d in skills_src.iterdir() if d.is_dir()}
+
+
+def _remove_agent_links(agents_target: Path) -> None:
+    """Remove the agent links install created, matched by name, so the user's own agents survive."""
+    if not agents_target.is_dir():
+        return
+    for agent_file in _agent_files(_get_assets_dir()):
+        dest = agents_target / agent_file.name
+        if dest.is_symlink():
+            dest.unlink()
 
 
 def cmd_uninstall(
@@ -612,7 +664,8 @@ def cmd_uninstall(
             _remove_existing(skills_target / name)
             removed += 1
         _remove_instruction_block(rt)
-        if rt.split(":")[0] == CLAUDE_RUNTIME:
+        if _is_claude_runtime(rt):
+            _remove_agent_links(agents_target=skills_target.parent / "agents")
             remove_hooks(settings_path=skills_target.parent / "settings.json")
         typer.echo(f"  {rt}: removed {len(names)} skill(s)", err=True)
 

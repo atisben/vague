@@ -192,3 +192,75 @@ def test_file_writing_skills_log_their_deliverable_with_doc(skill_dir):
                          + '\n```bash\nvague memory-log retro-x "Retro." --doc --files "/r.md" --skill retro\n```\n')
     assert check_skill(skill_dir=with_doc) == []
     assert not any("deliverable-doc-memory" in f for f in check_skill(skill_dir=skill_dir(name="triage")))
+
+
+def test_check_skill_reports_link_to_missing_reference_file(skill_dir):
+    directory = skill_dir(body=_preamble("demo-skill") + "\nRead [polish](reference/polish.md) first.\n")
+    reference = directory / "reference"
+    reference.mkdir()
+    (reference / "polish.md").write_text(
+        "See [gone](live.md), [fallback](degraded/finish-reviewer.md) and [ok](polish.md#steps).\n"
+        "Ignore [site](https://example.com/x.md), [anchor](#top) and `[code](nope.md)`.\n",
+        encoding="utf-8",
+    )
+    (reference / "degraded").mkdir()
+    (reference / "degraded" / "finish-reviewer.md").write_text("[up](../polish.md)\n", encoding="utf-8")
+
+    findings = check_skill(skill_dir=directory)
+
+    assert [f for f in findings if "missing-reference" in f] == [
+        f"{reference / 'polish.md'}: missing-reference: line 1: `live.md` does not exist in the skill"
+    ], findings
+
+
+def test_check_skill_reports_link_that_escapes_the_skill_dir(skill_dir):
+    directory = skill_dir(body=_preamble("demo-skill") + "\nSee [other](../other/SKILL.md).\n")
+    skill_dir(name="other")
+    assert any("missing-reference" in f and "../other/SKILL.md" in f for f in check_skill(skill_dir=directory))
+
+
+def _repo_with_agents(tmp_path, skill_dir, body, agents=()):
+    repo = _fake_repo(tmp_path, skill_dir, names=["shiny", "shiny-extra"],
+                      readme="2 markdown-based LLM skills: /shiny /shiny-extra",
+                      claude_md="2 skills: `/shiny` `/shiny-extra`")
+    skill_dir(name="shiny", root=repo / "vague" / "assets" / "skills", body=_preamble("shiny") + body)
+    agents_dir = repo / "vague" / "assets" / "agents"
+    agents_dir.mkdir(parents=True)
+    for agent in agents:
+        (agents_dir / f"{agent}.md").write_text(f"---\nname: {agent}\n---\n", encoding="utf-8")
+    return repo
+
+
+def test_check_repo_reports_skill_naming_a_missing_agent(tmp_path, skill_dir):
+    body = (
+        "\nSpawn the `shiny-finish-reviewer` agent, then the `shiny-documenter` agent.\n"
+        "The agent hands off to `/shiny-extra` and `shiny-extra`.\n"
+        "Style the `shiny-panel` box.\n"
+    )
+    repo = _repo_with_agents(tmp_path, skill_dir, body=body, agents=["shiny-finish-reviewer"])
+
+    findings = [f for f in check_repo(repo_root=repo) if "missing-agent" in f]
+
+    assert len(findings) == 1, findings
+    assert "`shiny-documenter`" in findings[0] and "SKILL.md" in findings[0]
+
+
+def test_check_repo_checks_agent_names_in_reference_files(tmp_path, skill_dir):
+    repo = _repo_with_agents(tmp_path, skill_dir, body="\nNo agents here.\n")
+    reference = repo / "vague" / "assets" / "skills" / "shiny" / "reference"
+    reference.mkdir()
+    (reference / "x.md").write_text("Hand off to the `shiny-asset-producer` subagent.\n", encoding="utf-8")
+    assert any("missing-agent" in f and "shiny-asset-producer" in f for f in check_repo(repo_root=repo))
+
+
+def test_check_skill_accepts_a_runtimes_list_and_rejects_unknown_runtimes(skill_dir):
+    assert check_skill(skill_dir=skill_dir(name="ok", fields={"runtimes": ["claude"]})) == []
+    findings = check_skill(skill_dir=skill_dir(name="bad", fields={"runtimes": ["vscode"]}))
+    assert any("invalid manifest" in f and "runtimes" in f for f in findings), findings
+
+
+def test_check_repo_lets_a_notice_name_dropped_upstream_agents(tmp_path, skill_dir):
+    repo = _repo_with_agents(tmp_path, skill_dir, body="\nNo agents here.\n")
+    notice = repo / "vague" / "assets" / "skills" / "shiny" / "NOTICE.md"
+    notice.write_text("Dropped agents: `shiny-documenter`.\n", encoding="utf-8")
+    assert not [f for f in check_repo(repo_root=repo) if "missing-agent" in f]

@@ -68,6 +68,12 @@ _CODE_PATTERN = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)
 _COMMAND_PATTERN = re.compile(r"(?:^|\$\(|\||&&|;)\s*vague ([a-z][a-z0-9-]*)", re.MULTILINE)
 
 
+# A Markdown link target: `[text](target)` or `[text](target "title")`.
+_LINK_PATTERN = re.compile(r"\]\(\s*<?([^)\s>]+)>?(?:\s+\"[^\"]*\")?\s*\)")
+_URL_SCHEME_PATTERN = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
+_INLINE_CODE_PATTERN = re.compile(r"`([^`\n]+)`")
+
+
 def default_repo_root() -> Path:
     """The repo holding this package: README.md, CLAUDE.md and vague/assets/skills/ live there."""
     return Path(__file__).resolve().parents[3]
@@ -134,6 +140,69 @@ def memory_convention_findings(path: Path, text: str) -> list[str]:
     return findings
 
 
+def _strip_code(text: str) -> str:
+    """Blank out code so an example link inside it is not checked, keeping line numbers intact."""
+    return _CODE_PATTERN.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
+
+
+def missing_reference_findings(skill_dir: Path) -> list[str]:
+    """Rule `missing-reference`: every relative `.md` link in a skill's Markdown resolves inside the skill.
+
+    Scans every `.md` file under the skill directory. A link counts when its target ends in `.md`,
+    after dropping any `#anchor`. URLs (`https:`, `mailto:`), anchor-only links, absolute and home
+    paths, and links written inside code are skipped. The target resolves against the linking file's
+    own directory and must be an existing file under the skill directory: a link that climbs out of
+    the skill breaks once the skill is symlinked into a runtime on its own.
+    """
+    root = skill_dir.resolve()
+    findings: list[str] = []
+    for path in sorted(skill_dir.rglob("*.md")):
+        text = _strip_code(path.read_text(encoding="utf-8"))
+        for number, line in enumerate(text.splitlines(), start=1):
+            for target in _LINK_PATTERN.findall(line):
+                relative = target.split("#", 1)[0]
+                if not relative.endswith(".md") or _URL_SCHEME_PATTERN.match(relative):
+                    continue
+                if relative.startswith(("/", "~")):
+                    continue
+                resolved = (path.parent / relative).resolve()
+                if not resolved.is_file() or not resolved.is_relative_to(root):
+                    findings.append(f"{path}: missing-reference: line {number}: `{target}` does not exist in the skill")
+    return findings
+
+
+def missing_agent_findings(repo_root: Path, skill_dir: Path) -> list[str]:
+    """Rule `missing-agent`: every agent a skill names is bundled in `vague/assets/agents/`.
+
+    An agent name is an inline-code span that is exactly `<skill>-<word>[-<word>...]` in lowercase
+    kebab case, on a line that contains the word "agent" (so "Agent tool", "subagent" and
+    "subagent_type" count too). Example: "Spawn the `impeccable-motion-reviewer` agent" inside the
+    impeccable skill. Every `.md` file under the skill directory is scanned. Other skill names
+    (`vault-excalidraw` inside /vault) are skipped. Each remaining name must exist as
+    `vague/assets/agents/<name>.md`, because the installer links only that directory into a
+    runtime's `agents/`.
+
+    `NOTICE.md` is skipped: a vendoring notice names the upstream agents that were dropped.
+
+    Both conditions keep false positives out: a CSS class (`slides-container`) or an example key
+    (`vault-perf-review-...`) sits in inline code but never on a line about agents. The cost is that
+    an agent named in plain prose, or on a line without the word "agent", goes unchecked.
+    """
+    agents_dir = repo_root / "vague" / "assets" / "agents"
+    agent_names = {p.stem for p in agents_dir.glob("*.md")} if agents_dir.is_dir() else set()
+    skill_names = {d.name for d in skill_dirs(repo_root=repo_root)}
+    pattern = re.compile(rf"{re.escape(skill_dir.name)}(?:-[a-z0-9]+)+")
+    findings: list[str] = []
+    for path in sorted(p for p in skill_dir.rglob("*.md") if p.name != "NOTICE.md"):
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if "agent" not in line.lower():
+                continue
+            for span in _INLINE_CODE_PATTERN.findall(line):
+                if pattern.fullmatch(span) and span not in skill_names and span not in agent_names:
+                    findings.append(f"{path}: missing-agent: line {number}: `{span}` is not in {agents_dir}")
+    return findings
+
+
 def check_skill(skill_dir: Path) -> list[str]:
     """Findings for one skill directory, each as `<file>: <rule>: <detail>`. Empty means it passes."""
     skill_md = skill_dir / "SKILL.md"
@@ -179,6 +248,7 @@ def check_skill(skill_dir: Path) -> list[str]:
         f"{skill_md}: undeclared-command: `vague {c}` is used but missing from sdk_commands"
         for c in sorted(c for c in used - declared if c.startswith("memory-"))
     ]
+    findings += missing_reference_findings(skill_dir=skill_dir)
     return findings
 
 
@@ -199,6 +269,7 @@ def check_repo(repo_root: Path) -> list[str]:
     """Findings for every bundled skill plus the docs that list them. Empty means it passes."""
     dirs = skill_dirs(repo_root=repo_root)
     findings = [finding for directory in dirs for finding in check_skill(skill_dir=directory)]
+    findings += [f for directory in dirs for f in missing_agent_findings(repo_root=repo_root, skill_dir=directory)]
 
     for path in _instruction_files(repo_root=repo_root):
         text = path.read_text(encoding="utf-8")

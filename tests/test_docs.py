@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 from vague.sdk.commands.skill import _get_assets_skills_dir
+from vague.sdk.core.frontmatter import read_md
 from vague.sdk.core.skill_rules import check_repo, check_skill, skill_dirs
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -103,3 +104,66 @@ def test_dev_develop_briefs_hand_memory_to_subagents():
 def test_guidelines_tell_skills_to_record_files_written_outside_the_repo():
     guidelines = (_get_assets_skills_dir().parent / "claude" / "guidelines.md").read_text(encoding="utf-8")
     assert "Obsidian" in guidelines.split("\n## Memory\n", 1)[1]
+
+
+IMPECCABLE_AGENTS = ("impeccable-finish-reviewer", "impeccable-motion-reviewer")
+
+
+def _impeccable_dir() -> Path:
+    return _get_assets_skills_dir() / "impeccable"
+
+
+def _impeccable_files() -> list[Path]:
+    """The vendored skill and its reviewer agents. NOTICE.md is exempt: it describes what upstream ships."""
+    agents_dir = _get_assets_skills_dir().parent / "agents"
+    files = [p for p in sorted(_impeccable_dir().rglob("*.md")) if p.name != "NOTICE.md"]
+    return [*files, *(agents_dir / f"{name}.md" for name in IMPECCABLE_AGENTS)]
+
+
+def test_impeccable_does_not_call_the_upstream_launcher():
+    # vague vendors neither the Rust engine nor its launcher, and the brief lives in memory, not in repo files.
+    pattern = re.compile(r"scripts/impeccable|scripts_path|PRODUCT\.md|DESIGN\.md|\.impeccable/")
+    files = _impeccable_files()
+    assert files, "the impeccable skill is not vendored"
+    hits = [
+        f"{p.relative_to(REPO_ROOT)}:{n}: {line.strip()}"
+        for p in files if p.is_file()
+        for n, line in enumerate(p.read_text(encoding="utf-8").splitlines(), start=1) if pattern.search(line)
+    ]
+    assert not hits, "impeccable still references the upstream engine or its project files:\n" + "\n".join(hits)
+
+
+def test_impeccable_ships_license_and_notice():
+    license_text = (_impeccable_dir() / "LICENSE").read_text(encoding="utf-8")
+    notice_text = (_impeccable_dir() / "NOTICE.md").read_text(encoding="utf-8")
+    assert "Apache License" in license_text
+    assert "pbakaus/impeccable" in notice_text
+
+
+def test_impeccable_memory_log_examples_fit_the_600_char_limit():
+    # memory-log rejects text over 600 characters, so a long direction contract belongs in a file, not a note.
+    example = re.compile(r'vague memory-log \S+ "([^"]*)"')
+    too_long, whole_contract = [], []
+    for path in _impeccable_files():
+        text = path.read_text(encoding="utf-8")
+        name = path.relative_to(REPO_ROOT)
+        too_long += [f"{name}: {len(m)} chars" for m in example.findall(text) if len(m) > 600]
+        if "resends the whole contract" in text or "carries the whole direction" in text:
+            whole_contract.append(str(name))
+    assert not too_long, "memory-log examples over the 600-character limit:\n" + "\n".join(too_long)
+    assert not whole_contract, "these files still re-log the whole direction contract:\n" + "\n".join(whole_contract)
+
+
+def test_impeccable_reviewers_are_read_only_and_attributed():
+    agents_dir = _get_assets_skills_dir().parent / "agents"
+    for name in IMPECCABLE_AGENTS:
+        fallback = _impeccable_dir() / "reference" / "degraded" / f"{name.removeprefix('impeccable-')}.md"
+        for path in (agents_dir / f"{name}.md", fallback):
+            text = path.read_text(encoding="utf-8")
+            assert "Adapted from pbakaus/impeccable@2b86d9c (Apache-2.0)" in text, path
+            assert "vague memory-search design-direction --scratch" in text, path
+            assert "vague memory-search design- --kind learning --skill impeccable" in text, path
+        frontmatter = read_md(path=agents_dir / f"{name}.md")
+        assert frontmatter["name"] == name
+        tools = {t.strip() for t in str(frontmatter["tools"]).split(",")}
+        assert tools == {"Read", "Glob", "Grep", "Bash"}, tools
