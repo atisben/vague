@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import time
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -170,6 +171,25 @@ def design_check(
     No path is a usage error (exit 2).
     """
     cmd_design_check(paths=paths or [], hook=hook)
+
+
+@sdk_app.command("vault-scan")
+def vault_scan(
+    vault: Annotated[Path | None, typer.Option(
+        "--vault", help="Vault root. Default: $VAGUE_VAULT, else ~/Obsidian.")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print the full report as JSON.")] = False,
+    similar_to: Annotated[str | None, typer.Option(
+        "--similar", help="Only list live notes whose title covers these words (the /vault dedup check).")] = None,
+    grace_days: Annotated[int, typer.Option(
+        "--grace-days", help="Days a note stays in 9. Archive/ before it is listed as expired.")] = 90,
+) -> None:
+    """Inventory the Obsidian vault: hygiene issues, likely duplicates, plans, guessed kinds, expired archive.
+
+    Measures only, never edits a note. A missing vault is a usage error (exit 2).
+    """
+    from vague.sdk.commands.vault import cmd_vault_scan, default_vault
+
+    cmd_vault_scan(vault=vault or default_vault(), as_json=as_json, similar_to=similar_to, grace_days=grace_days)
 
 
 @sdk_app.command("skill-list")

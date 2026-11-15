@@ -183,7 +183,7 @@ Each saved artifact gets a vault note and a memory pointer:
 
 | Artifact | Vault call | Memory pointer |
 |---|---|---|
-| Approved mockup | `/vault export "<mockup path>" title "Design Comp - <Page>" folder "6. Atomic Notes/" tags "design,impeccable"` | `vague memory-log design-comp-<page-slug> "<one line>" --doc --files "<VAULT_NOTE path>" --skill impeccable` |
-| Critique or audit report | `/vault save "Design Critique - <Target>" folder "6. Atomic Notes/" tags "design,review,impeccable"` | `vague memory-log design-critique-<target-slug> "<verdict in one line>" --doc --files "<VAULT_NOTE path>" --skill impeccable` |
+| Approved mockup | `/vault export "<mockup path>" title "Design Comp - <Page>" folder "6. Atomic Notes/" tags "design,impeccable" kind "plan"` | `vague memory-log design-comp-<page-slug> "<one line>" --doc --files "<VAULT_NOTE path>" --skill impeccable` |
+| Critique or audit report | `/vault save "Design Critique - <Target>" folder "6. Atomic Notes/" tags "design,review,impeccable" kind "plan"` | `vague memory-log design-critique-<target-slug> "<verdict in one line>" --doc --files "<VAULT_NOTE path>" --skill impeccable` |
 
 The vault skill prints `VAULT_NOTE: <path>`. Use that path in `--files`. Slugs are lowercase `[a-z0-9-]`.

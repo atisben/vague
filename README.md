@@ -1,6 +1,6 @@
 # vague
 
-A Python/Typer CLI that acts as the filesystem contract for 22 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
+A Python/Typer CLI that acts as the filesystem contract for 23 markdown-based LLM skills covering the full software development lifecycle, from triage to retro.
 
 Skills are markdown files. `vague` is the stable interface between them and the filesystem: skills call `vague` commands, `vague` reads and writes state under `~/.vague/`. No server, no cloud, no registry.
 
@@ -61,6 +61,7 @@ Then use any slash command in your AI tool.
 |---------|-------------|
 | `/retro` | Session retrospective: fix checks, standards and skills, and curate the memory ledger. |
 | `/vault` | Save, search, and export artifacts (HTML diagrams, images) to your Obsidian vault. |
+| `/vault-clean` | Keep the vault current: fix frontmatter, distill shipped plans into decisions, merge duplicates, build topic hubs, archive before deleting. |
 
 ### Management
 | Command | When to use |

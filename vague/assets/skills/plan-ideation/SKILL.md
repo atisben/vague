@@ -494,7 +494,7 @@ Both documents this skill writes, the design doc (Phase 5) and the scope doc (Ph
 1. Save the note through the `/vault` skill (see its "Saving for Another Skill" section). Use `6. Atomic Notes/Alma/` and add the `alma` tag for Alma work:
 
    ```
-   /vault save "Design - {title}" folder "6. Atomic Notes/" tags "decision,design"
+   /vault save "Design - {title}" folder "6. Atomic Notes/" tags "decision,design" kind "plan"
    ```
 
 2. Point the ledger at the note. The key carries the branch, so a newer doc on the same branch replaces the older pointer. `BRANCH_KEY` replaces the `/` in a branch name, because a key cannot hold one:

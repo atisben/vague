@@ -230,7 +230,7 @@ Show to user, support revision loops, then save it in two steps.
 1. Save the note through the `/vault` skill (see its "Saving for Another Skill" section). Use `6. Atomic Notes/Alma/` and add the `alma` tag for Alma work:
 
    ```
-   /vault save "Eng Plan - [Feature Name]" folder "6. Atomic Notes/" tags "engineering,architecture,code"
+   /vault save "Eng Plan - [Feature Name]" folder "6. Atomic Notes/" tags "engineering,architecture,code" kind "plan"
    ```
 
 2. Point the ledger at the note. The key carries the branch, so a newer plan on the same branch replaces the older pointer:
