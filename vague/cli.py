@@ -56,7 +56,7 @@ def _main(
 def install(
     runtime: Annotated[
         str | None,
-        typer.Option("--runtime", help="claude|claude:<profile>|cursor|windsurf|generic"),
+        typer.Option("--runtime", help="claude (every profile) or claude:<profile>"),
     ] = None,
 ) -> None:
     """Install skills into your LLM runtime (e.g. ~/.claude/skills/)."""
@@ -67,7 +67,7 @@ def install(
 def uninstall(
     runtime: Annotated[
         str | None,
-        typer.Option("--runtime", help="claude|claude:<profile>|cursor|windsurf|generic"),
+        typer.Option("--runtime", help="claude (every profile) or claude:<profile>"),
     ] = None,
 ) -> None:
     """Remove vague skills from your LLM runtime."""

@@ -9,14 +9,14 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 - **22 slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **One memory ledger** in `~/.vague/memory.jsonl` holds every learning and observation, scoped to a project or `global`. Every skill preamble prints a ranked slice of it (at most 1,500 tokens).
 - **Mechanical telemetry:** a Claude Code hook logs each skill start to `~/.vague/events/`, feeding `vague status` with zero agent cooperation.
-- **Installs into your runtime** of choice: Claude Code, Cursor, or Windsurf.
+- **Installs into Claude Code:** every Claude profile you declare gets the skills, agents, routing block and hooks.
 - **Clean layering:** `commands/` (thin Typer wrappers) → `core/` (logic) → `models.py` (pydantic). Covered by a fast test suite.
 
 ## Quickstart
 
 ```bash
 git clone https://github.com/atisben/vague.git && cd vague
-task install           # editable uv tool install + vague install (auto-detects Claude Code, Cursor, or Windsurf)
+task install           # editable uv tool install + vague install (every Claude profile found on disk)
 ```
 
 `task install` installs vague in editable mode, so skills link straight into this repo. Edits to a `SKILL.md` or a template are live at once. Run `task sync` (`vague install`) after adding, renaming, or changing the `Trigger:` line of a skill. Live skills follow the checked-out branch.
@@ -165,7 +165,7 @@ vague install --runtime claude:work      # just that one
 
 ### What vague writes into CLAUDE.md
 
-Each instruction file (every Claude profile's `CLAUDE.md`, Cursor's rule) gets
+Each instruction file (every Claude profile's `CLAUDE.md`) gets
 the same public block:
 
 ```
@@ -295,7 +295,7 @@ agent spawns inherits it. When running `vague` by hand, add
 - Python 3.11+
 - `git`
 - `gh` CLI (optional, for PR creation in `/dev-ship`)
-- Claude Code (or Cursor / Windsurf)
+- Claude Code
 
 ---
 

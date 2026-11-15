@@ -5,9 +5,9 @@
 `vague` is a Python CLI package that sits between AI tool skills (Markdown files) and the local filesystem. There is no server, no cloud, no registry.
 
 ```
-AI tool session (Claude Code / Cursor / Windsurf)
+Claude Code session (any profile)
     │
-    ├── reads  ~/.claude/skills/{skill-name}/SKILL.md   (or ~/.cursor/skills/…)
+    ├── reads  ~/.claude/skills/{skill-name}/SKILL.md   (or ~/.claude-<profile>/skills/…)
     │          └── skill calls `vague` CLI commands
     └── vague  ← Python package on $PATH
                └── reads/writes ~/.vague/
@@ -23,7 +23,7 @@ When the user types `/dev-ship` (or any skill), this is what ends up in the LLM'
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         LLM CONTEXT WINDOW                              │
 │                                                                         │
-│  1. CLAUDE.md / .cursor/rules/vague.mdc          (always present)       │
+│  1. CLAUDE.md                                    (always present)       │
 │     guidelines.md (incl. the Memory section) + skill routing table      │
 │                              │                                          │
 │                              ▼                                          │
@@ -193,7 +193,7 @@ Each skill that writes a doc announces the output path, logs a `doc` pointer wit
 
 ### Memory Across Sessions and Agents
 
-`~/.vague/` is agent-agnostic. A memory written by Claude Code reaches Cursor's next preamble, and the reverse.
+`~/.vague/` is shared by every Claude profile and every agent with a shell. A memory written from your personal profile reaches the work profile's next preamble, and the reverse.
 
 ```
 Day 1 — Claude Code — /dev-investigate on acme-api
@@ -204,7 +204,7 @@ Day 1 — Claude Code — /dev-investigate on acme-api
                   --files app/models/order.rb --skill dev-investigate
               → memory.jsonl +1 line, events +1 context_write (ids: acme-api/order-lineitems-n-plus-one)
 
-─────────────────────────────────────────────── Day 3 — Cursor — /dev-ship
+──────────────────────────────── Day 3 — another Claude profile — /dev-ship
   preamble    → git diff touches app/models/order.rb, so the memory ranks first:
                 - [order-lineitems-n-plus-one] Order.line_items is never eager-loaded...
   agent       → applies the fix, writes a regression test, commits
@@ -225,7 +225,7 @@ Day 1 — Claude Code — /dev-investigate on acme-api
 
 | Property | Behaviour |
 |----------|-----------|
-| Agent-agnostic | Claude Code and Cursor read and write the same `~/.vague/` |
+| Profile-agnostic | Every Claude profile, and any agent that runs `vague`, reads and writes the same `~/.vague/` |
 | Session-persistent | Memories survive session restarts and reboots |
 | Scoped, with a global layer | Each repo has its own scope. `--global` memories reach every repo |
 | Bounded | The preamble never prints more than 1,500 tokens of memory |
