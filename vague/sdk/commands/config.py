@@ -3,37 +3,22 @@
 from __future__ import annotations
 
 import sys
-from typing import Any
 
 import typer
 
-from vague.sdk.core.config import get_config, set_config_key
+from vague.config import get_config, load_config, set_config_key
 
 
 def cmd_config_get(key: str) -> None:
-    """Get a config value by key. Outputs raw value or 'null'."""
-    try:
-        config = get_config()
-        data = config.model_dump()
-        value = data.get(key)
-        if value is None:
-            typer.echo("null")
-        else:
-            typer.echo(str(value))
-    except Exception:
-        typer.echo("null")
+    """Print a config value: the file's value, else the default, else 'null'."""
+    value = {**get_config().model_dump(), **load_config()}.get(key)
+    typer.echo("null" if value is None else str(value))
 
 
 def cmd_config_set(key: str, value: str) -> None:
-    """Set a config value. Coerces booleans."""
+    """Set a config value in config.env."""
     try:
-        # Coerce booleans
-        parsed: Any = value
-        if value.lower() == "true":
-            parsed = True
-        elif value.lower() == "false":
-            parsed = False
-        set_config_key(key, parsed)
-    except Exception as e:
+        set_config_key(key=key, value=value)
+    except OSError as e:
         print(f"Error: {e}", file=sys.stderr)
         raise typer.Exit(1) from e

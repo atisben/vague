@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any
 
 import typer
 
+from vague.hooks import edited_file
 from vague.sdk.core.logging import get_logger
 
 
@@ -25,17 +25,9 @@ def _edited_skill_dir(payload: dict[str, Any]) -> Path | None:
     Only dirs under the bundled root qualify: a hook must not run the rules on any
     SKILL.md the user happens to edit elsewhere on disk.
     """
-    if payload.get("tool_name") not in ("Write", "Edit"):
-        return None
-    tool_input = payload.get("tool_input")
-    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
-    if not isinstance(file_path, str) or not file_path:
-        return None
-    cwd = str(payload.get("cwd") or "")
-    # realpath so an edit through the installed symlink (~/.claude*/skills/<name>) still counts.
-    resolved = Path(os.path.realpath(os.path.join(cwd, file_path) if cwd else file_path))
+    resolved = edited_file(payload=payload)
     root = _bundled_skills_root()
-    if not resolved.is_relative_to(root):
+    if resolved is None or not resolved.is_relative_to(root):
         return None
 
     from vague.sdk.core.skill_rules import skill_dir_for
@@ -63,7 +55,7 @@ def cmd_log_event() -> None:
             return
         payload = parsed
 
-        from vague.sdk.core.config import get_config
+        from vague.config import get_config
         if get_config().telemetry != "off":
             from vague.sdk.core.events import append_event, parse_hook_payload
             event = parse_hook_payload(payload=payload)

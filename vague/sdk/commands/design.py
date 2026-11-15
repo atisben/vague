@@ -7,10 +7,10 @@ import os
 import sys
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
 
 import typer
 
+from vague.hooks import edited_file
 from vague.sdk.core.logging import get_logger
 
 # Vendored, generated or tool-owned trees: findings there are not the user's to fix.
@@ -75,17 +75,6 @@ def cmd_design_check(paths: list[str], hook: bool) -> None:
     print("OK: no findings")
 
 
-def _edited_file(payload: dict[str, Any]) -> tuple[Path, Path] | None:
-    """The file a Write/Edit touched, resolved against the session cwd, and that cwd."""
-    tool_input = payload.get("tool_input")
-    file_path = tool_input.get("file_path") if isinstance(tool_input, dict) else None
-    if not isinstance(file_path, str) or not file_path:
-        return None
-    cwd_raw = payload.get("cwd")
-    cwd = Path(os.path.realpath(cwd_raw)) if isinstance(cwd_raw, str) and cwd_raw else Path.cwd()
-    return Path(os.path.realpath(cwd / file_path)), cwd
-
-
 def _run_hook() -> None:
     """PostToolUse hook: findings go to stderr with exit 2, which Claude Code feeds back to Claude.
 
@@ -100,10 +89,11 @@ def _run_hook() -> None:
         payload = json.loads(raw)
         if not isinstance(payload, dict):
             return
-        edited = _edited_file(payload=payload)
-        if edited is None:
+        path = edited_file(payload=payload)
+        if path is None:
             return
-        path, cwd = edited
+        cwd_raw = payload.get("cwd")
+        cwd = Path(os.path.realpath(cwd_raw)) if isinstance(cwd_raw, str) and cwd_raw else Path.cwd()
 
         from vague.sdk.core import design_rules
 

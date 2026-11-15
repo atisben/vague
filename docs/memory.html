@@ -286,7 +286,7 @@ alma-ai_ml/ai-ml-tests-need-docker  [dev-review]  alma/ai_ml tests and mypy run 
 <ul>
   <li><b>Concurrent writers:</b> each write is a single append of one line, so parallel agents never overwrite each other and no lock is needed.</li>
   <li><b>Crashes:</b> a half-written last line is skipped with a warning, and every other line still reads.</li>
-  <li><b>Privacy:</b> events hold memory keys, never memory text or project file contents. Nothing leaves the machine. <code>telemetry: off</code> stops events, and memories are still written.</li>
+  <li><b>Privacy:</b> events hold memory keys, never memory text or project file contents. Nothing leaves the machine. <code>telemetry=off</code> in <code>config.env</code> stops events, and memories are still written.</li>
   <li><b>Direct edits:</b> do not edit <code>memory.jsonl</code> by hand. Edits through the CLI are the ones monitoring can see.</li>
 </ul>
 

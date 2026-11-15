@@ -20,4 +20,4 @@ jobs:
       - name: Pre-commit hooks
         run: uvx pre-commit run --all-files --show-diff-on-failure
       - name: Test
-        run: uv run --extra dev pytest -q
+        run: uv run pytest -q

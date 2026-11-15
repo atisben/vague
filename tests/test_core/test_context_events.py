@@ -79,8 +79,8 @@ def test_config_commands_record_their_file(home, in_session):
     runner.invoke(sdk_app, ["config-set", "telemetry", "local"])
     runner.invoke(sdk_app, ["config-get", "telemetry"])
     seen = {(e["command"], e["event"], e["path"].rsplit("/", 1)[1]) for e in _context(home)}
-    assert ("config-set", "context_write", "config.md") in seen
-    assert ("config-get", "context_read", "config.md") in seen
+    assert ("config-set", "context_write", "config.env") in seen
+    assert ("config-get", "context_read", "config.env") in seen
 
 
 def test_session_id_unset_logs_unknown_session(home):
@@ -155,7 +155,7 @@ def test_context_path_is_symlink_resolved(home, in_session, tmp_path):
 
 
 def test_log_event_itself_logs_no_context_events(home, in_session):
-    (home / "config.md").write_text("---\ntelemetry: local\n---\n")
+    (home / "config.env").write_text("telemetry=local\n")
     payload = {
         "hook_event_name": "PostToolUse", "tool_name": "Skill", "tool_input": {"skill": "learn"},
         "tool_response": {"success": True}, "session_id": "s1", "cwd": "/nonexistent/x",

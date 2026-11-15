@@ -8,7 +8,6 @@ from vague.config import (
     claude_dirs,
     load_config,
     profile_name_for,
-    vague_home,
 )
 
 
@@ -17,21 +16,6 @@ def clean_env(monkeypatch):
     """Remove every config env var so tests start from a known state."""
     for var in ("VAGUE_CLAUDE_DIRS", "CLAUDE_CONFIG_DIR"):
         monkeypatch.delenv(var, raising=False)
-
-
-class TestVagueHome:
-    def test_uses_env_var(self, vague_home_dir, monkeypatch):
-        monkeypatch.setenv("VAGUE_HOME", str(vague_home_dir))
-        assert vague_home() == vague_home_dir
-
-    def test_defaults_to_home_dot_vague(self, monkeypatch):
-        monkeypatch.delenv("VAGUE_HOME", raising=False)
-        assert vague_home().name == ".vague"
-
-    def test_expands_tilde(self, monkeypatch):
-        monkeypatch.setenv("VAGUE_HOME", "~/.custom-vague")
-        assert "~" not in str(vague_home())
-        assert vague_home().name == ".custom-vague"
 
 
 class TestLoadConfig:

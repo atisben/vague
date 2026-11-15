@@ -1,12 +1,17 @@
 """Tests for vague context."""
 
 import json
+import subprocess
 
 from typer.testing import CliRunner
 
 from vague.sdk.cli import sdk_app
 
 runner = CliRunner()
+
+
+def git_repo_branch(repo):
+    return subprocess.run(["git", "branch", "--show-current"], cwd=repo, capture_output=True, text=True).stdout.strip()
 
 
 def test_context_json_returns_context_fields(vague_home):
@@ -37,7 +42,8 @@ def test_context_json_skill_prints_json_and_writes_nothing(vague_home, git_repo,
     monkeypatch.chdir(git_repo)
     result = runner.invoke(sdk_app, ["context", "--skill", "dev-develop"])
     assert result.exit_code == 0
-    assert json.loads(result.output)["slug"] == "repo"
+    data = json.loads(result.output)
+    assert (data["slug"], data["branch"]) == ("repo", git_repo_branch(git_repo))
     assert not (vague_home / "projects").exists()
 
 
