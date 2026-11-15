@@ -230,6 +230,11 @@ with Write or Edit while a skill runs. When that file belongs to a bundled
 skill, the hook also runs `vague skill-check` on it and returns any findings
 to Claude (exit 2), so a broken skill edit is caught in the same turn.
 
+`/impeccable` declares its own `PostToolUse` hook in its frontmatter. Once you
+invoke the skill, `vague design-check --hook` scans each UI file Claude edits for
+eight AI-design tells and returns findings the same way. Run `vague design-check <paths>`
+to scan by hand.
+
 Capture is best-effort and can never break a skill: if the write fails, the
 error is swallowed and the command output still prints.
 

@@ -26,6 +26,6 @@ Reason over the signals; there is no score to obey:
 - A native project (`ios`, `android`, or `adaptive`) → say that vague ships no native-platform guidance, and recommend only the commands that are platform-neutral (`critique`, `clarify`, `distill`, `onboard`, `shape`).
 - Otherwise group by intent (build new / improve what's there), tailored to the current surface.
 
-**If there are changed markup or style files and the project is web, skim them once** with Read and Grep for obvious slop families. Fold the hits into your picks: many contrast or quality problems → `audit` or `polish`; a specific slop family → the matching command (gradient text or eyebrows → `quieter` / `typeset`, flat or gray palette → `colorize`, and so on). If the tree is large and slow, skip it and recommend the user run `audit` themselves; never block the suggestion on it.
+**If there are changed markup or style files and the project is web, run `vague design-check <changed files>` once**, then skim them with Read and Grep for slop families the detector does not cover. Fold the hits into your picks: many contrast or quality problems → `audit` or `polish`; a specific slop family → the matching command (gradient text or eyebrows → `quieter` / `typeset`, flat or gray palette → `colorize`, and so on). If the tree is large and slow, skip it and recommend the user run `audit` themselves; never block the suggestion on it.
 
 Keep it to 2-3 pointed picks with the exact command to type. The menu stays the fallback; the recommendation is the lede.

@@ -67,6 +67,7 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 | `requires_slug` | Yes | `true` for most skills. `false` for global tools like `/vault`. |
 | `allowed-tools` | Yes | List only tools the skill actually uses. |
 | `benefits-from` | No | Array of skill names this one reads outputs from. |
+| `hooks` | No | Claude Code hooks active once the skill is invoked, keyed by event: `PostToolUse: [{matcher: "Edit\|Write", hooks: [{type: command, command: ...}]}]`. `vague skill-check` validates the shape. `/impeccable` uses it to run `vague design-check --hook`. |
 
 ---
 

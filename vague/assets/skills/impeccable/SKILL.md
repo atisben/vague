@@ -12,9 +12,16 @@ sdk_commands:
   - vague context
   - vague memory-log
   - vague memory-search
+  - vague design-check
 requires_slug: true
 runtimes:
   - claude
+hooks:
+  PostToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: vague design-check --hook
 allowed-tools: [Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion, Agent]
 ---
 <!-- Adapted from pbakaus/impeccable@2b86d9c (Apache-2.0). See NOTICE.md. -->
@@ -145,6 +152,29 @@ Two read-only reviewer agents check built work. They never edit files.
 | `impeccable-motion-reviewer` | Authored motion and its reduced-motion path | animate, critique | Run [reference/degraded/motion-reviewer.md](reference/degraded/motion-reviewer.md) inline |
 
 Spawn them with the Agent tool and a fresh context. Pass the target files, the chosen mockup path when the direction file names one, and the evidence the playbook names. They load the brief and the direction note themselves with `vague memory-search`, then read the direction file the note names. When no Agent tool is exposed, read the fallback file, step out of your own findings, run the review inline, and disclose the substitution in the result.
+
+---
+
+## Detector
+
+`vague design-check` is a regex scan of UI source files (`.css`, `.html`, `.jsx`, `.tsx`, `.vue`, `.svelte` and similar) for eight AI-design tells. It reads one file at a time, so it cannot see rendered contrast, sizes or overflow.
+
+It runs in two ways:
+
+- **As a hook.** The `hooks` block in this file's frontmatter runs `vague design-check --hook` after every Edit and Write, from the moment `/impeccable` is invoked until the session ends. Findings come back to you as a hook error (exit 2). Fix them in the same turn.
+- **By hand.** `audit`, `critique`, `layout`, `typeset` and `polish` run `vague design-check <target paths>` first, then scan by hand for what the rules do not cover. It prints `<path>:<line>: <rule>: <message>` per finding and exits 1 when there is any.
+
+The eight rule ids are `side-tab`, `border-accent-on-rounded`, `overused-font`, `gradient-text`, `gray-on-color`, `ai-color-palette`, `bounce-easing` and `broken-image`. A font named in the brief's `design-type` learning (`Brand fonts: ...`) is never flagged as `overused-font`.
+
+To keep a deliberate match, add a comment with the rule id and a reason after `:` or `--`. The comment uses the file's own syntax (`/* */` in CSS and scripts, `<!-- -->` in markup):
+
+| Comment | Waives the rules for |
+|---|---|
+| `/* impeccable-disable-next-line side-tab: brand callout */` | The next line |
+| `/* impeccable-disable-line bounce-easing: playful toggle */` | Its own line |
+| `<!-- impeccable-disable broken-image -- exported doc -->` | The whole file |
+
+Separate several rule ids with commas or spaces. A comment with no rule id waives every rule. Waive only what the brief asks for, never to silence a real finding.
 
 ---
 
