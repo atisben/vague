@@ -3,133 +3,262 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>vague usage</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='%23a8491f'/%3E%3C/svg%3E">
 <style>
+  /* Warm paper tokens. The accent is spent on selection and the primary action only. */
   :root {
-    --bg: #fafaf9; --panel: #ffffff; --line: #e7e5e4; --text: #1c1917; --muted: #78716c;
-    --edge: rgba(120,113,108,.28); --skill: #44403c; --accent: #2563eb;
+    color-scheme: light dark;
+    --bg: #f7f2ea; --panel: #fdfaf4; --line: #e4dccd; --text: #2a2520; --muted: #6f655a;
+    --edge: rgba(111,101,90,.32); --accent: #a8491f; --on-accent: #ffffff;
+    --accent-wash: color-mix(in srgb, var(--accent) 12%, var(--panel));
+    --shadow: 0 8px 24px rgba(70,45,20,.14);
     --sans: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px;
+    --r-s: 6px; --r-m: 10px;
+    --ease: cubic-bezier(.22, 1, .36, 1);
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #131211; --panel: #1c1a19; --line: #2c2927; --text: #f5f5f4; --muted: #a8a29e;
-            --edge: rgba(168,162,158,.26); --skill: #d6d3d1; --accent: #60a5fa; }
+    :root { --bg: #1a1612; --panel: #221d18; --line: #342d26; --text: #f1e9dd; --muted: #aa9f90;
+            --edge: rgba(170,159,144,.3); --accent: #e08a5c; --on-accent: #1a1612;
+            --shadow: 0 8px 24px rgba(0,0,0,.45); }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { height: 100%; margin: 0; }
-  body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--sans);
-         display: grid; grid-template-columns: 250px 1fr; grid-template-rows: 48px 1fr 96px; overflow: hidden; }
-  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  body { position: relative; background: var(--bg); color: var(--text); font: 13px/1.45 var(--sans);
+         display: grid; grid-template-columns: 272px 1fr; grid-template-rows: 52px 1fr 104px; overflow: hidden;
+         caret-color: var(--accent); accent-color: var(--accent); scrollbar-color: var(--line) transparent; }
+  ::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  h1, h2, h3, h4 { text-wrap: balance; }
+
+  header { grid-column: 1 / 3; display: flex; align-items: center; gap: var(--s3); padding: 0 var(--s4);
            border-bottom: 1px solid var(--line); background: var(--panel); }
-  header h1 { font-size: 14px; margin: 0; font-weight: 650; letter-spacing: .02em; }
+  header h1 { font: 600 17px/1 var(--serif); margin: 0; }
   header .grow { flex: 1; }
-  input[type=search], select { background: var(--bg); color: var(--text); border: 1px solid var(--line);
-         border-radius: 6px; padding: 5px 9px; font: inherit; }
-  input[type=search] { width: 220px; }
-  .toggle { display: flex; gap: 4px; }
-  .toggle button, .btn { background: var(--bg); color: var(--muted); border: 1px solid var(--line); border-radius: 6px;
-         padding: 4px 9px; font: inherit; cursor: pointer; }
-  .toggle button.on { color: var(--text); border-color: var(--muted); }
+  input[type=search], input[type=date], select { background: var(--bg); color: var(--text); border: 1px solid var(--line);
+         border-radius: var(--r-s); padding: 5px 9px; font: inherit; }
+  input[type=date] { padding: 4px 6px; font-variant-numeric: tabular-nums; }
+  .search { position: relative; }
+  .search input { width: 260px; max-width: 100%; }
+  #results { position: absolute; top: calc(100% + var(--s1)); left: 0; width: 340px; max-width: 86vw; z-index: 8; padding: var(--s1);
+             background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-m); box-shadow: var(--shadow); }
+  .res { display: flex; align-items: center; gap: var(--s2); width: 100%; padding: 6px var(--s2); border: 0; border-radius: var(--r-s);
+         background: none; text-align: left; cursor: pointer; }
+  .res:hover { background: var(--bg); }
+  .res .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toggle { display: flex; gap: var(--s1); }
+  .btn, .toggle button { background: var(--bg); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-s);
+         padding: 4px 10px; cursor: pointer; min-height: 28px; }
+  .toggle button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: var(--accent-wash); }
   .btn:hover, .toggle button:hover { border-color: var(--muted); color: var(--text); }
-  aside { grid-row: 2; border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 12px 10px; }
-  aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 14px 6px 6px; font-weight: 600; }
-  aside h2:first-child { margin-top: 2px; }
-  .chip { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; user-select: none; }
-  .chip:hover { background: var(--bg); }
-  .chip.off { opacity: .35; }
-  .chip .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-  .chip .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn.primary:hover { color: var(--on-accent); filter: brightness(1.06); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .range { display: flex; align-items: center; gap: var(--s2); }
+  #custom { display: inline-flex; align-items: center; gap: var(--s2); }
+  .sep { color: var(--muted); }
+  #vault-badge { display: inline-flex; align-items: center; gap: var(--s2); color: var(--text); border-color: var(--accent); }
+  #vault-badge b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  aside { grid-row: 2; grid-column: 1; border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto;
+          padding: var(--s4) var(--s3) var(--s5); }
+  aside section + section { margin-top: var(--s5); }
+  aside h2 { font: 600 15px/1.3 var(--serif); margin: 0 6px var(--s2); }
+  aside h2 .sub { font: 400 12px var(--sans); color: var(--muted); margin-left: var(--s1); font-variant-numeric: tabular-nums; }
+  .close-drawer { display: none; margin: 0 6px var(--s3) auto; }
+  .chip, .vf { display: flex; align-items: center; gap: var(--s2); width: 100%; padding: 5px 6px; border: 0; border-radius: var(--r-s);
+               background: none; text-align: left; cursor: pointer; user-select: none; }
+  .chip:hover, .vf:hover { background: var(--bg); }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--dot); }
+  .chip[aria-pressed="false"] { color: var(--muted); }
+  .chip[aria-pressed="false"] .dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--dot); }
+  .chip .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip .n { color: var(--muted); font-variant-numeric: tabular-nums; }
-  main { grid-row: 2; position: relative; overflow: hidden; }
-  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
-  canvas.drag { cursor: grabbing; }
-  #detail { position: absolute; top: 12px; right: 12px; bottom: 12px; width: 340px; background: var(--panel);
-            border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-y: auto;
-            box-shadow: 0 6px 24px rgba(0,0,0,.12); transform: translateX(380px); transition: transform .18s ease; }
-  #detail.open { transform: none; }
-  #detail h3 { margin: 0 0 2px; font-size: 15px; word-break: break-all; }
-  #detail .kind { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
-  #detail .row { margin-top: 12px; }
-  #detail .row b { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 3px; }
-  #detail .path { font-family: var(--mono); font-size: 12px; word-break: break-all; }
-  #detail .text { white-space: pre-wrap; }
-  #detail .actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
-  #detail .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  #detail .btn[disabled] { opacity: .4; cursor: not-allowed; }
-  #detail a.link { display: flex; align-items: center; gap: 7px; padding: 3px 0; cursor: pointer; color: var(--fc, var(--text)); }
-  #detail a.link.file, .vf .name { font-family: var(--mono); font-size: 12px; }
-  .vf .name { color: var(--fc, var(--text)); }
-  #detail a.link:hover { color: var(--accent); }
-  #detail a.link .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-  #close { position: absolute; top: 10px; right: 12px; background: none; border: 0; color: var(--muted); font-size: 18px; cursor: pointer; }
-  #tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
-         padding: 4px 8px; font-size: 12px; max-width: 360px; display: none; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
-  #empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: var(--muted); text-align: center; }
-  #toast { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--text); color: var(--bg);
-           padding: 6px 12px; border-radius: 6px; display: none; }
-  #legend { position: absolute; left: 12px; bottom: 12px; color: var(--muted); font-size: 11px; display: flex; gap: 12px; }
-  input[type=date] { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; font: inherit; color-scheme: light dark; }
-  .sep { color: var(--muted); margin: 0 -6px; }
-  aside .sub { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 4px; }
-  #timeline { grid-column: 1 / 3; grid-row: 3; display: flex; flex-direction: column; padding: 6px 16px 6px;
-              border-top: 1px solid var(--line); background: var(--panel); min-width: 0; }
-  #timeline .head { display: flex; gap: 10px; align-items: baseline; font-size: 11px; color: var(--muted); }
-  #timeline .head b { color: var(--text); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
-  #timeline .head .grow { flex: 1; }
-  #hist { position: relative; flex: 1; display: flex; align-items: flex-end; gap: 1px; margin-top: 4px; cursor: crosshair; touch-action: none; user-select: none; }
-  #hist i { flex: 1; min-width: 1px; background: var(--muted); opacity: .25; border-radius: 1px 1px 0 0; pointer-events: none; }
-  #hist i.in { opacity: .9; background: var(--accent); }
-  #hist-axis { display: flex; justify-content: space-between; margin-top: 2px; color: var(--muted); font-size: 10px; }
-  .vf { display: block; padding: 4px 6px; border-radius: 6px; cursor: pointer; }
-  .vf:hover { background: var(--bg); }
-  .vf .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vf .meta { color: var(--muted); font-size: 11px; }
-  .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
-  .badge.vault { color: var(--accent); border-color: var(--accent); }
-  .skill { padding: 4px 6px; border-radius: 6px; }
-  .skill:hover { background: var(--bg); }
-  .skill .top { display: flex; justify-content: space-between; gap: 8px; }
+  .glyph { flex: none; }
+  .vf { align-items: flex-start; }
+  .vf .glyph { margin-top: 3px; }
+  .vf-text { display: block; flex: 1; min-width: 0; }
+  .vf .name { display: block; font: 12px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .vf .meta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .empty-note { margin: 0; padding: var(--s1) 6px; }
+  .more { margin: var(--s1) 6px 0; }
+  .skill { padding: 4px 6px; }
+  .skill .top { display: flex; justify-content: space-between; gap: var(--s2); }
   .skill .top span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .skill .bar { display: flex; height: 6px; margin-top: 3px; border-radius: 3px; overflow: hidden; background: var(--bg); }
+  .skill .bar { display: flex; height: 6px; margin-top: 3px; border-radius: 3px; overflow: hidden; background: var(--line); }
   .skill .bar i { display: block; height: 100%; }
-  .skill .last { color: var(--muted); font-size: 11px; margin-top: 2px; }
-  @media (max-width: 760px) { body { grid-template-columns: 1fr; } aside { display: none; } header, #timeline { grid-column: 1; } #detail { width: calc(100% - 24px); } }
+  .skill .last { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  main { grid-row: 2; grid-column: 2; position: relative; overflow: hidden; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  canvas.drag { cursor: grabbing; }
+  .viewctl { position: absolute; top: var(--s3); left: var(--s3); display: flex; gap: var(--s1); }
+  .viewctl .btn { background: var(--panel); min-width: 32px; }
+  #keys-btn[aria-expanded="true"] { color: var(--text); border-color: var(--accent); background: var(--accent-wash); }
+  #keys { position: absolute; top: 52px; left: var(--s3); z-index: 5; width: min(300px, calc(100% - 24px)); padding: var(--s3) var(--s4);
+          background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-m); box-shadow: var(--shadow); }
+  #keys h2 { margin: 0 0 var(--s2); font: 600 15px var(--serif); }
+  #keys dl { display: grid; grid-template-columns: auto 1fr; gap: 6px var(--s4); margin: 0; }
+  #keys dt { font: 12px var(--mono); }
+  #keys dd { margin: 0; color: var(--muted); }
+  @media (pointer: coarse) { #keys-btn { display: none; } }
+  #banner { position: absolute; top: 52px; left: var(--s3); z-index: 3; display: flex; align-items: center; gap: var(--s3);
+            max-width: min(520px, calc(100% - 24px)); padding: var(--s2) var(--s3); background: var(--panel);
+            border: 1px solid var(--accent); border-radius: var(--r-m); box-shadow: var(--shadow); }
+  #state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+           gap: var(--s3); padding: var(--s5); color: var(--muted); text-align: center; pointer-events: none; }
+  #state p { margin: 0; max-width: 40ch; text-wrap: pretty; }
+  #state .btn { pointer-events: auto; }
+  code { font: 12px var(--mono); }
+  #detail { position: absolute; top: var(--s3); right: var(--s3); bottom: var(--s3); width: min(340px, calc(100% - 24px)); z-index: 4;
+            background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-m); padding: var(--s4); overflow-y: auto;
+            box-shadow: var(--shadow); transform: translateX(calc(100% + 24px)); visibility: hidden;
+            transition: transform .18s var(--ease), visibility 0s linear .18s; }
+  #detail.open { transform: none; visibility: visible; transition-delay: 0s; }
+  #detail h3 { font: 600 17px/1.25 var(--serif); margin: 0 var(--s5) 2px 0; overflow-wrap: anywhere; }
+  #detail .kind { color: var(--muted); }
+  #detail .row { margin-top: var(--s3); }
+  #detail h4 { margin: 0 0 3px; font: 600 12px var(--sans); color: var(--muted); }
+  #detail .path { font: 12px var(--mono); overflow-wrap: anywhere; }
+  #detail .text { white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: pretty; }
+  #detail .actions { display: flex; gap: 6px; margin-top: var(--s3); flex-wrap: wrap; }
+  .link { display: flex; align-items: center; gap: 7px; width: 100%; padding: 3px 0; border: 0; background: none; text-align: left; cursor: pointer; }
+  .link.file { font: 12px var(--mono); }
+  .link:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .link span { min-width: 0; overflow-wrap: anywhere; }
+  #close { position: absolute; top: var(--s2); right: var(--s2); width: 32px; height: 32px; background: none; border: 0; border-radius: var(--r-s);
+           color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; }
+  #close:hover { color: var(--text); }
+  .badge { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
+  .badge.vault { color: var(--accent); border-color: var(--accent); }
+  #tip { position: absolute; z-index: 2; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-s);
+         padding: 4px var(--s2); font-size: 12px; max-width: 360px; display: none; box-shadow: var(--shadow); }
+  #toast { position: absolute; left: 50%; bottom: var(--s5); z-index: 6; transform: translateX(-50%); background: var(--text); color: var(--bg);
+           padding: 6px var(--s3); border-radius: var(--r-s); max-width: calc(100% - 24px); opacity: 0; pointer-events: none;
+           transition: opacity .18s var(--ease); }
+  #toast.show { opacity: 1; }
+  #legend { position: absolute; left: var(--s3); bottom: var(--s3); z-index: 1; max-width: calc(100% - 24px); display: flex; flex-wrap: wrap;
+            gap: 4px var(--s3); padding: 6px var(--s3); color: var(--muted); font-size: 12px; border-radius: var(--r-m);
+            background: color-mix(in srgb, var(--bg) 88%, transparent); }
+  #legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+  #timeline { grid-column: 1 / 3; grid-row: 3; display: flex; flex-direction: column; padding: var(--s2) var(--s4);
+              border-top: 1px solid var(--line); background: var(--panel); min-width: 0; }
+  #timeline .head { display: flex; flex-wrap: wrap; gap: 2px var(--s3); align-items: baseline; font-size: 12px; color: var(--muted); }
+  #timeline .head h2 { margin: 0; font: 600 14px var(--serif); color: var(--text); }
+  #timeline .head .grow { flex: 1; }
+  #hist-range, #hist-hover, #hist-a, #hist-b { font-variant-numeric: tabular-nums; }
+  #hist { position: relative; flex: 1; display: flex; align-items: flex-end; gap: 1px; margin-top: var(--s1); cursor: crosshair; touch-action: none; user-select: none; }
+  #hist i { flex: 1; min-width: 1px; background: var(--muted); opacity: .22; border-radius: 1px 1px 0 0; pointer-events: none; }
+  #hist i.in { opacity: .8; }
+  #hist.brushing i.in, #hist i.hot { background: var(--accent); opacity: 1; }
+  #hist-axis { display: flex; justify-content: space-between; margin-top: 2px; color: var(--muted); font-size: 11px; }
+
+  @media (pointer: coarse) { .btn, .toggle button, .chip, .vf, .res, select, input { min-height: 44px; } }
+  @media (max-width: 760px) {
+    body { grid-template-columns: 1fr; grid-template-rows: auto 1fr 104px; }
+    header { grid-column: 1; flex-wrap: wrap; padding: var(--s2) var(--s3); gap: var(--s2); }
+    header .grow { display: none; }
+    header h1 { order: 1; }
+    #vault-badge { order: 2; margin-left: auto; }
+    .search { order: 3; flex: 1 1 140px; min-width: 0; }
+    .search input { width: 100%; }
+    .range { order: 4; }
+    .viewctl { flex-wrap: wrap; max-width: calc(100% - 24px); }
+    .viewctl .toggle button { background: var(--panel); }
+    main { grid-column: 1; }
+    #timeline { grid-column: 1; }
+    aside { position: absolute; top: 0; bottom: 0; left: 0; z-index: 7; width: min(300px, 86vw); box-shadow: var(--shadow);
+            transform: translateX(-102%); visibility: hidden; transition: transform .18s var(--ease), visibility 0s linear .18s; }
+    body.drawer aside { transform: none; visibility: visible; transition-delay: 0s; }
+    body.drawer::after { content: ""; position: fixed; inset: 0; z-index: 6; background: rgba(0,0,0,.32); }
+    .close-drawer { display: block; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #detail, aside, #toast { transition: none; }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>vague usage</h1>
-  <input id="q" type="search" placeholder="Search (press /)" autocomplete="off">
-  <div class="toggle" id="layers"></div>
-  <span class="grow"></span>
-  <select id="preset" title="Date range">
-    <option value="7">Last 7 days</option>
-    <option value="30" selected>Last 30 days</option>
-    <option value="90">Last 90 days</option>
-    <option value="0">All time</option>
-    <option value="custom">Custom</option>
-  </select>
-  <input type="date" id="from" title="From"><span class="sep">→</span><input type="date" id="to" title="To">
-  <button class="btn" id="fit" title="Fit graph to view">Fit</button>
+  <div class="search">
+    <label class="sr-only" for="q">Search the graph</label>
+    <input id="q" type="search" placeholder="Search projects, files, memories (press /)" autocomplete="off" aria-controls="results">
+    <div id="results" hidden></div>
+  </div>
+  <div class="toggle" id="layers" role="group" aria-label="Show on the graph"></div>
+  <span class="grow" id="hdr-grow"></span>
+  <div class="range">
+    <label class="sr-only" for="preset">Date range</label>
+    <select id="preset">
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="0">All time</option>
+      <option value="custom">Custom</option>
+    </select>
+    <span id="custom" hidden>
+      <label class="sr-only" for="from">From</label><input type="date" id="from">
+      <span class="sep" aria-hidden="true">→</span>
+      <label class="sr-only" for="to">To</label><input type="date" id="to">
+    </span>
+  </div>
+  <button class="btn" id="vault-badge" type="button" title="Files skills wrote to your Obsidian vault in this range">Obsidian <b id="vault-count">0</b></button>
 </header>
-<aside>
-  <h2>Projects</h2><div id="projects"></div>
-  <h2>Written to Obsidian <span class="sub" id="vault-total"></span></h2><div id="vault"></div>
-  <h2>Skills used <span class="sub" id="skills-total"></span></h2><div id="skills"></div>
+<aside id="side" aria-label="Browse">
+  <button class="btn close-drawer" id="drawer-close" type="button">Close</button>
+  <section aria-labelledby="h-vault">
+    <h2 id="h-vault" tabindex="-1">Written to Obsidian <span class="sub" id="vault-total"></span></h2>
+    <div id="vault"></div>
+  </section>
+  <section aria-labelledby="h-projects">
+    <h2 id="h-projects">Projects</h2>
+    <div id="projects"></div>
+  </section>
+  <section aria-labelledby="h-skills">
+    <h2 id="h-skills">Skills used <span class="sub" id="skills-total"></span></h2>
+    <div id="skills"></div>
+  </section>
 </aside>
 <main>
-  <canvas id="c"></canvas>
-  <div id="empty">Nothing in this date range.<br>Widen the range or pick another day.</div>
-  <div id="legend"><span>● project</span><span>▪ file</span><span>▣ file outside a repo (incl. Obsidian)</span><span>○ memory</span><span>◐ branch</span><span>— file↔file: named in the same memory</span></div>
+  <canvas id="c" role="img" aria-label="Graph of your usage. Use search or the lists on the left to browse it."></canvas>
+  <div class="viewctl" id="viewctl" role="group" aria-label="Graph view">
+    <button class="btn" id="zout" type="button" aria-label="Zoom out" title="Zoom out (-)">−</button>
+    <button class="btn" id="zin" type="button" aria-label="Zoom in" title="Zoom in (+)">+</button>
+    <button class="btn" id="fit" type="button" title="Fit the graph to the view (0)">Fit</button>
+    <button class="btn" id="keys-btn" type="button" aria-expanded="false" aria-controls="keys" title="Keyboard shortcuts (?)">Keys</button>
+  </div>
+  <div id="keys" hidden>
+    <h2>Keyboard shortcuts</h2>
+    <dl>
+      <dt>/</dt><dd>Search, then Enter to jump</dd>
+      <dt>Esc</dt><dd>Clear search, close this, then close the panel</dd>
+      <dt>+ and −</dt><dd>Zoom in and out</dd>
+      <dt>0</dt><dd>Fit the graph to the view</dd>
+      <dt>Double-click</dt><dd>Open a file</dd>
+    </dl>
+  </div>
+  <div id="banner" role="alert" hidden><span id="banner-msg"></span><button class="btn" id="banner-retry" type="button">Try again</button></div>
+  <div id="state" role="status" hidden><p id="state-msg"></p><button class="btn" id="retry" type="button" hidden>Try again</button></div>
+  <div id="legend" aria-label="Legend"></div>
   <div id="tip"></div>
-  <div id="toast"></div>
-  <div id="detail"><button id="close" aria-label="Close">×</button><div id="detail-body"></div></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="detail" role="region" aria-label="Details"><button id="close" type="button" aria-label="Close details">×</button><div id="detail-body"></div></div>
 </main>
 <footer id="timeline">
-  <div class="head"><b>Activity</b><span id="hist-range"></span><span class="grow"></span>
-    <span>Drag to select a window · click a day · shift+click extends</span></div>
-  <div id="hist"></div>
-  <div id="hist-axis"><span id="hist-a"></span><span id="hist-b"></span></div>
+  <div class="head"><h2>Activity</h2><span id="hist-range"></span><span id="hist-hover"></span><span class="grow"></span>
+    <span>Drag to pick a window, click a day, shift-click to extend</span></div>
+  <div id="hist" role="group" aria-label="Events per day. Drag to choose a window. The date controls in the header do the same from the keyboard."></div>
+  <div id="hist-axis" aria-hidden="true"><span id="hist-a"></span><span id="hist-b"></span></div>
 </footer>
 
 <script>
@@ -137,42 +266,77 @@
 const $ = (id) => document.getElementById(id);
 const canvas = $("c"), ctx = canvas.getContext("2d");
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const plural = (n, one, many = one + "s") => (n === 1 ? one : many);
 
 // ── state ────────────────────────────────────────────────────────────
 const S = {
   nodes: [], links: [], byId: new Map(), adj: new Map(),
   hiddenProjects: new Set(), skills: [], activity: [], range: { from: "", to: "" },
-  layers: { branch: false, memory: false, file: true },
-  query: "", selected: null, hover: null,
+  layers: { branch: false, memory: false, file: true }, vaultAll: false,
+  query: "", selected: null, hover: null, detailSig: "", prevFocus: null, lastOk: null,
   view: { x: 0, y: 0, k: 1 }, alpha: 1, fitted: false, w: 0, h: 0, dpr: 1,
 };
 const R = { project: 7, branch: 3.5, memory: 2.6, file: 2.4 };
 const CHARGE = { project: 900, branch: 260, memory: 120, file: 110 };
 const LINK = { has_branch: [70, .06], has_memory: [60, .05], touches: [34, .12], has_file: [80, .02], co_mentioned: [42, .09] };
 const LAYER_LABEL = { branch: "Branches", memory: "Memories", file: "Files" };
+const LAYER_HINT = { branch: "Show git branches", memory: "Show memories: lasting facts and notes that link files", file: "Show the files skills touched" };
+const KIND_NOTE = {
+  learning: "A lasting fact", observation: "Feedback about a skill",
+  note: "A working note, hidden after 7 days", doc: "A pointer to a document a skill wrote",
+};
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
+const dark = matchMedia("(prefers-color-scheme: dark)");
 
-// One hue per project, inherited by its branches, memories and files. "global" and skills stay gray.
-const hue = (n) => n.project === "global" ? null : (S.byId.get("project:" + n.project)?.hue ?? null);
-const projectColor = (slug, a = 1) => {
-  const h = slug === "global" ? null : S.byId.get("project:" + slug)?.hue ?? null;
-  return h === null ? `hsla(30,6%,55%,${a})` : `hsla(${h},68%,54%,${a})`;
+// Canvas colours come from the CSS tokens, read once per theme change instead of once per drawn element.
+const T = {};
+function readTheme() { for (const k of ["--edge", "--bg", "--text", "--panel", "--muted", "--accent", "--sans", "--serif", "--mono"]) T[k] = css(k); }
+dark.addEventListener("change", readTheme);
+
+// One colour code per channel: hue names the project (shared by its branches, memories and files), shape names the kind.
+const hueOf = (slug) => (slug === "global" ? null : S.byId.get("project:" + slug)?.hue ?? null);
+const projectColor = (slug, a = 1, lift = 0) => {
+  const h = hueOf(slug);
+  return h === null ? `hsla(32,10%,${dark.matches ? 62 : 48}%,${a})` : `hsla(${h},40%,${(dark.matches ? 66 : 40) + lift}%,${a})`;
 };
-const color = (n, a = 1) => {
-  const h = hue(n);
-  return h === null ? `hsla(30,6%,55%,${a})` : `hsla(${h},68%,${n.type === "branch" ? 62 : 54}%,${a})`;
-};
+const color = (n, a = 1) => projectColor(n.project, a, n.type === "branch" ? 8 : 0);
 
 // ── data ─────────────────────────────────────────────────────────────
+let loadSeq = 0;
 async function load(first) {
+  const mine = ++loadSeq; // a slower, older response must never overwrite a newer range
+  if (first && !S.nodes.length) setState("loading");
   const q = new URLSearchParams();
   if (S.range.from) q.set("since", S.range.from);
   if (S.range.to) q.set("until", S.range.to);
   let data;
-  try { data = await (await fetch(`/api/graph?${q}`)).json(); } catch { return; }
+  try {
+    const res = await fetch(`/api/graph?${q}`);
+    if (!res.ok) throw new Error(String(res.status));
+    data = await res.json();
+  } catch { if (mine === loadSeq) failLoad(); return; }
+  if (mine !== loadSeq) return;
+  S.lastOk = new Date(); $("banner").hidden = true;
   S.skills = data.skills; S.activity = data.activity;
   merge(data);
   renderSkills(); renderHist(); renderVault();
   if (first || !S.fitted) { settle(220); fit(); S.fitted = true; }
+}
+function failLoad() {
+  if (S.nodes.length) {
+    $("banner-msg").textContent = `Can't reach the vague server. Showing what loaded at ${S.lastOk ? S.lastOk.toLocaleTimeString([], { timeStyle: "short" }) : "the start"}. Retrying every 10 seconds.`;
+    $("banner").hidden = false;
+  } else setState("error");
+}
+function setState(kind) {
+  const box = $("state"), msg = $("state-msg"), retry = $("retry");
+  box.hidden = !kind; retry.hidden = kind !== "error";
+  box.setAttribute("role", kind === "error" ? "alert" : "status");
+  msg.replaceChildren(...({
+    loading: ["Gathering your usage…"],
+    empty: ["Quiet here. Nothing happened in this range, so widen it or pick another day."],
+    error: ["Can't reach the vague server. It may have stopped. Run ", el("code", { textContent: "vague ui" }), " again, then try again."],
+  }[kind] || []));
 }
 
 function merge(data) {
@@ -194,9 +358,10 @@ function merge(data) {
   S.adj = new Map(S.nodes.map((n) => [n.id, new Set()]));
   for (const l of S.links) { S.adj.get(l.source).add(l.target); S.adj.get(l.target).add(l.source); }
   if (S.selected && !next.has(S.selected.id)) select(null); else if (S.selected) S.selected = next.get(S.selected.id);
-  renderSidebar(); renderDetail();
-  if (changed) S.alpha = Math.max(S.alpha, .5);
-  $("empty").style.display = S.nodes.length ? "none" : "flex";
+  renderSidebar(); renderDetail(); renderSummary(); runSearch();
+  // A cursor, drag or open panel means the user is looking: reheat gently so nodes do not slide away.
+  if (changed) S.alpha = Math.max(S.alpha, S.hover || down || S.selected ? .12 : .5);
+  setState(S.nodes.length ? null : "empty");
 }
 
 // ── visibility ───────────────────────────────────────────────────────
@@ -242,78 +407,85 @@ function tick() {
     if (n === S.drag) { n.vx = n.vy = 0; continue; }
     n.x += n.vx; n.y += n.vy; n.vx *= .6; n.vy *= .6;
   }
-  S.alpha *= .985; if (S.alpha < .01) S.alpha = 0;
+  S.alpha *= REDUCED.matches ? .9 : .985; if (S.alpha < .01) S.alpha = 0;
 }
 function settle(n) { VIS = visibleSet(); S.alpha = 1; for (let i = 0; i < n; i++) tick(); S.alpha = .3; }
 
 // ── drawing ──────────────────────────────────────────────────────────
 function focusSet() {
   const c = S.hover || S.selected, q = S.query.trim().toLowerCase();
-  if (c) return new Set([c.id, ...S.adj.get(c.id)]);
+  if (c) return new Set([c.id, ...(S.adj.get(c.id) || [])]);
   if (q) return new Set(S.nodes.filter((n) => matches(n, q)).map((n) => n.id));
   return null;
 }
 const matches = (n, q) => [n.label, n.project, n.relative, n.text, n.skill].some((v) => v && String(v).toLowerCase().includes(q));
 const radius = (n) => R[n.type] + (n.type === "project" ? Math.min(3.5, Math.log2(n.count + 1) * .8) : n.type === "file" ? Math.min(2.4, Math.log2(n.count + 1) * .7) : 0);
 
-// Label color follows the file extension, so the type reads without opening the file.
-const EXT_HUE = { py: 215, ipynb: 28, md: 150, txt: 150, html: 18, css: 275, js: 48, ts: 200, tsx: 200, json: 38, yml: 330, yaml: 330, toml: 330, sh: 100, sql: 180, csv: 120 };
-const SANS = 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif';
-const MONO = 'ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace';
-const dark = matchMedia("(prefers-color-scheme: dark)");
-function extColor(n) {
-  const name = n.label || "", dot = name.lastIndexOf(".");
-  const h = dot > 0 ? EXT_HUE[name.slice(dot + 1).toLowerCase()] : undefined;
-  return h === undefined ? css("--text") : `hsl(${h},62%,${dark.matches ? 70 : 38}%)`;
-}
-
 function draw() {
   const { w, h, dpr, view } = S;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
   ctx.translate(view.x, view.y); ctx.scale(view.k, view.k);
   const focus = focusSet(), dim = (id) => focus && !focus.has(id);
+  const lead = S.hover || S.selected;
   ctx.lineCap = "round";
 
   for (const l of S.links) {
     if (!linkShown(l)) continue;
-    const lit = focus && focus.has(l.source) && focus.has(l.target) && (S.hover || S.selected) &&
-                (l.source === (S.hover || S.selected).id || l.target === (S.hover || S.selected).id);
-    ctx.strokeStyle = lit ? color(l.s, .9) : dim(l.source) || dim(l.target) ? "rgba(128,128,128,.06)" : css("--edge");
+    const lit = focus && focus.has(l.source) && focus.has(l.target) && lead && (l.source === lead.id || l.target === lead.id);
+    ctx.strokeStyle = lit ? color(l.s, .9) : dim(l.source) || dim(l.target) ? "rgba(128,128,128,.06)" : T["--edge"];
     ctx.lineWidth = (lit ? 1.8 : .8 + Math.min(2.2, Math.log2(l.weight + 1) * .5)) / Math.sqrt(view.k);
     ctx.beginPath(); ctx.moveTo(l.s.x, l.s.y); ctx.lineTo(l.t.x, l.t.y); ctx.stroke();
   }
 
+  const labels = [];
   for (const n of S.nodes) {
     if (!VIS.has(n.id)) continue;
     const r = radius(n), a = dim(n.id) ? .12 : 1;
     ctx.globalAlpha = a; ctx.fillStyle = color(n); ctx.strokeStyle = color(n);
     ctx.beginPath();
-    if (n.type === "file") { // same square everywhere; a thin frame marks a file outside a repo (incl. Obsidian)
+    if (n.type === "file") { // a thin frame marks a file outside a repo (incl. Obsidian)
       ctx.fillStyle = color(n, n.exists ? 1 : .45); ctx.rect(n.x - r, n.y - r, r * 2, r * 2); ctx.fill();
       if (n.area === "vault" || n.area === "external") {
-        ctx.lineWidth = 1 / view.k; ctx.strokeStyle = css("--text"); ctx.beginPath(); ctx.rect(n.x - r - 2, n.y - r - 2, r * 2 + 4, r * 2 + 4); ctx.stroke();
+        ctx.lineWidth = 1 / view.k; ctx.strokeStyle = T["--text"]; ctx.beginPath(); ctx.rect(n.x - r - 2, n.y - r - 2, r * 2 + 4, r * 2 + 4); ctx.stroke();
       }
     } else if (n.type === "memory") {
       ctx.arc(n.x, n.y, r, 0, 6.283);
       if (n.kind === "observation") { ctx.lineWidth = 1.3; ctx.stroke(); } else ctx.fill();
     } else if (n.type === "branch") {
-      ctx.arc(n.x, n.y, r, 0, 6.283); ctx.fill(); ctx.fillStyle = css("--panel"); ctx.beginPath(); ctx.arc(n.x, n.y, r * .42, 0, 6.283); ctx.fill();
+      ctx.arc(n.x, n.y, r, 0, 6.283); ctx.fill(); ctx.fillStyle = T["--panel"]; ctx.beginPath(); ctx.arc(n.x, n.y, r * .42, 0, 6.283); ctx.fill();
     } else { ctx.arc(n.x, n.y, r, 0, 6.283); ctx.fill(); }
-    if (n === S.selected || n === S.hover) { ctx.globalAlpha = 1; ctx.strokeStyle = css("--text"); ctx.lineWidth = 2 / view.k; ctx.beginPath(); ctx.arc(n.x, n.y, r + 3.5, 0, 6.283); ctx.stroke(); }
-    ctx.globalAlpha = 1;
-    const showLabel = n.type === "project" || (focus && focus.has(n.id) && n.type !== "memory") || (n.type === "file" && view.k > 1.3) || (n.type === "branch" && view.k > 1.5) || view.k > 2.6;
-    if (showLabel && !dim(n.id)) {
-      const fs = (n.type === "project" ? 12 : 10) / Math.min(1.4, Math.max(.8, view.k));
-      ctx.fillStyle = n.type === "file" ? extColor(n) : css("--text");
-      ctx.font = n.type === "file" ? `500 ${fs}px ${MONO}` : `${n.type === "project" ? "600 " : "400 "}${fs}px ${SANS}`;
-      ctx.textAlign = "center"; ctx.fillText(n.label.length > 28 ? n.label.slice(0, 27) + "…" : n.label, n.x, n.y + r + fs + 3);
+    if (n === S.selected || n === S.hover) {
+      ctx.globalAlpha = 1; ctx.strokeStyle = n === S.selected ? T["--accent"] : T["--text"]; ctx.lineWidth = 2 / view.k;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 3.5, 0, 6.283); ctx.stroke();
     }
+    ctx.globalAlpha = 1;
+    // Lower rank wins a contested spot: what you point at, projects, then what the vault holds, then the rest as you zoom in.
+    const rank = n === S.selected || n === S.hover ? 0 : n.type === "project" ? 1 : n.type === "file" && n.area === "vault" ? 2
+      : focus && focus.has(n.id) && n.type !== "memory" ? 3 : n.type === "file" && view.k > 1.3 ? 4 : n.type === "branch" && view.k > 1.5 ? 5 : view.k > 2.6 ? 6 : 99;
+    if (rank < 99 && !dim(n.id)) labels.push({ n, r, rank });
+  }
+  drawLabels(labels, view);
+}
+// Greedy placement: a label that would land on one already placed is skipped, so the graph never turns into a smear of names.
+function drawLabels(labels, view) {
+  labels.sort((a, b) => a.rank - b.rank);
+  const placed = [];
+  ctx.textAlign = "center"; ctx.lineJoin = "round"; ctx.lineWidth = 3 / Math.min(1.4, Math.max(.8, view.k)); ctx.strokeStyle = T["--bg"];
+  for (const { n, r, rank } of labels) {
+    const fs = (n.type === "project" ? 13 : 11) / Math.min(1.4, Math.max(.8, view.k));
+    ctx.font = n.type === "file" ? `500 ${fs}px ${T["--mono"]}` : n.type === "project" ? `600 ${fs}px ${T["--serif"]}` : `400 ${fs}px ${T["--sans"]}`;
+    const text = n.label.length > 28 ? n.label.slice(0, 27) + "…" : n.label, w = ctx.measureText(text).width;
+    const box = { x0: n.x - w / 2 - 2, x1: n.x + w / 2 + 2, y0: n.y + r + 2, y1: n.y + r + fs + 5 };
+    if (rank > 0 && placed.some((p) => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0)) continue;
+    placed.push(box);
+    ctx.strokeText(text, n.x, n.y + r + fs + 3); ctx.fillStyle = T["--text"]; ctx.fillText(text, n.x, n.y + r + fs + 3);
   }
 }
 
 function frame() {
   VIS = visibleSet();
-  if (S.alpha > 0) tick();
+  // Reduced motion: settle within a frame or two instead of animating the layout.
+  if (S.alpha > 0) for (let i = 0, n = REDUCED.matches ? 40 : 1; i < n && S.alpha > 0; i++) tick();
   draw(); requestAnimationFrame(frame);
 }
 
@@ -326,8 +498,14 @@ function fit() {
   const ns = S.nodes.filter((n) => VIS.has(n.id)); if (!ns.length) return;
   const xs = ns.map((n) => n.x), ys = ns.map((n) => n.y);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-  const k = Math.min(2, .86 * Math.min(S.w / ((x1 - x0) || 1), S.h / ((y1 - y0) || 1)));
-  S.view = { k, x: S.w / 2 - ((x0 + x1) / 2) * k, y: S.h / 2 - ((y0 + y1) / 2) * k };
+  // Keep the graph clear of the view controls above and the legend below.
+  const top = $("viewctl").offsetHeight + 24, bottom = S.h - $("legend").offsetHeight - 24, room = Math.max(120, bottom - top);
+  const k = Math.min(2, .86 * Math.min(Math.max(120, S.w - 140) / ((x1 - x0) || 1), room / ((y1 - y0) || 1))); // 140px of side room for wide file names
+  S.view = { k, x: S.w / 2 - ((x0 + x1) / 2) * k, y: top + room / 2 - ((y0 + y1) / 2) * k };
+}
+function zoom(f) {
+  const cx = S.w / 2, cy = S.h / 2, p = toWorld(cx, cy), k = Math.min(4, Math.max(.15, S.view.k * f));
+  S.view.k = k; S.view.x = cx - p.x * k; S.view.y = cy - p.y * k;
 }
 const toWorld = (px, py) => ({ x: (px - S.view.x) / S.view.k, y: (py - S.view.y) / S.view.k });
 function pick(px, py) {
@@ -339,13 +517,18 @@ function pick(px, py) {
   }
   return best;
 }
+// One pointer owns a drag. A second finger, a browser-cancelled gesture, lost capture or a blurred window all end it cleanly.
 let down = null;
+function cancelDrag() { canvas.classList.remove("drag"); S.drag = null; down = null; }
 canvas.addEventListener("pointerdown", (e) => {
-  const n = pick(e.offsetX, e.offsetY); down = { x: e.offsetX, y: e.offsetY, n, moved: false, vx: S.view.x, vy: S.view.y };
+  if (down) return;
+  if (document.body.classList.contains("drawer")) { closeDrawer(); return; }
+  const n = pick(e.offsetX, e.offsetY); down = { id: e.pointerId, x: e.offsetX, y: e.offsetY, n, moved: false, vx: S.view.x, vy: S.view.y };
   canvas.setPointerCapture(e.pointerId); canvas.classList.add("drag"); if (n) S.drag = n;
 });
 canvas.addEventListener("pointermove", (e) => {
   if (down) {
+    if (e.pointerId !== down.id) return;
     const dx = e.offsetX - down.x, dy = e.offsetY - down.y; if (Math.hypot(dx, dy) > 3) down.moved = true;
     if (down.n && down.moved) { const p = toWorld(e.offsetX, e.offsetY); down.n.x = p.x; down.n.y = p.y; S.alpha = Math.max(S.alpha, .25); }
     else if (!down.n) { S.view.x = down.vx + dx; S.view.y = down.vy + dy; }
@@ -357,76 +540,268 @@ canvas.addEventListener("pointermove", (e) => {
   else tip.style.display = "none";
 });
 canvas.addEventListener("pointerup", (e) => {
-  canvas.classList.remove("drag"); S.drag = null;
-  if (down && !down.moved) select(down.n);
-  down = null;
+  if (!down || e.pointerId !== down.id) return;
+  const hit = !down.moved ? down.n : undefined;
+  cancelDrag();
+  if (hit !== undefined) select(hit);
 });
-canvas.addEventListener("pointerleave", () => { S.hover = null; $("tip").style.display = "none"; });
+for (const type of ["pointercancel", "lostpointercapture"]) canvas.addEventListener(type, cancelDrag);
+canvas.addEventListener("pointerleave", () => { if (!down) S.hover = null; $("tip").style.display = "none"; });
 canvas.addEventListener("dblclick", (e) => { const n = pick(e.offsetX, e.offsetY); if (n?.type === "file") openFile(n); });
 canvas.addEventListener("wheel", (e) => {
   e.preventDefault(); const f = Math.exp(-e.deltaY * .0015), k = Math.min(4, Math.max(.15, S.view.k * f)), p = toWorld(e.offsetX, e.offsetY);
   S.view.k = k; S.view.x = e.offsetX - p.x * k; S.view.y = e.offsetY - p.y * k;
 }, { passive: false });
+addEventListener("blur", () => { cancelDrag(); if (brush) { brush = null; $("hist").classList.remove("brushing"); renderHist(); } });
 
 const tipText = (n) => ({
-  project: `${n.label} · ${n.count} events`, branch: `${n.project} @ ${n.label}`,
+  project: `${n.label} · ${n.count} ${plural(n.count, "event")}`, branch: `${n.project} @ ${n.label}`,
   memory: `${n.label}${n.text ? " — " + n.text.slice(0, 120) : ""}`,
   file: `${n.area === "vault" ? "Obsidian · " : n.area === "external" ? "Outside repo · " : ""}${n.relative || n.label}${n.skill ? " · by " + n.skill : ""}`,
 }[n.type]);
 
-// ── sidebar & detail ─────────────────────────────────────────────────
+// ── building blocks ──────────────────────────────────────────────────
 function el(tag, props = {}, ...kids) {
   const e = Object.assign(document.createElement(tag), props);
   for (const k of kids.flat()) if (k != null) e.append(k.nodeType ? k : document.createTextNode(k));
   return e;
 }
-function chip(label, count, dotColor, off, onClick) {
-  const c = el("div", { className: "chip" + (off ? " off" : ""), title: "Click to show or hide" },
-    el("span", { className: "dot" }), el("span", { className: "name", textContent: label }), el("span", { className: "n", textContent: count }));
-  c.firstChild.style.background = dotColor; c.onclick = onClick; return c;
+// Shapes here are the same ones the canvas draws, so a legend, a list row and a node read as one code.
+function glyph(kind, fill = "currentColor") {
+  const NS = "http://www.w3.org/2000/svg", s = document.createElementNS(NS, "svg");
+  for (const [k, v] of Object.entries({ viewBox: "0 0 16 16", width: 12, height: 12, "aria-hidden": "true", class: "glyph" })) s.setAttribute(k, v);
+  const add = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); s.append(e); };
+  if (kind === "project") add("circle", { cx: 8, cy: 8, r: 6, fill });
+  else if (kind === "file") add("rect", { x: 3.5, y: 3.5, width: 9, height: 9, fill });
+  else if (kind === "vault") { add("rect", { x: 5, y: 5, width: 6, height: 6, fill }); add("rect", { x: 2, y: 2, width: 12, height: 12, fill: "none", stroke: "currentColor", "stroke-width": 1.25 }); }
+  else if (kind === "memory") add("circle", { cx: 8, cy: 8, r: 4, fill });
+  else if (kind === "observation") add("circle", { cx: 8, cy: 8, r: 4, fill: "none", stroke: fill, "stroke-width": 1.6 });
+  else if (kind === "branch") { add("circle", { cx: 8, cy: 8, r: 5.5, fill }); add("circle", { cx: 8, cy: 8, r: 2.2, fill: "var(--panel)" }); }
+  else if (kind === "line") add("line", { x1: 1, y1: 8, x2: 15, y2: 8, stroke: "currentColor", "stroke-width": 1.5 });
+  return s;
+}
+// Rebuild a list only when its data changed, and give focus back to the same item, so the 10-second refresh never drops a keyboard user.
+function patch(box, sig, build) {
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  const key = box.contains(document.activeElement) ? document.activeElement.dataset.key : null;
+  box.replaceChildren(...build());
+  if (key) box.querySelector(`[data-key="${CSS.escape(key)}"]`)?.focus();
+}
+const when = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "unknown");
+
+// ── sidebar ──────────────────────────────────────────────────────────
+function chip(p) {
+  const off = S.hiddenProjects.has(p.label);
+  const c = el("button", { type: "button", className: "chip", title: `${off ? "Show" : "Hide"} ${p.label} on the graph` },
+    el("span", { className: "dot" }), el("span", { className: "name", textContent: p.label }), el("span", { className: "n", textContent: p.count }));
+  c.setAttribute("aria-pressed", String(!off)); c.dataset.key = "project:" + p.label; c.style.setProperty("--dot", color(p));
+  c.onclick = () => {
+    off ? S.hiddenProjects.delete(p.label) : S.hiddenProjects.add(p.label);
+    S.alpha = Math.max(S.alpha, .4); renderSidebar();
+  };
+  return c;
 }
 function renderSidebar() {
   const projects = S.nodes.filter((n) => n.type === "project").sort((a, b) => b.count - a.count);
-  $("projects").replaceChildren(...projects.map((p) => chip(p.label, p.count, color(p), S.hiddenProjects.has(p.label), () => {
-    S.hiddenProjects.has(p.label) ? S.hiddenProjects.delete(p.label) : S.hiddenProjects.add(p.label);
-    S.alpha = Math.max(S.alpha, .4); renderSidebar();
-  })));
+  patch($("projects"), JSON.stringify([projects.map((p) => [p.label, p.count, p.hue]), [...S.hiddenProjects]]),
+    () => (projects.length ? projects.map(chip) : [el("p", { className: "meta empty-note", textContent: "No projects in this range." })]));
 }
 // Files a skill wrote into the vault, listed even when the Files layer is off: the user must always see these.
+const VAULT_ROWS = 8;
 function renderVault() {
   const files = S.nodes.filter((n) => n.type === "file" && n.area === "vault").sort((a, b) => (b.last_ts || "").localeCompare(a.last_ts || ""));
-  $("vault-total").textContent = files.length ? `· ${files.length}` : "";
-  $("vault").replaceChildren(...(files.length ? files.map((n) => {
-    const a = el("a", { className: "vf", title: n.relative },
-      el("div", { className: "name", textContent: n.label }),
-      el("div", { className: "meta", textContent: `${n.skill || "a skill"} · ${when(n.last_ts)} · ${n.project}` }));
-    a.firstChild.style.setProperty("--fc", extColor(n)); a.onclick = () => { select(n); if (VIS.has(n.id)) center(n); }; return a;
-  }) : [el("div", { className: "meta", style: "padding:4px 6px", textContent: "No skill wrote to the vault in this range." })]));
+  $("vault-total").textContent = files.length ? `· ${files.length}` : ""; $("vault-count").textContent = files.length;
+  const shown = S.vaultAll ? files : files.slice(0, VAULT_ROWS);
+  patch($("vault"), JSON.stringify([shown.map((n) => [n.id, n.label, n.last_ts, n.skill, n.project, n.relative]), files.length, S.vaultAll]), () => {
+    if (!files.length) return [el("p", { className: "meta empty-note", textContent: "No skill wrote to your vault in this range." })];
+    const rows = shown.map((n) => {
+      const b = el("button", { type: "button", className: "vf", title: n.relative },
+        glyph("vault", projectColor(n.project)),
+        el("span", { className: "vf-text" }, el("span", { className: "name", textContent: n.label }),
+          el("span", { className: "meta", textContent: `${n.skill || "A skill"} · ${when(n.last_ts)} · ${n.project}` })));
+      b.dataset.key = n.id; b.onclick = () => jumpTo(n);
+      b.onmouseenter = b.onfocus = () => { S.hover = n; };
+      b.onmouseleave = b.onblur = () => { if (S.hover === n) S.hover = null; };
+      return b;
+    });
+    if (files.length > VAULT_ROWS) {
+      const more = el("button", { type: "button", className: "btn more", textContent: S.vaultAll ? "Show fewer" : `Show all ${files.length}` });
+      more.dataset.key = "vault-more"; more.setAttribute("aria-expanded", String(S.vaultAll));
+      more.onclick = () => { S.vaultAll = !S.vaultAll; renderVault(); };
+      rows.push(more);
+    }
+    return rows;
+  });
 }
 // Skills are usage statistics, not graph nodes: a skill touches everything, so as a node it hubs unrelated projects.
 function renderSkills() {
   const total = S.skills.reduce((t, k) => t + k.count, 0), max = Math.max(1, ...S.skills.map((k) => k.count));
-  $("skills-total").textContent = total ? `· ${total} runs` : "";
-  $("skills").replaceChildren(...(S.skills.length ? S.skills.map((k) => {
-    const bar = el("div", { className: "bar" });
-    bar.style.width = (k.count / max) * 100 + "%";
+  $("skills-total").textContent = total ? `· ${total} ${plural(total, "run")}` : "";
+  patch($("skills"), JSON.stringify(S.skills), () => (S.skills.length ? S.skills.map((k) => {
+    const split = Object.entries(k.projects).map(([p, n]) => `${p}: ${n}`).join(", ");
+    const bar = el("div", { className: "bar", role: "img" });
+    bar.setAttribute("aria-label", `Runs by project: ${split}`); bar.style.width = (k.count / max) * 100 + "%";
     for (const [slug, n] of Object.entries(k.projects)) { const seg = el("i", { title: `${slug}: ${n}` }); seg.style.flex = n; seg.style.background = projectColor(slug); bar.append(seg); }
-    return el("div", { className: "skill", title: Object.entries(k.projects).map(([p, n]) => `${p}: ${n}`).join("\n") },
+    return el("div", { className: "skill", title: split.replaceAll(", ", "\n") },
       el("div", { className: "top" }, el("span", { textContent: k.skill }), el("span", { textContent: k.count })), bar,
-      el("div", { className: "last", textContent: "last " + new Date(k.last_ts).toLocaleDateString() }));
-  }) : [el("div", { className: "last", style: "padding:4px 6px", textContent: "No skill runs in this range." })]));
+      el("div", { className: "last", textContent: "last run " + new Date(k.last_ts).toLocaleDateString([], { dateStyle: "medium" }) }));
+  }) : [el("p", { className: "last empty-note", textContent: "No skill ran in this range." })]));
 }
+function renderSummary() {
+  const count = (t) => S.nodes.filter((n) => n.type === t).length, p = count("project"), f = count("file");
+  canvas.setAttribute("aria-label", `Graph of ${p} ${plural(p, "project")} and ${f} ${plural(f, "file")}. Use search or the lists on the left to browse it.`);
+}
+function renderLegend() {
+  const items = [["project", "Colour shows the project"]];
+  if (S.layers.file) items.push(["file", "File"], ["vault", "File in Obsidian or outside a repo"]);
+  if (S.layers.memory) items.push(["memory", "Memory"], ["observation", "Observation (feedback about a skill)"]);
+  if (S.layers.branch) items.push(["branch", "Branch"]);
+  if (S.layers.file && !S.layers.memory) items.push(["line", "Files named in the same memory"]);
+  $("legend").replaceChildren(...items.map(([k, label]) => el("span", {}, glyph(k), label)));
+}
+
+// ── search and jump ──────────────────────────────────────────────────
+const RANK = { project: 0, file: 1, branch: 2, memory: 3 };
+function runSearch() {
+  const q = S.query.trim().toLowerCase(), box = $("results");
+  if (!q) { box.hidden = true; delete box.dataset.sig; box.replaceChildren(); return; }
+  const hits = S.nodes.filter((n) => matches(n, q)).sort((a, b) => RANK[a.type] - RANK[b.type]).slice(0, 8);
+  box.hidden = false;
+  patch(box, JSON.stringify([q, hits.map((n) => n.id)]), () => (hits.length ? hits.map((n) => {
+    const b = el("button", { type: "button", className: "res" }, glyph(n.type === "file" && n.area === "vault" ? "vault" : n.type, color(n)),
+      el("span", { className: "name", textContent: n.label }), el("span", { className: "meta", textContent: n.type === "project" ? "project" : `${n.type} · ${n.project}` }));
+    b.dataset.key = n.id; b.onclick = () => jumpTo(n); return b;
+  }) : [el("p", { className: "meta empty-note", textContent: `Nothing matches “${S.query.trim()}”.` })]));
+}
+function clearSearch() { $("q").value = ""; S.query = ""; runSearch(); if (document.activeElement !== document.body) document.activeElement.blur(); }
+// Reveal what the user asked for: switch its layer on and unhide its project first.
+function jumpTo(n) {
+  if (n.type !== "project" && !S.layers[n.type]) { S.layers[n.type] = true; renderLayers(); }
+  S.hiddenProjects.delete(n.type === "project" ? n.label : n.project); renderSidebar();
+  S.alpha = Math.max(S.alpha, .3);
+  if (document.body.classList.contains("drawer")) closeDrawer(false);
+  // A chosen result ends the search. Esc then returns focus to the search box, not to a button that just vanished.
+  const from = $("results").contains(document.activeElement) ? $("q") : document.activeElement;
+  $("q").value = ""; S.query = ""; runSearch();
+  select(n, from); center(n);
+}
+$("q").addEventListener("input", (e) => { S.query = e.target.value; runSearch(); });
+$("q").addEventListener("keydown", (e) => {
+  const first = $("results").querySelector(".res");
+  if (e.key === "Enter" && first) { e.preventDefault(); first.click(); }
+  if (e.key === "ArrowDown" && first) { e.preventDefault(); first.focus(); }
+});
+$("results").addEventListener("keydown", (e) => {
+  const list = [...$("results").querySelectorAll(".res")], i = list.indexOf(document.activeElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); list[Math.min(i + 1, list.length - 1)]?.focus(); }
+  if (e.key === "ArrowUp") { e.preventDefault(); (i > 0 ? list[i - 1] : $("q")).focus(); }
+});
+
+// ── detail panel ─────────────────────────────────────────────────────
+function select(n, from = document.activeElement) {
+  if (n && !S.selected) S.prevFocus = from;
+  S.selected = n; renderDetail(true);
+  if (n) $("close").focus({ preventScroll: true });
+  else if (S.prevFocus && document.contains(S.prevFocus) && S.prevFocus !== document.body) { S.prevFocus.focus({ preventScroll: true }); S.prevFocus = null; }
+}
+function link(n) {
+  const b = el("button", { type: "button", className: "link" + (n.type === "file" ? " file" : "") },
+    glyph(n.type === "file" && n.area === "vault" ? "vault" : n.type, color(n)), el("span", { textContent: n.type === "file" ? n.relative : n.label }));
+  b.onclick = () => jumpTo(n); return b;
+}
+const coFiles = (n) => S.links.filter((l) => l.kind === "co_mentioned" && (l.source === n.id || l.target === n.id))
+  .sort((a, b) => b.weight - a.weight).map((l) => (l.source === n.id ? l.t : l.s));
+const related = (n, type) => [...(S.adj.get(n.id) || [])].map((id) => S.byId.get(id)).filter((m) => m && m.type === type);
+const links = (items, max = 12) => [items.slice(0, max).map(link), items.length > max ? el("div", { className: "meta", textContent: `and ${items.length - max} more` }) : null];
+function row(title, ...kids) {
+  const flat = kids.flat(2).filter((k) => k != null && k !== "");
+  return flat.length ? el("div", { className: "row" }, el("h4", { textContent: title }), ...flat) : null;
+}
+const KIND_LABEL = { project: "Project", branch: "Branch", memory: "Memory", file: "File" };
+function renderDetail(force) {
+  const n = S.selected, box = $("detail-body"); $("detail").classList.toggle("open", !!n);
+  if (!n) { S.detailSig = ""; return; }
+  // The 10-second refresh re-enters here: skip the rebuild unless something the panel shows changed.
+  const sig = [n.id, n.last_ts, n.exists, n.text, n.status, n.count, S.adj.get(n.id)?.size].join("|");
+  if (!force && sig === S.detailSig) return;
+  S.detailSig = sig;
+  const out = [el("h3", { textContent: n.label }), el("div", { className: "kind", textContent: KIND_LABEL[n.type] || n.type })];
+  if (n.type === "file") {
+    const where = { vault: "Obsidian vault", external: "Outside the repo", repo: "In the repo" }[n.area || "repo"];
+    out.push(row("Location", el("span", { className: "badge" + (n.area === "vault" ? " vault" : ""), textContent: where }), n.skill ? ` · written by ${n.skill}` : ""));
+    out.push(row("Path", el("div", { className: "path", textContent: n.path || n.relative })));
+    if (!n.path) out.push(row("Note", "vague has never seen this repo's checkout on disk, so it can't open the file from here."));
+    else if (!n.exists) out.push(row("Note", "The file no longer exists on disk. It may have been moved or deleted."));
+    const open = el("button", { type: "button", className: "btn primary", textContent: "Open", disabled: !n.exists, onclick: () => openFile(n) });
+    const reveal = el("button", { type: "button", className: "btn", textContent: "Reveal", disabled: !n.exists, onclick: () => openFile(n, true) });
+    const copy = el("button", { type: "button", className: "btn", textContent: "Copy path", onclick: () => copyPath(n.path || n.relative) });
+    out.push(el("div", { className: "actions" }, open, reveal, copy));
+    out.push(row("Files named in the same memory", links(coFiles(n))));
+    out.push(row("Mentioned in memories", links(related(n, "memory"))));
+  } else if (n.type === "memory") {
+    out.push(row("Memory", el("div", { className: "text", textContent: n.text || "(no text)" })));
+    out.push(row("Kind", `${n.kind}: ${KIND_NOTE[n.kind] || "a ledger entry"}`), row("Status", n.status), row("Last written", when(n.last_ts)));
+    out.push(row("Project", links(related(n, "project"))), row("Written by", n.skill), row("Files", links(related(n, "file"))));
+  } else if (n.type === "project") {
+    out.push(row("Checkout", el("div", { className: "path", textContent: n.root || "not seen in any event yet" })));
+    out.push(row("Last activity", when(n.last_ts)));
+    const files = related(n, "file"), memories = related(n, "memory");
+    out.push(row(`${files.length} ${plural(files.length, "file")}`, links(files, 15)));
+    out.push(row("Branches", links(related(n, "branch"))), row(`${memories.length} ${plural(memories.length, "memory", "memories")}`, links(memories)));
+  } else if (n.type === "branch") {
+    out.push(row("Project", links(related(n, "project"))), row("Last activity", when(n.last_ts)));
+  }
+  box.replaceChildren(...out.filter(Boolean));
+}
+function center(n) { S.view.x = S.w / 2 - n.x * S.view.k; S.view.y = S.h / 2 - n.y * S.view.k; }
+async function openFile(n, reveal = false) {
+  if (!n.path || !n.exists) return toast("This file can't be opened: it isn't on disk any more.");
+  let r;
+  try { r = await fetch("/api/open", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: n.path, reveal }) }); }
+  catch { return toast("Can't reach the vague server, so the file wasn't opened."); }
+  toast(r.ok ? (reveal ? "Revealed in your file manager" : "Opened") : r.status === 403 ? "The server only opens files the graph lists, and it no longer lists this one." : `The server couldn't open the file (error ${r.status}).`);
+}
+async function copyPath(text) {
+  try { await navigator.clipboard.writeText(text); toast("Copied"); }
+  catch { toast("Couldn't copy. Select the path and copy it by hand."); }
+}
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2800); }
+
+// ── drawer (narrow screens) and vault badge ──────────────────────────
+const NARROW = matchMedia("(max-width: 760px)");
+// On a phone the layer toggles ride with the canvas controls, which frees a header row.
+function placeLayers() { NARROW.matches ? $("viewctl").append($("layers")) : $("hdr-grow").before($("layers")); }
+NARROW.addEventListener("change", () => { document.body.classList.remove("drawer"); placeLayers(); }); // the drawer class means nothing on a wide screen
+function openVault() {
+  if (NARROW.matches) document.body.classList.add("drawer");
+  $("side").scrollTop = 0;
+  ($("vault").querySelector("button") || $("h-vault")).focus({ preventScroll: true });
+}
+function closeDrawer(restore = true) { document.body.classList.remove("drawer"); if (restore) $("vault-badge").focus({ preventScroll: true }); }
+$("vault-badge").onclick = openVault;
+$("drawer-close").onclick = () => closeDrawer();
+document.addEventListener("click", (e) => {
+  if (document.body.classList.contains("drawer") && !e.target.closest("aside") && !e.target.closest("#vault-badge")) closeDrawer(false);
+});
 
 // ── date range ───────────────────────────────────────────────────────
 const iso = (d) => d.toISOString().slice(0, 10);
 function setRange(from, to, preset) {
-  S.range = { from, to }; $("from").value = from; $("to").value = to;
-  $("preset").value = preset ?? "custom"; S.fitted = false; load(true);
+  if (from && to && from > to) { [from, to] = [to, from]; toast("Swapped the dates so the range runs forward."); }
+  S.range = { from, to }; $("from").value = from; $("to").value = to; $("from").max = to; $("to").min = from;
+  const p = preset ?? "custom"; $("preset").value = p; $("custom").hidden = p !== "custom";
+  S.fitted = false; load(true);
 }
 function applyPreset(v) {
-  if (v === "custom") return;
-  const days = Number(v), today = new Date();
-  setRange(days ? iso(new Date(today.getTime() - (days - 1) * 864e5)) : "", days ? iso(today) : "", v);
+  const today = new Date(), span = (days) => iso(new Date(today.getTime() - (days - 1) * 864e5));
+  if (v === "custom") { // open the date fields with the current window, so the user edits something real
+    if (S.range.from || S.range.to) { $("custom").hidden = false; return; }
+    return setRange(span(30), iso(today), "custom");
+  }
+  const days = Number(v);
+  setRange(days ? span(days) : "", days ? iso(today) : "", v);
 }
 const inRange = (day) => (!S.range.from || day >= S.range.from) && (!S.range.to || day <= S.range.to);
 function renderHist() {
@@ -434,16 +809,16 @@ function renderHist() {
   const a = S.activity; if (!a.length) { S.days = []; $("hist").replaceChildren(); return; }
   const counts = new Map(a.map((d) => [d.day, d.count])), start = new Date(a[0].day), end = new Date(a[a.length - 1].day);
   const days = []; for (let d = start; d <= end; d = new Date(d.getTime() + 864e5)) days.push(iso(d));
-  S.days = days;
+  S.days = days; S.counts = counts;
   const max = Math.max(...a.map((d) => d.count));
   $("hist").replaceChildren(...days.map((day) => {
-    const bar = el("i", { title: `${day}: ${counts.get(day) || 0}`, className: inRange(day) ? "in" : "" });
+    const bar = el("i", { className: inRange(day) ? "in" : "" });
     bar.style.height = Math.max(counts.has(day) ? 8 : 2, ((counts.get(day) || 0) / max) * 100) + "%"; return bar;
   }));
   $("hist-a").textContent = days[0]; $("hist-b").textContent = days[days.length - 1];
   $("hist-range").textContent = S.range.from ? `${S.range.from}${S.range.to && S.range.to !== S.range.from ? " → " + S.range.to : ""}` : "all time";
 }
-// Drag across the strip to pick a window, exactly like the date inputs. A click is a one-day window.
+// Drag across the strip to pick a window, exactly like the date fields. A click is a one-day window.
 let brush = null;
 const dayAt = (e) => {
   const r = $("hist").getBoundingClientRect(), n = S.days.length;
@@ -452,91 +827,66 @@ const dayAt = (e) => {
 function paintBrush() {
   const [lo, hi] = brush.a < brush.b ? [brush.a, brush.b] : [brush.b, brush.a];
   [...$("hist").children].forEach((bar, i) => bar.classList.toggle("in", S.days[i] >= lo && S.days[i] <= hi));
+  $("hist-hover").textContent = lo === hi ? lo : `${lo} → ${hi}`;
 }
+const hoverDay = (day) => {
+  const c = S.counts?.get(day) || 0; $("hist-hover").textContent = `${day} · ${c} ${plural(c, "event")}`;
+  [...$("hist").children].forEach((bar, i) => bar.classList.toggle("hot", S.days[i] === day));
+};
+const clearHot = () => [...$("hist").children].forEach((bar) => bar.classList.remove("hot"));
 $("hist").addEventListener("pointerdown", (e) => {
-  if (!S.days.length) return;
+  if (!S.days?.length || brush) return;
   const day = dayAt(e);
   if (e.shiftKey && S.range.from) { setRange(day < S.range.from ? day : S.range.from, day < S.range.from ? S.range.to || S.range.from : day); return; }
-  brush = { a: day, b: day }; $("hist").setPointerCapture(e.pointerId); paintBrush();
+  brush = { id: e.pointerId, a: day, b: day }; $("hist").setPointerCapture(e.pointerId); clearHot(); $("hist").classList.add("brushing"); paintBrush();
 });
-$("hist").addEventListener("pointermove", (e) => { if (brush) { brush.b = dayAt(e); paintBrush(); } });
-$("hist").addEventListener("pointerup", () => {
-  if (!brush) return;
+$("hist").addEventListener("pointermove", (e) => {
+  if (!S.days?.length) return;
+  if (!brush) return hoverDay(dayAt(e));
+  if (e.pointerId === brush.id) { brush.b = dayAt(e); paintBrush(); }
+});
+$("hist").addEventListener("pointerup", (e) => {
+  if (!brush || e.pointerId !== brush.id) return;
   const [lo, hi] = brush.a < brush.b ? [brush.a, brush.b] : [brush.b, brush.a];
-  brush = null; setRange(lo, hi);
+  brush = null; $("hist").classList.remove("brushing"); setRange(lo, hi);
 });
-$("hist").addEventListener("pointercancel", () => { brush = null; renderHist(); });
+$("hist").addEventListener("pointerleave", () => { if (!brush) { $("hist-hover").textContent = ""; clearHot(); } });
+for (const type of ["pointercancel", "lostpointercapture"]) $("hist").addEventListener(type, () => { if (brush) { brush = null; $("hist").classList.remove("brushing"); renderHist(); } });
+
 function renderLayers() {
+  const key = $("layers").contains(document.activeElement) ? document.activeElement.dataset.layer : null; // keep focus on the toggle just pressed
   $("layers").replaceChildren(...Object.keys(LAYER_LABEL).map((k) => {
-    const b = el("button", { textContent: LAYER_LABEL[k], className: S.layers[k] ? "on" : "", title: k === "memory" ? "Show the memories that link files" : "" });
+    const b = el("button", { type: "button", textContent: LAYER_LABEL[k], title: LAYER_HINT[k] });
+    b.dataset.layer = k; b.setAttribute("aria-pressed", String(S.layers[k]));
     b.onclick = () => { S.layers[k] = !S.layers[k]; S.alpha = Math.max(S.alpha, .4); renderLayers(); }; return b;
   }));
+  renderLegend();
+  if (key) $("layers").querySelector(`[data-layer="${key}"]`)?.focus();
 }
-function select(n) { S.selected = n; renderDetail(); }
-function link(n) {
-  const a = el("a", { className: "link" + (n.type === "file" ? " file" : "") }, el("span", { className: "dot" }), n.type === "file" ? n.relative : n.label);
-  a.firstChild.style.background = color(n);
-  if (n.type === "file") a.style.setProperty("--fc", extColor(n));
-  a.onclick = () => { select(n); center(n); }; return a;
-}
-const coFiles = (n) => S.links.filter((l) => l.kind === "co_mentioned" && (l.source === n.id || l.target === n.id))
-  .sort((a, b) => b.weight - a.weight).map((l) => (l.source === n.id ? l.t : l.s));
-const related = (n, type) => [...S.adj.get(n.id)].map((id) => S.byId.get(id)).filter((m) => m.type === type);
-const when = (iso) => iso ? new Date(iso).toLocaleString() : "n/a";
-function row(title, ...kids) { return el("div", { className: "row" }, el("b", { textContent: title }), ...kids); }
-
-function renderDetail() {
-  const n = S.selected, box = $("detail-body"); $("detail").classList.toggle("open", !!n);
-  if (!n) return;
-  const out = [el("div", { className: "kind", textContent: n.type }), el("h3", { textContent: n.label })];
-  if (n.type === "file") {
-    const where = { vault: "Obsidian vault", external: "Outside the repo", repo: "In the repo" }[n.area || "repo"];
-    out.push(row("Where", el("span", { className: "badge" + (n.area === "vault" ? " vault" : ""), textContent: where }),
-      n.skill ? ` · written by ${n.skill}` : ""));
-    out.push(row("Path", el("div", { className: "path", textContent: n.path || n.relative })));
-    if (!n.path) out.push(row("Note", "This repo's checkout was not seen in any event, so the file cannot be opened from here."));
-    else if (!n.exists) out.push(row("Note", "File no longer exists on disk."));
-    const open = el("button", { className: "btn primary", textContent: "Open", disabled: !n.exists, onclick: () => openFile(n) });
-    const reveal = el("button", { className: "btn", textContent: "Reveal", disabled: !n.exists, onclick: () => openFile(n, true) });
-    const copy = el("button", { className: "btn", textContent: "Copy path", onclick: () => navigator.clipboard.writeText(n.path || n.relative).then(() => toast("Copied")) });
-    out.push(el("div", { className: "actions" }, open, reveal, copy));
-    out.push(row("Often named alongside", coFiles(n).map(link)));
-    out.push(row("Memories that mention it", related(n, "memory").map(link)));
-  } else if (n.type === "memory") {
-    out.push(row("Memory", el("div", { className: "text", textContent: n.text || "(no text)" })));
-    out.push(row("Details", `${n.kind} · ${n.status} · ${when(n.last_ts)}`));
-    if (related(n, "project")[0]) out.push(row("Project", link(related(n, "project")[0])));
-    out.push(row("Written by", n.skill || "n/a"), row("Files", related(n, "file").map(link)));
-  } else if (n.type === "project") {
-    out.push(row("Checkout", el("div", { className: "path", textContent: n.root || "not seen in events" })));
-    out.push(row("Last activity", when(n.last_ts)));
-    out.push(row("Files", `${related(n, "file").length}`, related(n, "file").slice(0, 15).map(link)));
-    out.push(row("Branches", related(n, "branch").map(link)), row("Memories", `${related(n, "memory").length}`, related(n, "memory").slice(0, 12).map(link)));
-  } else if (n.type === "branch") {
-    out.push(row("Project", related(n, "project").map(link)), row("Last activity", when(n.last_ts)));
-  }
-  box.replaceChildren(...out);
-}
-function center(n) { S.view.x = S.w / 2 - n.x * S.view.k; S.view.y = S.h / 2 - n.y * S.view.k; }
-async function openFile(n, reveal = false) {
-  if (!n.path || !n.exists) return toast("File cannot be opened");
-  const r = await fetch("/api/open", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: n.path, reveal }) });
-  toast(r.ok ? (reveal ? "Revealed in file manager" : "Opened") : "Refused by server");
-}
-let toastTimer;
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", 1600); }
 
 // ── wiring ───────────────────────────────────────────────────────────
-$("q").addEventListener("input", (e) => { S.query = e.target.value; });
 $("preset").addEventListener("change", (e) => applyPreset(e.target.value));
 for (const id of ["from", "to"]) $(id).addEventListener("change", () => setRange($("from").value, $("to").value));
-$("fit").onclick = fit; $("close").onclick = () => select(null);
+$("fit").onclick = fit; $("zin").onclick = () => zoom(1.25); $("zout").onclick = () => zoom(.8);
+$("close").onclick = () => select(null);
+function toggleKeys(open = $("keys").hidden) { $("keys").hidden = !open; $("keys-btn").setAttribute("aria-expanded", String(open)); }
+$("keys-btn").onclick = () => toggleKeys();
+$("retry").onclick = $("banner-retry").onclick = () => load(true);
 addEventListener("keydown", (e) => {
-  if (e.key === "/" && document.activeElement !== $("q")) { e.preventDefault(); $("q").focus(); }
-  if (e.key === "Escape") { $("q").value = ""; S.query = ""; $("q").blur(); select(null); }
+  const typing = ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName);
+  if (e.key === "/" && !typing) { e.preventDefault(); $("q").focus(); return; }
+  if (e.key === "Escape") { // one layer per press: search, keys, drawer, then the open panel
+    if ($("q").value || $("results").contains(document.activeElement) || document.activeElement === $("q")) return clearSearch();
+    if (!$("keys").hidden) return toggleKeys(false);
+    if (document.body.classList.contains("drawer")) return closeDrawer();
+    if (S.selected) select(null);
+    return;
+  }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === "?") toggleKeys(); else if (e.key === "+" || e.key === "=") zoom(1.25); else if (e.key === "-") zoom(.8); else if (e.key === "0") fit();
 });
 addEventListener("resize", resize);
-resize(); renderLayers(); applyPreset("30"); requestAnimationFrame(frame);
+readTheme(); placeLayers(); resize(); renderLayers(); applyPreset("30"); requestAnimationFrame(frame);
 setInterval(() => { if (!document.hidden) load(false); }, 10000);
 </script>
 </body>
