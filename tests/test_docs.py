@@ -96,9 +96,35 @@ def test_slides_skill_lists_every_bold_template():
     assert not missing, f"slides SKILL.md bold template list is missing: {missing}"
 
 
-def test_dev_develop_briefs_hand_memory_to_subagents():
-    text = (_get_assets_skills_dir() / "dev-develop" / "SKILL.md").read_text(encoding="utf-8")
+def test_dev_implement_briefs_hand_memory_to_subagents():
+    text = (_get_assets_skills_dir() / "dev-implement" / "SKILL.md").read_text(encoding="utf-8")
     assert "--scratch" in text, "subagents never run the preamble, so their brief must explain note memories"
+
+
+def test_dev_implement_isolates_parallel_implementers_and_ends_with_dev_review():
+    # Parallel implementers in one checkout share an index and HEAD, so each one gets its own worktree.
+    text = (_get_assets_skills_dir() / "dev-implement" / "SKILL.md").read_text(encoding="utf-8")
+    assert "git worktree add" in text
+    assert "integration branch" in text
+    assert "/dev-review" in text
+
+
+def test_retro_reads_the_session_log_and_the_observations():
+    text = (_get_assets_skills_dir() / "retro" / "SKILL.md").read_text(encoding="utf-8")
+    assert "vague memory-search --kind observation" in text
+    assert ".jsonl" in text, "the session log is the primary source a retro reads"
+
+
+def test_renamed_and_retired_skills_are_gone():
+    names = {d.name for d in skill_dirs(repo_root=REPO_ROOT)}
+    assert not names & {"dev-develop", "meta"}
+
+
+def test_adapted_upstream_skills_ship_license_and_notice():
+    for name in ("dev-review", "dev-implement", "retro"):
+        skill = _get_assets_skills_dir() / name
+        assert "MIT License" in (skill / "LICENSE").read_text(encoding="utf-8"), name
+        assert "mattpocock/skills" in (skill / "NOTICE.md").read_text(encoding="utf-8"), name
 
 
 def test_guidelines_tell_skills_to_record_files_written_outside_the_repo():
@@ -167,3 +193,10 @@ def test_impeccable_reviewers_are_read_only_and_attributed():
         assert frontmatter["name"] == name
         tools = {t.strip() for t in str(frontmatter["tools"]).split(",")}
         assert tools == {"Read", "Glob", "Grep", "Bash"}, tools
+
+
+def test_dev_review_never_edits_files():
+    # A review reports findings. Applying them belongs to the built-in `/code-review --fix` or the user.
+    frontmatter = read_md(path=_get_assets_skills_dir() / "dev-review" / "SKILL.md")
+    assert {"Write", "Edit", "NotebookEdit"}.isdisjoint(frontmatter["allowed-tools"])
+    assert "Agent" in frontmatter["allowed-tools"]

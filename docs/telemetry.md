@@ -14,11 +14,11 @@ The four kinds share the ledger:
 | Kind | Written with | Lifetime |
 |---|---|---|
 | `learning` | `vague memory-log <key> "<fact>"` | Forever |
-| `observation` | `--about <skill>` | Until `/meta` actions it |
+| `observation` | `--about <skill>` | Until `/retro` actions it |
 | `note` | `--scratch`: a working note agents on one project share | Hidden from the preamble and from search after 7 days |
 | `doc` | `--doc --files <absolute path>`: a pointer to a document a skill wrote | Forever |
 
-The preamble prints at most 1,500 tokens of it, for this scope plus `global`, including the newest 5 `doc` pointers. Observations never load in the preamble. Only `/meta` reads them. It never leaves your machine.
+The preamble prints at most 1,500 tokens of it, for this scope plus `global`, including the newest 5 `doc` pointers. Observations never load in the preamble. Only `/retro` reads them. It never leaves your machine.
 
 ### events/YYYY-MM.jsonl
 Written to `~/.vague/events/YYYY-MM.jsonl` (one file per month, one JSON line per event). It records vague usage only: which skill started, which files Claude wrote while a skill ran, and which memories a `vague` command served or wrote.
@@ -104,8 +104,8 @@ When a Write or Edit touches a file inside a bundled skill (`vague/assets/skills
 Exit code 2 makes Claude Code hand stderr back to Claude, so Claude sees the findings and can fix the skill in the same turn. The stderr output for one finding:
 
 ```
-vague skill-check: 1 finding(s) in meta
-/Users/me/vague/vague/assets/skills/meta/SKILL.md: frontmatter: missing required field `description`
+vague skill-check: 1 finding(s) in retro
+/Users/me/vague/vague/assets/skills/retro/SKILL.md: frontmatter: missing required field `description`
 ```
 
 The check runs even with `telemetry: off`, because it is a guard, not telemetry. The event is still logged first, so a failing check never drops the `file_write` line.

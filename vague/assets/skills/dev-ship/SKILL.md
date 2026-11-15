@@ -54,7 +54,7 @@ Each line prints as `scope/key  [skill]  text  (files: <path>)`. The plan for th
 
 If on the base branch, ask: "You're on `$BASE`. Should I create a feature branch first?"
 
-**If there is no diff but pending designs exist:** Tell the user: "No code changes yet, but I found a pending plan: [filename]. Run `/dev-develop` to implement it first." Stop there: this skill lands code, it does not write it.
+**If there is no diff but pending designs exist:** Tell the user: "No code changes yet, but I found a pending plan: [filename]. Run `/dev-implement` to build it first." Stop there: this skill lands code, it does not write it.
 
 ---
 
@@ -224,4 +224,4 @@ Log feedback about this skill with `vague memory-log <key> "<issue → suggestio
 
 ## Handoff
 
-> "PR created: [URL]. Next: `/code-review` for a pre-landing code review, or ask a teammate to review."
+> "PR created: [URL]. Next: `/dev-review` for a Standards and Spec review, `/code-review` for a pre-landing bug hunt, or ask a teammate to review."

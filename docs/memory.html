@@ -84,18 +84,18 @@
   <text x="540" y="22" text-anchor="middle" class="t-sub" style="fill:var(--muted)">THE ONLY WAY IN</text>
   <text x="950" y="30" text-anchor="middle" class="t-sub" style="fill:var(--muted)">WHERE IT LIVES (~/.vague/)</text>
 
-  <!-- left: skills, meta, hooks -->
+  <!-- left: skills, retro, hooks -->
   <g style="color:var(--skill-ink)">
     <rect x="20" y="60" width="260" height="130" rx="10" fill="var(--skill)" stroke="var(--skill-ink)"/>
-    <text x="150" y="88" text-anchor="middle" class="t-title">21 skills</text>
+    <text x="150" y="88" text-anchor="middle" class="t-title">22 skills</text>
     <text x="150" y="110" text-anchor="middle" class="t-mono">vague/assets/skills/*/SKILL.md</text>
-    <text x="150" y="134" text-anchor="middle" class="t-sub">dev-develop, dev-ship, plan-eng,</text>
+    <text x="150" y="134" text-anchor="middle" class="t-sub">dev-implement, dev-ship, plan-eng,</text>
     <text x="150" y="152" text-anchor="middle" class="t-sub">dev-investigate, slides, iv-*, mgmt-*…</text>
     <text x="150" y="176" text-anchor="middle" class="t-sub">(also Cursor or any agent with a shell)</text>
   </g>
   <g style="color:var(--skill-ink)">
     <rect x="20" y="240" width="260" height="76" rx="10" fill="var(--skill)" stroke="var(--skill-ink)"/>
-    <text x="150" y="268" text-anchor="middle" class="t-title">/meta</text>
+    <text x="150" y="268" text-anchor="middle" class="t-title">/retro</text>
     <text x="150" y="290" text-anchor="middle" class="t-sub">merges, promotes, forgets memories;</text>
     <text x="150" y="306" text-anchor="middle" class="t-sub">acts on observations</text>
   </g>
@@ -184,13 +184,13 @@
 <div class="flow">
   <div class="step"><b class="n">1</b><b>Skill starts</b><br>The hook runs <code>vague log-event</code>, which appends a <code>skill_start</code> event.<div class="who">Mechanical: the model does nothing.</div></div>
   <div class="link"><span class="a">→</span>preamble runs</div>
-  <div class="step"><b class="n">2</b><b>Memory is shown</b><br><code>eval "$(vague context --shell --skill dev-develop)"</code> prints the MEMORY block.<div class="who">At most 1,500 tokens, ranked.</div></div>
+  <div class="step"><b class="n">2</b><b>Memory is shown</b><br><code>eval "$(vague context --shell --skill dev-implement)"</code> prints the MEMORY block.<div class="who">At most 1,500 tokens, ranked.</div></div>
   <div class="link"><span class="a">→</span>model works</div>
   <div class="step"><b class="n">3</b><b>Look up more</b><br><code>vague memory-search drift alert</code> when the block isn't enough.<div class="who">Example: dev-investigate.</div></div>
   <div class="link"><span class="a">→</span>learns a fact</div>
   <div class="step"><b class="n">4</b><b>Write it down</b><br><code>vague memory-log &lt;key&gt; "&lt;text&gt;"</code>, plus <code>--global</code>, <code>--scratch</code>, <code>--doc</code> or <code>--about</code>.<div class="who">The model's choice, guided by the Memory guideline.</div></div>
   <div class="link"><span class="a">→</span>days later</div>
-  <div class="step"><b class="n">5</b><b>Curate</b><br><code>/meta</code> reads every memory with <code>vague memory-search --scope all</code>. It merges duplicates, promotes facts that hold in several projects, and fixes or forgets memories whose <code>(files: …)</code> no longer exist.<div class="who">Nothing is deleted automatically.</div></div>
+  <div class="step"><b class="n">5</b><b>Curate</b><br><code>/retro</code> reads every memory with <code>vague memory-search --scope all</code>. It merges duplicates, promotes facts that hold in several projects, and fixes or forgets memories whose <code>(files: …)</code> no longer exist.<div class="who">Nothing is deleted automatically.</div></div>
 </div>
 
 <h2>3. Which command to use</h2>
@@ -202,7 +202,7 @@
   <tr><td>leave a note for other agents on this project</td><td>add <code>--scratch</code></td><td>One <code>note</code> line in <code>memory.jsonl</code>. Hidden after 7 days. It is not a lock.</td></tr>
   <tr><td>point at a document a skill wrote</td><td><code>vague memory-log eng-plan-feat-x "Plan for X" --doc --files "/Users/me/Obsidian/6. Atomic Notes/Eng Plan - X.md" --skill plan-eng</code></td><td>One <code>doc</code> line in <code>memory.jsonl</code>, kept forever. The document stays in the vault. A newer doc under the same key replaces the pointer.</td></tr>
   <tr><td>find a document an earlier skill wrote</td><td><code>vague memory-search --kind doc --skill plan-eng</code></td><td>Read only. Each line ends with <code>(files: &lt;path&gt;)</code>. Read that path.</td></tr>
-  <tr><td>give feedback about a skill</td><td><code>vague memory-log slides-fan-chart "Missing range chart → add recipe" --about slides</code></td><td>An observation, always in <code>global</code>. <code>/meta</code> reads it.</td></tr>
+  <tr><td>give feedback about a skill</td><td><code>vague memory-log slides-fan-chart "Missing range chart → add recipe" --about slides</code></td><td>An observation, always in <code>global</code>. <code>/retro</code> reads it.</td></tr>
   <tr><td>correct a fact</td><td>re-use the same key</td><td>A new line. The latest line wins, and the old one stays as history.</td></tr>
   <tr><td>retire a fact or close an observation</td><td><code>vague memory-log &lt;key&gt; --status forgotten</code> (or <code>actioned</code>, <code>declined</code>)</td><td>A status-only line. The memory disappears from blocks and searches.</td></tr>
   <tr><td>find something the block didn't show</td><td><code>vague memory-search &lt;words&gt;</code> (<code>--scope global|&lt;project&gt;|all</code>, <code>--kind learning|observation|note|doc</code>, <code>--skill &lt;name&gt;</code>, <code>--scratch</code> = <code>--kind note</code>)</td><td>Read only. Matches every word across key, text, files and skill. With no words, it lists every memory, newest first. Each line prints as <code>scope/key  [skill]  text  (files: …)</code>. Default scope: this project plus <code>global</code>.</td></tr>
@@ -214,12 +214,12 @@
 <div class="scroll">
 <table>
   <tr><th>Skills</th><th>Read at start (preamble)</th><th><code>memory-log</code> learning</th><th><code>memory-log --doc</code></th><th><code>memory-search</code></th><th><code>--scratch</code></th></tr>
-  <tr><td>plan-eng, plan-ideation, retro, diagram</td><td class="yes">yes</td><td class="yes">plan-eng, plan-ideation</td><td class="yes">yes (vault note)</td><td class="yes">yes (<code>--kind doc</code>, prior docs)</td><td>guideline only</td></tr>
+  <tr><td>plan-eng, plan-ideation, diagram</td><td class="yes">yes</td><td class="yes">plan-eng, plan-ideation</td><td class="yes">yes (vault note)</td><td class="yes">yes (<code>--kind doc</code>, prior docs)</td><td>guideline only</td></tr>
   <tr><td>vault, vault-excalidraw, slides</td><td class="yes">yes</td><td>no</td><td class="yes">yes (note or deck)</td><td>no</td><td>guideline only</td></tr>
-  <tr><td>dev-develop</td><td class="yes">yes</td><td class="yes">yes</td><td>no</td><td class="yes">yes (<code>--kind doc</code> plan, <code>--scratch</code>)</td><td class="yes">yes (subagent briefs)</td></tr>
+  <tr><td>dev-implement</td><td class="yes">yes</td><td class="yes">yes</td><td>no</td><td class="yes">yes (<code>--kind doc</code> plan, <code>--scratch</code>)</td><td class="yes">yes (subagent briefs)</td></tr>
   <tr><td>dev-ship</td><td class="yes">yes</td><td class="yes">yes</td><td>no</td><td class="yes">yes (<code>--kind doc</code> plan)</td><td>guideline only</td></tr>
   <tr><td>dev-investigate</td><td class="yes">yes</td><td class="yes">yes</td><td>no</td><td class="yes">yes (error words)</td><td>guideline only</td></tr>
-  <tr><td>meta</td><td class="yes">yes</td><td class="yes">yes (merge, promote, forget)</td><td>no</td><td class="yes">yes (<code>--scope all</code>, all observations)</td><td>guideline only</td></tr>
+  <tr><td>retro</td><td class="yes">yes</td><td class="yes">yes (merge, promote, forget)</td><td>no</td><td class="yes">yes (<code>--scope all</code>, all observations)</td><td>guideline only</td></tr>
   <tr><td>triage, iv-*, mgmt-*</td><td class="yes">yes</td><td>no</td><td>no</td><td>no</td><td>guideline only</td></tr>
 </table>
 </div>
@@ -253,7 +253,7 @@ Memories (most relevant first):
 <pre>$ vague memory-search --scope alma-ai_ml docker
 alma-ai_ml/ai-ml-local-pytest-env  [dev-ship]  uv run pytest outside the container fails on missing settings env vars…
 alma-ai_ml/ai-ml-tests-need-docker  [dev-review]  alma/ai_ml tests and mypy run only inside the container…  (files: Taskfile.yml)</pre>
-<p>These two lines are the duplicate that <code>/meta</code> should merge.</p>
+<p>These two lines are the duplicate that <code>/retro</code> should merge.</p>
 
 <h2>6. One line of memory</h2>
 <p>Every learning, observation, note and doc pointer has these 8 fields:</p>
@@ -266,7 +266,7 @@ alma-ai_ml/ai-ml-tests-need-docker  [dev-review]  alma/ai_ml tests and mypy run 
   <tr><td><code>scope</code></td><td>Which project it belongs to: the <code>owner-repo</code> slug from the git remote, the main checkout's folder name, or <code>global</code></td></tr>
   <tr><td><code>key</code></td><td>Its name. The same scope and key on a new line replace the old content.</td></tr>
   <tr><td><code>kind</code></td><td><code>learning</code> (a fact about a project), <code>observation</code> (feedback about a skill), <code>note</code> (a working note, hidden after 7 days) or <code>doc</code> (a pointer to a document; <code>files</code> holds its absolute path)</td></tr>
-  <tr><td><code>files</code>, <code>skill</code></td><td>Used for ranking, and printed by <code>memory-search</code>. <code>files</code> lets <code>/meta</code> spot dead paths. <code>skill</code> tells it which skill an observation is about.</td></tr>
+  <tr><td><code>files</code>, <code>skill</code></td><td>Used for ranking, and printed by <code>memory-search</code>. <code>files</code> lets <code>/retro</code> spot dead paths. <code>skill</code> tells it which skill an observation is about.</td></tr>
   <tr><td><code>status</code></td><td><code>active</code>, <code>forgotten</code>, <code>actioned</code> or <code>declined</code></td></tr>
 </table>
 </div>

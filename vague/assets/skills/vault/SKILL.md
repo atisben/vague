@@ -184,7 +184,7 @@ vague memory-log vault-<title-slug> "<one-line summary of the note>" --doc --fil
 
 ## Saving for Another Skill
 
-Skills such as `/plan-eng`, `/plan-ideation`, `/retro` and `/diagram` save their documents through this skill. The caller names the destination in the arguments:
+Skills such as `/plan-eng`, `/plan-ideation` and `/diagram` save their documents through this skill. The caller names the destination in the arguments:
 
 ```
 /vault save "<Title>" folder "<folder>/" tags "<tag1>,<tag2>"

@@ -5,7 +5,7 @@ Four kinds share the one file:
 | kind        | meaning                               | lifetime                  |
 |-------------|---------------------------------------|---------------------------|
 | learning    | a durable fact                        | forever                   |
-| observation | feedback about a skill, for /meta     | until actioned            |
+| observation | feedback about a skill, for /retro    | until actioned            |
 | note        | a working note for this scope's agents | hidden 7 days after `ts` |
 | doc         | a pointer to a document a skill wrote | forever                   |
 """
@@ -198,7 +198,7 @@ def render_block(
 ) -> Block:
     """Preamble block: notes, newest docs, ranked learnings (global capped at a third), key-only index, search pointer.
 
-    Observations never appear: they are feedback for /meta, not context for the task.
+    Observations never appear: they are feedback for /retro, not context for the task.
     """
     visible = [m for m in load_ledger() if m.scope in {scope, "global"} and _live(memory=m, now=now)]
     learnings = [m for m in visible if m.kind == "learning"]

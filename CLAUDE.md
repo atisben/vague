@@ -14,9 +14,9 @@ When the user's request matches a skill below, invoke it using the Skill tool as
 | "mind map", "map this out", "architecture overview", "diagram this", "visualize the system" | `/diagram` |
 | "ship", "deploy", "push to main", "create a PR", code is ready | `/dev-ship` |
 | "debug this", "fix this bug", "why is this broken", error / stack trace | `/dev-investigate` |
-| "weekly retro", "what did we ship", "engineering retrospective" | `/retro` |
-| "develop this", "build this feature", "implement this", "orchestrate" | `/dev-develop` |
-| "improve skills", "meta review", "skill improvement", "review observations" | `/meta` |
+| "review since X", "review this branch", "review against the spec", "review my changes" | `/dev-review` |
+| "implement this", "build this feature", "develop this", "orchestrate" | `/dev-implement` |
+| "retro", "retrospective", "what went wrong this session", "improve skills", "review observations" | `/retro` |
 | "excalidraw", "draw this in excalidraw", "add this to my excalidraw", "draw the architecture in excalidraw", "draw the training windows" | `/vault-excalidraw` |
 | "make slides", "build a deck", "create a presentation", "convert this pptx" | `/slides` |
 | "impeccable", "critique this UI", "polish the design", "audit the UI", "design a new page", "make it look better" | `/impeccable` (Claude Code only) |
@@ -47,7 +47,7 @@ uv run pytest
 
 ## Development Best Practices
 
-These conventions apply to **all** skills that touch code in a Python project. Skills like `/plan-eng`, `/dev-develop`, `/dev-ship`, and `/dev-investigate` should assume and enforce them.
+These conventions apply to **all** skills that touch code in a Python project. Skills like `/plan-eng`, `/dev-implement`, `/dev-ship`, and `/dev-investigate` should assume and enforce them.
 
 ### Environment: `uv`
 - Always run Python commands through `uv` so they use the project's pinned environment:

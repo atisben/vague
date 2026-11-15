@@ -208,8 +208,8 @@ def test_file_writing_skills_log_their_deliverable_with_doc(skill_dir):
     without = skill_dir(name="slides", fields=fields, body=_preamble("slides") + learning)
     assert any("deliverable-doc-memory" in f for f in check_skill(skill_dir=without))
 
-    with_doc = skill_dir(name="retro", fields=fields, body=_preamble("retro")
-                         + '\n```bash\nvague memory-log retro-x "Retro." --doc --files "/r.md" --skill retro\n```\n')
+    doc_log = '\n```bash\nvague memory-log eng-plan-x "Plan." --doc --files "/p.md" --skill plan-eng\n```\n'
+    with_doc = skill_dir(name="plan-eng", fields=fields, body=_preamble("plan-eng") + doc_log)
     assert check_skill(skill_dir=with_doc) == []
     assert not any("deliverable-doc-memory" in f for f in check_skill(skill_dir=skill_dir(name="triage")))
 
