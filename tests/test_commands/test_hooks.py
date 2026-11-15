@@ -27,7 +27,7 @@ def test_install_creates_settings_with_both_hooks(tmp_path):
     settings = _read(path)
     assert _commands(settings, "UserPromptSubmit") == ["vague log-event"]
     assert _commands(settings, "PostToolUse") == ["vague log-event"]
-    assert settings["hooks"]["PostToolUse"][0]["matcher"] == "Skill"
+    assert settings["hooks"]["PostToolUse"][0]["matcher"] == "Skill|Write|Edit"
 
 
 def test_install_keeps_existing_settings_and_hooks(tmp_path):
@@ -141,3 +141,32 @@ def test_uninstall_command_removes_the_hooks(runtimes):
 
     assert result.exit_code == 0, result.output
     assert "log-event" not in (claude / "settings.json").read_text()
+
+
+def test_install_widens_matcher_of_existing_vague_hook(tmp_path):
+    path = tmp_path / "settings.json"
+    other = {"type": "command", "command": "echo hi"}
+    old = {"type": "command", "command": "vague log-event"}
+    path.write_text(json.dumps({"hooks": {"PostToolUse": [
+        {"matcher": "Bash", "hooks": [other]}, {"matcher": "Skill", "hooks": [old]},
+    ]}}))
+
+    assert install_hooks(settings_path=path, command="vague log-event") is True
+
+    groups = _read(path)["hooks"]["PostToolUse"]
+    assert groups == [
+        {"matcher": "Bash", "hooks": [other]},
+        {"matcher": "Skill|Write|Edit", "hooks": [{"type": "command", "command": "vague log-event"}]},
+    ]
+
+
+def test_install_twice_leaves_settings_unchanged(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps({"hooks": {"PostToolUse": [{"matcher": "Skill", "hooks": [
+        {"type": "command", "command": "vague log-event"}]}]}}))
+    install_hooks(settings_path=path, command="vague log-event")
+    first = path.read_text()
+
+    assert install_hooks(settings_path=path, command="vague log-event") is False
+
+    assert path.read_text() == first

@@ -16,9 +16,8 @@ from vague.sdk.commands.init import cmd_context
 from vague.sdk.commands.memory import cmd_memory_log, cmd_memory_search
 from vague.sdk.commands.skill import (
     cmd_skill_add,
-    cmd_skill_audit,
+    cmd_skill_check,
     cmd_skill_list,
-    cmd_skill_validate,
 )
 from vague.sdk.commands.slug import cmd_slug
 from vague.sdk.commands.status import cmd_status
@@ -180,19 +179,10 @@ def skill_list(
     cmd_skill_list(validate=validate)
 
 
-@sdk_app.command("skill-validate")
-def skill_validate(skill_dir: str) -> None:
-    """Validate a skill directory."""
-    cmd_skill_validate(skill_dir)
-
-
-@sdk_app.command("skill-audit")
-def skill_audit(
-    skill_dir: str,
-    strict: Annotated[bool, typer.Option("--strict")] = False,
-) -> None:
-    """Audit a skill for legacy bash patterns."""
-    cmd_skill_audit(skill_dir, strict=strict)
+@sdk_app.command("skill-check")
+def skill_check(paths: Annotated[list[str] | None, typer.Argument()] = None) -> None:
+    """Check skills against the skill rules; no path checks every skill and the docs. Exits 1 on any finding."""
+    cmd_skill_check(paths=paths or [])
 
 
 @sdk_app.command("skill-add")

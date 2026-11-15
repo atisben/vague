@@ -347,13 +347,14 @@ def _install_to_runtime(runtime: str, assets: Path, skill_names: list[str]) -> i
     if runtime.split(":")[0] == CLAUDE_RUNTIME:
         settings = skills_target.parent / "settings.json"
         if install_hooks(settings_path=settings, command=hook_command()):
-            typer.echo(f"  {runtime}: skill-start hooks added → {settings}", err=True)
+            typer.echo(f"  {runtime}: usage hooks updated → {settings}", err=True)
     return count
 
 
 HOOK_SUBCOMMAND = "log-event"
-# (hook event, tool matcher). The Skill matcher keeps the hook off every other tool call.
-HOOKS: tuple[tuple[str, str | None], ...] = (("UserPromptSubmit", None), ("PostToolUse", "Skill"))
+# (hook event, tool matcher). The matcher keeps the hook off Read, Bash and every other tool call:
+# Skill marks a skill start, Write and Edit name a file written during one.
+HOOKS: tuple[tuple[str, str | None], ...] = (("UserPromptSubmit", None), ("PostToolUse", "Skill|Write|Edit"))
 
 
 def hook_command() -> str:
@@ -387,8 +388,10 @@ def _save_settings(path: Path, settings: dict) -> None:
 
 
 def install_hooks(settings_path: Path, command: str) -> bool:
-    """Add the skill-start hooks to a Claude settings.json. True when the file changed.
+    """Reconcile vague's hooks in a Claude settings.json with `HOOKS`. True when the file changed.
 
+    A vague hook under the right event and matcher stays, so a hand-added one with another path to
+    `vague` survives. Any other vague hook is removed, so a changed matcher reaches an existing file.
     Idempotent, keeps every other setting and hook, and refuses to touch a file it cannot parse:
     a broken settings.json is the user's to fix, not ours to overwrite.
     """
@@ -397,10 +400,31 @@ def install_hooks(settings_path: Path, command: str) -> bool:
         typer.echo(f"  Skipped hooks: {settings_path} is not valid JSON.", err=True)
         return False
     hooks = settings.setdefault("hooks", {})
+    wanted = {event: matcher for event, matcher in HOOKS}
     changed = False
+    for event in list(hooks):
+        groups = hooks[event] if isinstance(hooks[event], list) else []
+        kept_groups = []
+        for group in groups:
+            current = event in wanted and isinstance(group, dict) and group.get("matcher") == wanted[event]
+            if isinstance(group, dict) and not current:
+                kept = [h for h in group.get("hooks", []) if not _is_vague_hook(h)]
+                if len(kept) != len(group.get("hooks", [])):
+                    changed = True
+                    if not kept:
+                        continue
+                    group["hooks"] = kept
+            kept_groups.append(group)
+        if isinstance(hooks[event], list):
+            hooks[event] = kept_groups
+            if not kept_groups and event not in wanted:
+                del hooks[event]
     for event, matcher in HOOKS:
         groups = hooks.setdefault(event, [])
-        if any(_is_vague_hook(h) for g in groups if isinstance(g, dict) for h in g.get("hooks", [])):
+        if any(
+            _is_vague_hook(h) for g in groups if isinstance(g, dict) and g.get("matcher") == matcher
+            for h in g.get("hooks", [])
+        ):
             continue
         group: dict = {"hooks": [{"type": "command", "command": command}]}
         if matcher:

@@ -16,3 +16,13 @@ repos:
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files
+
+  - repo: local
+    hooks:
+      - id: vague-skill-check
+        name: vague skill-check
+        # Runs the whole repo check: a skill edit can break README.md or CLAUDE.md drift rules, and vice versa
+        entry: uv run vague skill-check
+        language: system
+        pass_filenames: false
+        files: ^(vague/assets/skills/|README\.md$|CLAUDE\.md$)

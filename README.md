@@ -198,8 +198,7 @@ vague memory-search [words...]          # memories containing every word (no wor
 vague memory-search --scope all         # every scope; also --scope global or --scope <project>
 vague slug                              # print SLUG= and BRANCH=
 vague commit "msg" --files f1 f2        # atomic git commit
-vague skill-validate <dir>              # validate a skill against the contract
-vague skill-audit <dir> --strict        # scan for legacy bash patterns
+vague skill-check [paths...]            # check skills against the rules (no path: every skill + README/CLAUDE.md)
 vague install --runtime claude:work     # install/sync one Claude profile
 ```
 
@@ -212,6 +211,11 @@ logs every skill start to `~/.vague/events/YYYY-MM.jsonl`, with the repo's
 main checkout path. No agent cooperation needed, no logging step a model can
 skip. `vague status` derives each project's path and last activity from those
 events, then runs git checks across all your projects.
+
+The same hook logs the path (never the contents) of each file Claude writes
+with Write or Edit while a skill runs. When that file belongs to a bundled
+skill, the hook also runs `vague skill-check` on it and returns any findings
+to Claude (exit 2), so a broken skill edit is caught in the same turn.
 
 Capture is best-effort and can never break a skill: if the write fails, the
 error is swallowed and the command output still prints.

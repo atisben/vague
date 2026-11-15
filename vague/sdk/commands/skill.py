@@ -3,33 +3,14 @@
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import sys
 from pathlib import Path
 
 import typer
 
-from vague.models import SkillManifest
 from vague.sdk.core.events import log_context_access
-from vague.sdk.core.frontmatter import FrontmatterError, read_md
-
-# Patterns that indicate old bash tooling usage
-BS_PATTERNS = [
-    r"\bbs-config\b",
-    r"\bbs-learnings-log\b",
-    r"\bbs-learnings-search\b",
-    r"\bbs-slug\b",
-    r"\bbs-timeline-log\b",
-    r"\bbs-analytics\b",
-    r'source\s+["\']?.*_preamble\.sh',
-    # Removed by the memory ledger redesign.
-    r"\bvague learnings-log\b",
-    r"\bvague learnings-search\b",
-    r"\bvague observations-log\b",
-    r"\bvague timeline-log\b",
-    r"\bvague init\b",
-]
+from vague.sdk.core.skill_rules import check_repo, check_skill, default_repo_root, skill_dir_for
 
 
 def _get_assets_skills_dir() -> Path:
@@ -52,55 +33,35 @@ def cmd_skill_list(validate: bool = False) -> None:
             continue
         entry: dict = {"name": skill_dir.name, "path": str(skill_md)}
         if validate:
-            valid, errors = _validate_skill(skill_dir)
-            entry["valid"] = valid
+            errors = check_skill(skill_dir=skill_dir)
+            entry["valid"] = not errors
             entry["errors"] = errors
         results.append(entry)
 
     typer.echo(json.dumps(results))
 
 
-def cmd_skill_validate(skill_dir: str) -> None:
-    """Validate a skill dir against SkillManifest contract."""
-    path = Path(skill_dir)
-    valid, errors = _validate_skill(path)
-    if valid:
-        typer.echo(f"OK: {skill_dir}")
+def cmd_skill_check(paths: list[str]) -> None:
+    """Check the given skills, or every bundled skill and the docs listing them when no path is given."""
+    if paths:
+        findings: list[str] = []
+        checked: set[Path] = set()
+        for raw in paths:
+            directory = skill_dir_for(path=Path(raw))
+            if directory is None:
+                findings.append(f"{raw}: structure: no SKILL.md at or above this path")
+            elif directory not in checked:
+                checked.add(directory)
+                findings += check_skill(skill_dir=directory)
     else:
-        for err in errors:
-            print(f"Error: {err}", file=sys.stderr)
-        raise typer.Exit(1)
+        findings = check_repo(repo_root=default_repo_root())
 
-
-def cmd_skill_audit(skill_dir: str, strict: bool = False) -> None:
-    """Scan for raw bash patterns that should be vague commands."""
-    path = Path(skill_dir)
-    skill_md = path / "SKILL.md"
-    if not skill_md.exists():
-        print(f"Error: SKILL.md not found in {skill_dir}", file=sys.stderr)
-        raise typer.Exit(1)
-
-    content = skill_md.read_text(encoding="utf-8")
-    findings = []
-    for pattern in BS_PATTERNS:
-        matches = re.findall(pattern, content)
-        if matches:
-            findings.append(f"Found legacy pattern '{pattern}': {matches[:3]}")
-
-    if re.search(r"vague context --shell(?!\s+--skill\b)", content):
-        findings.append(
-            "Preamble missing --skill: use `vague context --shell --skill <name>` "
-            "so usage is captured mechanically"
-        )
-
+    for finding in findings:
+        typer.echo(finding)
     if findings:
-        for f in findings:
-            print(f"Audit: {f}", file=sys.stderr)
-        if strict:
-            raise typer.Exit(1)
-        typer.echo(f"WARNINGS: {len(findings)} legacy patterns found")
-    else:
-        typer.echo("OK: no legacy patterns found")
+        typer.echo(f"FAILED: {len(findings)} finding(s)")
+        raise typer.Exit(1)
+    typer.echo("OK: no findings")
 
 
 def cmd_skill_add(skill_dir: str) -> None:
@@ -121,36 +82,3 @@ def cmd_skill_add(skill_dir: str) -> None:
     shutil.copytree(src, dest)
     log_context_access(kind="write", path=dest)
     typer.echo(f"OK: copied {src.name} to assets/skills/")
-
-
-def _validate_skill(skill_dir: Path) -> tuple[bool, list[str]]:
-    """Validate a skill directory. Returns (valid, errors)."""
-    errors = []
-    skill_md = skill_dir / "SKILL.md"
-    if not skill_md.exists():
-        return False, ["SKILL.md not found"]
-
-    try:
-        data = read_md(skill_md)
-    except FrontmatterError as e:
-        return False, [f"Frontmatter parse error: {e}"]
-
-    required_fields = [
-        "name",
-        "version",
-        "description",
-        "sdk_commands",
-        "requires_slug",
-        "allowed-tools",
-    ]
-    for field in required_fields:
-        if field not in data:
-            errors.append(f"Missing required field: {field}")
-
-    if not errors:
-        try:
-            SkillManifest(**{k: v for k, v in data.items() if k in SkillManifest.model_fields})
-        except Exception as e:
-            errors.append(f"Manifest validation error: {e}")
-
-    return len(errors) == 0, errors
