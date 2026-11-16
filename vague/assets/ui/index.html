@@ -162,6 +162,101 @@
   #hist.brushing i.in, #hist i.hot { background: var(--accent); opacity: 1; }
   #hist-axis { display: flex; justify-content: space-between; margin-top: 2px; color: var(--muted); font-size: 11px; }
 
+  /* ── views: Live and History read runs, Graph keeps the canvas ── */
+  .tabs { display: flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: var(--r-s); background: var(--bg); }
+  .tabs button { border: 0; background: none; color: var(--muted); padding: 3px 12px; border-radius: 4px; cursor: pointer; min-height: 26px; }
+  .tabs button:hover { color: var(--text); }
+  .tabs button[aria-selected="true"] { background: var(--panel); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(70,45,20,.12); }
+  #graphview { position: absolute; inset: 0; }
+  body:not(.view-graph) #graphview, body:not(.view-graph) #layers, body:not(.view-graph) #graph-pane,
+  body.view-graph #sheet, body.view-graph #runs-pane, body.view-live .range, body.view-live #timeline, body.view-live #run-filter { display: none; }
+  body.view-live { grid-template-rows: 52px 1fr; }
+  body:not(.view-graph) #banner { top: var(--s3); }
+
+  #runs-pane h2 { display: flex; align-items: baseline; }
+  .seg { display: flex; flex-wrap: wrap; gap: var(--s1); margin: 0 6px var(--s3); }
+  .seg button { border: 1px solid var(--line); background: var(--bg); color: var(--muted); border-radius: var(--r-s); padding: 2px var(--s2); cursor: pointer; font-size: 12px; min-height: 24px; }
+  .seg button:hover { color: var(--text); border-color: var(--muted); }
+  .seg button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: var(--accent-wash); }
+  .group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s2); white-space: nowrap; margin: var(--s4) 6px var(--s1); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .group-head:first-child { margin-top: 0; }
+  .group-head b { font-weight: 600; color: var(--text); }
+  .live-dot { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); }
+  .live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .run { display: grid; grid-template-columns: 1fr auto; gap: 1px var(--s2); width: 100%; padding: 6px var(--s2); border: 1px solid transparent;
+         border-radius: var(--r-s); background: none; text-align: left; cursor: pointer; }
+  .run:hover { background: var(--bg); }
+  .run[aria-current="true"] { background: var(--accent-wash); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .run .skill-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run .skill-name.none { font-weight: 400; font-style: italic; color: var(--muted); }
+  .run time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .run .meta { grid-column: 1 / 3; display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+  .run .meta .glyph { margin-top: 3px; }
+  .run .counts span { white-space: nowrap; }
+
+  #sheet { position: absolute; inset: 0; overflow-y: auto; padding: var(--s5) var(--s5) 48px; }
+  #sheet.swap > * { animation: sheet-in .18s var(--ease); }
+  @keyframes sheet-in { from { opacity: 0; } }
+  .sheet-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s2) var(--s4); margin-bottom: var(--s5); max-width: 1180px; }
+  .sheet-head .grow { flex: 1; min-width: 220px; }
+  .sheet-head h2 { margin: 0 0 2px; font: 600 22px/1.2 var(--serif); }
+  .sheet-head h2.none { font-style: italic; font-weight: 400; }
+  .sheet-head .meta { font-size: 13px; font-variant-numeric: tabular-nums; }
+  .sheet-head .say { margin: var(--s2) 0 0; max-width: 72ch; color: var(--text); text-wrap: pretty; }
+  .open-runs { display: none; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(220px, .8fr) minmax(0, 1fr); gap: var(--s5); align-items: start; max-width: 1180px; }
+  .col h3 { display: flex; align-items: baseline; gap: var(--s2); margin: 0 0 var(--s3); padding-bottom: var(--s2); border-bottom: 1px solid var(--line); font: 600 15px/1.3 var(--serif); }
+  .col h3 .sub { font: 400 12px var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .col h4 { display: flex; align-items: center; gap: 6px; margin: var(--s4) 0 var(--s2); font: 600 12px var(--sans); color: var(--muted); }
+  .col h4:first-of-type { margin-top: 0; }
+  .col .empty-note { padding: 0; }
+
+  .tile { padding: 7px var(--s2); margin: 0 calc(-1 * var(--s2)); border-bottom: 1px solid var(--line); border-radius: var(--r-s);
+          transition: opacity .18s var(--ease), background-color .18s var(--ease); }
+  .tile:last-child { border-bottom: 0; }
+  .tile .key { display: flex; align-items: center; gap: 7px; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; font: 12px var(--mono); }
+  .tile .key span { min-width: 0; overflow-wrap: anywhere; }
+  .tile .key .times { margin-left: auto; font: 12px var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tile .text { margin: 2px 0 0 19px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; text-wrap: pretty; overflow-wrap: anywhere; }
+  .tile.open .text { display: block; -webkit-line-clamp: unset; white-space: pre-wrap; }
+  .tile .meta { margin: 2px 0 0 19px; display: flex; flex-wrap: wrap; gap: 2px var(--s2); }
+  .tile.gone { opacity: .7; }
+  .linkish { padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+  .linkish:hover { color: var(--accent); text-decoration-color: currentColor; }
+  .lit-on .tile:not(.lit), .lit-on .step:not(.lit) { opacity: .35; }
+  .tile.lit, .step.lit, .step[data-ids]:hover { background: color-mix(in srgb, var(--text) 7%, transparent); }
+
+  .spine ol { list-style: none; margin: 0; padding: 0; position: relative; }
+  .spine ol::before { content: ""; position: absolute; left: 72px; top: 6px; bottom: 6px; width: 1px; background: var(--line); }
+  .step { display: grid; grid-template-columns: 62px 15px 1fr; gap: 0 6px; align-items: start; width: 100%; padding: 5px 4px; border: 0; border-radius: var(--r-s);
+          background: none; text-align: left; cursor: default; transition: opacity .18s var(--ease); }
+  .step[data-ids] { cursor: pointer; }
+  .step time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; padding-top: 1px; white-space: nowrap; }
+  .step .pip { width: 9px; height: 9px; margin: 4px 0 0 3px; border-radius: 50%; background: var(--panel); border: 1.5px solid var(--muted); position: relative; }
+  .step.read .pip { border-color: var(--text); }
+  .step.write .pip { background: var(--text); border-color: var(--text); }
+  .step .what { min-width: 0; overflow-wrap: anywhere; }
+  .step .what small { display: block; color: var(--muted); font-size: 12px; }
+  .step .what code { font-size: 12px; }
+
+  .frow { display: grid; grid-template-columns: auto 1fr auto; gap: 2px var(--s2); align-items: start; padding: var(--s2) 0; border-bottom: 1px solid var(--line); }
+  .frow:last-child { border-bottom: 0; }
+  .frow .glyph { margin-top: 3px; }
+  .frow .fname { font: 12px var(--mono); overflow-wrap: anywhere; }
+  .frow .meta { grid-column: 2; }
+  .frow .acts { display: flex; gap: var(--s1); }
+  .frow .acts .btn { min-height: 24px; padding: 1px var(--s2); font-size: 12px; }
+  .frow.compact { grid-template-columns: auto 1fr; padding: 4px 0; border: 0; }
+  details.more-mem { margin-top: var(--s3); }
+  details.more-mem summary { cursor: pointer; color: var(--muted); padding: 4px 0; }
+  details.more-mem summary:hover { color: var(--text); }
+  details.more-mem[open] summary { margin-bottom: var(--s2); }
+
+  @media (max-width: 1100px) {
+    .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .cols .spine { grid-column: 1 / 3; grid-row: 1; }
+  }
+
   @media (pointer: coarse) { .btn, .toggle button, .chip, .vf, .res, select, input { min-height: 44px; } }
   @media (max-width: 760px) {
     body { grid-template-columns: 1fr; grid-template-rows: auto 1fr 104px; }
@@ -181,18 +276,39 @@
     body.drawer aside { transform: none; visibility: visible; transition-delay: 0s; }
     body.drawer::after { content: ""; position: fixed; inset: 0; z-index: 6; background: rgba(0,0,0,.32); }
     .close-drawer { display: block; }
+    body.view-live { grid-template-rows: auto 1fr; }
+    .tabs { order: 3; flex: 1 1 100%; }
+    .tabs button { flex: 1; }
+    .search { order: 4; }
+    .range { order: 5; }
+    #sheet { padding: var(--s4) var(--s4) 40px; }
+    .open-runs { display: inline-flex; }
+    .cols { grid-template-columns: minmax(0, 1fr); }
+    .cols .spine { grid-column: 1; grid-row: auto; }
+    body.view-live .cols .spine { order: 1; }
+    body.view-live .cols .col:last-child { order: 2; }
+    body.view-live .cols .col:first-child { order: 3; }
+    .hist-hint { display: none; }
+    .frow { grid-template-columns: auto 1fr; }
+    .frow .acts { grid-column: 2; grid-row: 3; margin-top: var(--s1); }
   }
   @media (prefers-reduced-motion: reduce) {
-    #detail, aside, #toast { transition: none; }
+    #detail, aside, #toast, .tile, .step { transition: none; }
+    #sheet.swap > * { animation: none; }
   }
 </style>
 </head>
 <body>
 <header>
   <h1>vague usage</h1>
+  <div class="tabs" id="tabs" role="tablist" aria-label="View">
+    <button type="button" role="tab" id="tab-live" data-tab="live" aria-controls="sheet" title="What the agents of your current session read and wrote">Live</button>
+    <button type="button" role="tab" id="tab-history" data-tab="history" aria-controls="sheet" title="Past runs and the files they wrote">History</button>
+    <button type="button" role="tab" id="tab-graph" data-tab="graph" aria-controls="graphview" title="Projects, files and memories as one graph">Graph</button>
+  </div>
   <div class="search">
     <label class="sr-only" for="q">Search the graph</label>
-    <input id="q" type="search" placeholder="Search projects, files, memories (press /)" autocomplete="off" aria-controls="results">
+    <input id="q" type="search" placeholder="Filter runs (press /)" autocomplete="off" aria-controls="results">
     <div id="results" hidden></div>
   </div>
   <div class="toggle" id="layers" role="group" aria-label="Show on the graph"></div>
@@ -216,6 +332,16 @@
 </header>
 <aside id="side" aria-label="Browse">
   <button class="btn close-drawer" id="drawer-close" type="button">Close</button>
+  <div id="runs-pane">
+    <h2 id="h-runs">Runs <span class="sub" id="runs-sub"></span></h2>
+    <div class="seg" id="run-filter" role="group" aria-label="Show runs">
+      <button type="button" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-filter="files" aria-pressed="false">Wrote files</button>
+      <button type="button" data-filter="vault" aria-pressed="false">Wrote to Obsidian</button>
+    </div>
+    <div id="runlist" aria-labelledby="h-runs"></div>
+  </div>
+  <div id="graph-pane">
   <section aria-labelledby="h-vault">
     <h2 id="h-vault" tabindex="-1">Written to Obsidian <span class="sub" id="vault-total"></span></h2>
     <div id="vault"></div>
@@ -228,8 +354,11 @@
     <h2 id="h-skills">Skills used <span class="sub" id="skills-total"></span></h2>
     <div id="skills"></div>
   </section>
+  </div>
 </aside>
 <main>
+  <section id="sheet" role="tabpanel" aria-label="Run context"></section>
+  <div id="graphview" role="tabpanel" aria-labelledby="tab-graph">
   <canvas id="c" role="img" aria-label="Graph of your usage. Use search or the lists on the left to browse it."></canvas>
   <div class="viewctl" id="viewctl" role="group" aria-label="Graph view">
     <button class="btn" id="zout" type="button" aria-label="Zoom out" title="Zoom out (-)">−</button>
@@ -247,16 +376,17 @@
       <dt>Double-click</dt><dd>Open a file</dd>
     </dl>
   </div>
-  <div id="banner" role="alert" hidden><span id="banner-msg"></span><button class="btn" id="banner-retry" type="button">Try again</button></div>
-  <div id="state" role="status" hidden><p id="state-msg"></p><button class="btn" id="retry" type="button" hidden>Try again</button></div>
   <div id="legend" aria-label="Legend"></div>
   <div id="tip"></div>
-  <div id="toast" role="status" aria-live="polite"></div>
   <div id="detail" role="region" aria-label="Details"><button id="close" type="button" aria-label="Close details">×</button><div id="detail-body"></div></div>
+  </div>
+  <div id="banner" role="alert" hidden><span id="banner-msg"></span><button class="btn" id="banner-retry" type="button">Try again</button></div>
+  <div id="state" role="status" hidden><p id="state-msg"></p><button class="btn" id="retry" type="button" hidden>Try again</button></div>
+  <div id="toast" role="status" aria-live="polite"></div>
 </main>
 <footer id="timeline">
   <div class="head"><h2>Activity</h2><span id="hist-range"></span><span id="hist-hover"></span><span class="grow"></span>
-    <span>Drag to pick a window, click a day, shift-click to extend</span></div>
+    <span class="hist-hint">Drag to pick a window, click a day, shift-click to extend</span></div>
   <div id="hist" role="group" aria-label="Events per day. Drag to choose a window. The date controls in the header do the same from the keyboard."></div>
   <div id="hist-axis" aria-hidden="true"><span id="hist-a"></span><span id="hist-b"></span></div>
 </footer>
@@ -305,7 +435,7 @@ const color = (n, a = 1) => projectColor(n.project, a, n.type === "branch" ? 8 :
 let loadSeq = 0;
 async function load(first) {
   const mine = ++loadSeq; // a slower, older response must never overwrite a newer range
-  if (first && !S.nodes.length) setState("loading");
+  if (first && !S.nodes.length && TAB === "graph") setState("loading");
   const q = new URLSearchParams();
   if (S.range.from) q.set("since", S.range.from);
   if (S.range.to) q.set("until", S.range.to);
@@ -320,13 +450,14 @@ async function load(first) {
   S.skills = data.skills; S.activity = data.activity;
   merge(data);
   renderSkills(); renderHist(); renderVault();
-  if (first || !S.fitted) { settle(220); fit(); S.fitted = true; }
+  // A hidden canvas has no size to fit to: the Graph tab fits when it opens.
+  if (first || !S.fitted) { settle(220); if (TAB === "graph") { fit(); S.fitted = true; } else S.fitted = false; }
 }
 function failLoad() {
   if (S.nodes.length) {
     $("banner-msg").textContent = `Can't reach the vague server. Showing what loaded at ${S.lastOk ? S.lastOk.toLocaleTimeString([], { timeStyle: "short" }) : "the start"}. Retrying every 10 seconds.`;
     $("banner").hidden = false;
-  } else setState("error");
+  } else if (TAB === "graph") setState("error");
 }
 function setState(kind) {
   const box = $("state"), msg = $("state-msg"), retry = $("retry");
@@ -361,7 +492,7 @@ function merge(data) {
   renderSidebar(); renderDetail(); renderSummary(); runSearch();
   // A cursor, drag or open panel means the user is looking: reheat gently so nodes do not slide away.
   if (changed) S.alpha = Math.max(S.alpha, S.hover || down || S.selected ? .12 : .5);
-  setState(S.nodes.length ? null : "empty");
+  if (TAB === "graph") setState(S.nodes.length ? null : "empty");
 }
 
 // ── visibility ───────────────────────────────────────────────────────
@@ -576,6 +707,7 @@ function glyph(kind, fill = "currentColor") {
   else if (kind === "vault") { add("rect", { x: 5, y: 5, width: 6, height: 6, fill }); add("rect", { x: 2, y: 2, width: 12, height: 12, fill: "none", stroke: "currentColor", "stroke-width": 1.25 }); }
   else if (kind === "memory") add("circle", { cx: 8, cy: 8, r: 4, fill });
   else if (kind === "observation") add("circle", { cx: 8, cy: 8, r: 4, fill: "none", stroke: fill, "stroke-width": 1.6 });
+  else if (kind === "note") { add("circle", { cx: 8, cy: 8, r: 4.5, fill: "none", stroke: fill, "stroke-width": 1.4, "stroke-dasharray": "2 1.6" }); add("circle", { cx: 8, cy: 8, r: 1.6, fill }); }
   else if (kind === "branch") { add("circle", { cx: 8, cy: 8, r: 5.5, fill }); add("circle", { cx: 8, cy: 8, r: 2.2, fill: "var(--panel)" }); }
   else if (kind === "line") add("line", { x1: 1, y1: 8, x2: 15, y2: 8, stroke: "currentColor", "stroke-width": 1.5 });
   return s;
@@ -665,6 +797,7 @@ function renderLegend() {
 const RANK = { project: 0, file: 1, branch: 2, memory: 3 };
 function runSearch() {
   const q = S.query.trim().toLowerCase(), box = $("results");
+  if (TAB !== "graph") { box.hidden = true; delete box.dataset.sig; box.replaceChildren(); if (RV.loaded) renderRuns(); return; }
   if (!q) { box.hidden = true; delete box.dataset.sig; box.replaceChildren(); return; }
   const hits = S.nodes.filter((n) => matches(n, q)).sort((a, b) => RANK[a.type] - RANK[b.type]).slice(0, 8);
   box.hidden = false;
@@ -689,6 +822,7 @@ function jumpTo(n) {
 $("q").addEventListener("input", (e) => { S.query = e.target.value; runSearch(); });
 $("q").addEventListener("keydown", (e) => {
   const first = $("results").querySelector(".res");
+  if (e.key === "Enter" && TAB !== "graph") { e.preventDefault(); const r = $("runlist").querySelector(".run"); if (r) { r.click(); r.focus(); } return; }
   if (e.key === "Enter" && first) { e.preventDefault(); first.click(); }
   if (e.key === "ArrowDown" && first) { e.preventDefault(); first.focus(); }
 });
@@ -780,10 +914,11 @@ function openVault() {
   ($("vault").querySelector("button") || $("h-vault")).focus({ preventScroll: true });
 }
 function closeDrawer(restore = true) { document.body.classList.remove("drawer"); if (restore) $("vault-badge").focus({ preventScroll: true }); }
-$("vault-badge").onclick = openVault;
+// In the run views the badge narrows History to the runs that wrote into the vault.
+$("vault-badge").onclick = () => { if (TAB === "graph") return openVault(); RV.filter = "vault"; setTab("history"); };
 $("drawer-close").onclick = () => closeDrawer();
 document.addEventListener("click", (e) => {
-  if (document.body.classList.contains("drawer") && !e.target.closest("aside") && !e.target.closest("#vault-badge")) closeDrawer(false);
+  if (document.body.classList.contains("drawer") && !e.target.closest("aside, #vault-badge, .open-runs")) closeDrawer(false);
 });
 
 // ── date range ───────────────────────────────────────────────────────
@@ -793,6 +928,7 @@ function setRange(from, to, preset) {
   S.range = { from, to }; $("from").value = from; $("to").value = to; $("from").max = to; $("to").min = from;
   const p = preset ?? "custom"; $("preset").value = p; $("custom").hidden = p !== "custom";
   S.fitted = false; load(true);
+  if (TAB === "history" && RV.loaded) renderRuns();
 }
 function applyPreset(v) {
   const today = new Date(), span = (days) => iso(new Date(today.getTime() - (days - 1) * 864e5));
@@ -864,6 +1000,318 @@ function renderLayers() {
   if (key) $("layers").querySelector(`[data-layer="${key}"]`)?.focus();
 }
 
+// ── runs: Live and History ───────────────────────────────────────────
+// A run is one skill start and everything its session read and wrote until the next start.
+const RV = { runs: [], mem: {}, byId: new Map(), pick: { live: null, history: null }, follow: true, filter: "all", loaded: false, failed: false, sheetSig: "" };
+let TAB = "live";
+const LIVE_HOURS = 24, ACTIVE_MIN = 15;
+const KIND_GLYPH = { learning: "memory", observation: "observation", note: "note", doc: "file" };
+const KIND_GROUP = { learning: "Learnings", note: "Working notes", doc: "Documents", observation: "Skill feedback" };
+const KIND_ORDER = ["learning", "note", "doc", "observation"];
+const AREA_LABEL = { vault: "In your Obsidian vault", repo: "In the repo", external: "Outside the repo" };
+const timeOf = (iso) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const dayOf = (iso) => new Date(iso).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" });
+const localDay = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const keyOf = (id) => id.slice(id.indexOf("/") + 1);
+function span(run) {
+  const min = Math.round((new Date(run.end) - new Date(run.start)) / 6e4);
+  return min < 1 ? "under a minute" : min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`;
+}
+const vaultFiles = (run) => run.files.filter((f) => f.area === "vault");
+
+async function loadRuns() {
+  let data;
+  try { const res = await fetch("/api/runs"); if (!res.ok) throw new Error(String(res.status)); data = await res.json(); }
+  catch { RV.failed = true; if (!RV.loaded && TAB !== "graph") setState("error"); return; }
+  RV.failed = false; RV.loaded = true; RV.runs = data.runs; RV.mem = data.memories;
+  RV.byId = new Map(data.runs.map((r) => [r.id, r]));
+  if (TAB !== "graph") { setState(null); renderRuns(); }
+}
+
+// Live: the sessions active in the last day. With none, the latest session, so the view is never blank for a returning user.
+function liveRuns() {
+  const cutoff = Date.now() - LIVE_HOURS * 36e5, recent = RV.runs.filter((r) => new Date(r.end) >= cutoff);
+  if (recent.length) { const sessions = new Set(recent.map((r) => r.session)); return RV.runs.filter((r) => sessions.has(r.session)); }
+  return RV.runs.length ? RV.runs.filter((r) => r.session === RV.runs[0].session) : [];
+}
+function historyRuns() {
+  return RV.runs.filter((r) => {
+    const day = r.start.slice(0, 10);
+    if (!inRange(day)) return false;
+    return RV.filter === "files" ? r.files.length > 0 : RV.filter === "vault" ? vaultFiles(r).length > 0 : true;
+  });
+}
+const runMatches = (r, q) => [r.skill, r.repo, r.branch, ...r.served.map((s) => s.id), ...r.created.map((c) => c.id), ...r.files.map((f) => f.relative)]
+  .some((v) => v && String(v).toLowerCase().includes(q));
+function shownRuns() {
+  const q = S.query.trim().toLowerCase(), base = TAB === "live" ? liveRuns() : historyRuns();
+  return q ? base.filter((r) => runMatches(r, q)) : base;
+}
+function currentRun(list) {
+  if (TAB === "live" && RV.follow) return list[0] || null;
+  const id = RV.pick[TAB];
+  return (id && RV.byId.get(id)) || list[0] || null;
+}
+
+function runRow(r, chosen) {
+  const vault = vaultFiles(r).length;
+  const counts = TAB === "live"
+    ? [`${r.served.length} read`, `${r.created.length} logged`, r.files.length ? `${r.files.length} ${plural(r.files.length, "file")}` : null, vault ? `${vault} in Obsidian` : null]
+    : [r.files.length ? `${r.files.length} ${plural(r.files.length, "file")}` : "no files", vault ? `${vault} in Obsidian` : null, r.repo];
+  const b = el("button", { type: "button", className: "run" },
+    el("span", { className: "skill-name" + (r.skill ? "" : " none"), textContent: r.skill || "No skill" }),
+    el("time", { dateTime: r.start, textContent: timeOf(r.start) }),
+    el("span", { className: "meta" }, vault ? glyph("vault") : null,
+      el("span", { className: "counts" }, counts.filter(Boolean).flatMap((c, i) => [i ? " · " : null, el("span", { textContent: c })]))));
+  b.dataset.key = r.id; b.setAttribute("aria-current", String(r === chosen));
+  b.onclick = () => chooseRun(r);
+  return b;
+}
+function renderRuns() {
+  const list = shownRuns(), chosen = currentRun(list), box = $("runlist");
+  const live = TAB === "live", newest = list[0];
+  const active = live && newest && Date.now() - new Date(newest.end) < ACTIVE_MIN * 6e4;
+  $("h-runs").firstChild.textContent = live ? "Last 24 hours " : "Runs ";
+  $("runs-sub").textContent = list.length ? `· ${list.length}` : "";
+  for (const b of $("run-filter").children) b.setAttribute("aria-pressed", String(b.dataset.filter === RV.filter));
+  patch(box, JSON.stringify([TAB, list.map((r) => [r.id, r.end, r.served.length, r.created.length, r.files.length]), chosen?.id, active]), () => {
+    if (!list.length) {
+      const msg = S.query.trim() ? `No run matches “${S.query.trim()}”.` : live ? "No agent has run yet. Start a skill and its context shows up here."
+        : RV.filter === "all" ? "No run in this range. Widen it in the header or on the activity strip." : "No run in this range wrote what this filter asks for.";
+      return [el("p", { className: "meta empty-note", textContent: msg })];
+    }
+    const out = []; let group = null;
+    for (const r of list) {
+      const g = live ? r.session : localDay(r.start);
+      if (g !== group) {
+        group = g;
+        const head = live
+          ? el("div", { className: "group-head" }, el("b", { textContent: `Session ${r.session.slice(0, 6)}` }), dayOf(r.start),
+            r === newest && active ? el("span", { className: "live-dot", textContent: "active now" }) : null)
+          : el("div", { className: "group-head" }, el("b", { textContent: dayOf(r.start) }));
+        out.push(head);
+      }
+      out.push(runRow(r, chosen));
+    }
+    return out;
+  });
+  renderSheet(chosen, list);
+}
+function chooseRun(r) {
+  if (TAB === "live") RV.follow = r === liveRuns()[0];
+  RV.pick[TAB] = r.id; RV.sheetSig = "";
+  if (document.body.classList.contains("drawer")) closeDrawer(false);
+  renderRuns();
+  $("sheet").scrollTop = 0;
+}
+// A provenance link can point at a run outside the current list: open it in History over all time.
+function openRun(id) {
+  const r = RV.byId.get(id); if (!r) return toast("That run is no longer in the log.");
+  if (!(TAB === "live" ? liveRuns() : historyRuns()).includes(r)) {
+    RV.filter = "all"; if (!historyRuns().includes(r)) applyPreset("0");
+    clearSearch(); setTab("history");
+  }
+  chooseRun(r);
+}
+
+// ── the sheet: what one run read, did and left behind ──
+function memTile(entry, role) {
+  const m = RV.mem[entry.id], kind = m?.kind || "learning";
+  const tile = el("div", { className: "tile" + (!m || m.status === "forgotten" ? " gone" : "") });
+  tile.dataset.id = entry.id;
+  const key = el("button", { type: "button", className: "key", title: entry.id },
+    glyph(KIND_GLYPH[kind] || "memory"), el("span", { textContent: keyOf(entry.id) }),
+    entry.count > 1 ? el("span", { className: "times", textContent: `read ${entry.count} times` }) : null);
+  key.setAttribute("aria-expanded", "false");
+  key.onclick = () => { const open = tile.classList.toggle("open"); key.setAttribute("aria-expanded", String(open)); };
+  tile.append(key);
+  if (m?.text) tile.append(el("p", { className: "text", textContent: m.text }));
+  const meta = el("div", { className: "meta" });
+  if (!m) meta.append("No longer in the ledger");
+  else {
+    meta.append(el("span", { textContent: m.status === "forgotten" ? `${kind}, forgotten` : kind }));
+    if (entry.id.startsWith("global/")) meta.append(el("span", { textContent: "global" }));
+    if (role === "served") {
+      const from = entry.from_run && RV.byId.get(entry.from_run);
+      if (from) meta.append(el("button", { type: "button", className: "linkish", textContent: `logged by ${m.skill || from.skill || "a session"}, ${dayOf(from.start)}`, onclick: () => openRun(from.id) }));
+      else meta.append(el("span", { textContent: `${m.skill ? "logged by " + m.skill + ", " : "last written "}${dayOf(m.ts)}` }));
+    } else {
+      meta.append(el("span", { textContent: entry.served_later ? `read by ${entry.served_later} later ${plural(entry.served_later, "run")}` : "no later run has read it yet" }));
+    }
+  }
+  tile.append(meta);
+  hoverLink(tile, [entry.id]);
+  return tile;
+}
+function byKind(entries, role) {
+  const groups = new Map();
+  for (const e of entries) { const k = RV.mem[e.id]?.kind || "learning"; (groups.get(k) || groups.set(k, []).get(k)).push(e); }
+  return KIND_ORDER.filter((k) => groups.has(k)).flatMap((k) => [
+    el("h4", {}, glyph(KIND_GLYPH[k]), `${KIND_GROUP[k]} · ${groups.get(k).length}`),
+    ...groups.get(k).map((e) => memTile(e, role)),
+  ]);
+}
+function fileRow(f, compact) {
+  const r = el("div", { className: "frow" + (compact ? " compact" : "") },
+    glyph(f.area === "repo" ? "file" : "vault"),
+    el("span", { className: "fname", title: f.path || f.relative, textContent: compact ? f.name : f.relative }));
+  const bits = [f.count > 1 ? `written ${f.count} times` : "written once", "last " + timeOf(f.last_ts), f.subagent ? "by a subagent" : null, f.exists ? null : "no longer on disk"];
+  if (!compact) {
+    r.append(el("span", { className: "acts" },
+      el("button", { type: "button", className: "btn", textContent: "Open", disabled: !f.exists, onclick: () => openFile(f) }),
+      el("button", { type: "button", className: "btn", textContent: "Reveal", disabled: !f.exists, onclick: () => openFile(f, true) }),
+      el("button", { type: "button", className: "btn", textContent: "Copy path", onclick: () => copyPath(f.path || f.relative) })));
+    r.append(el("span", { className: "meta", textContent: bits.filter(Boolean).join(" · ") }));
+  }
+  return r;
+}
+function filesByArea(files) {
+  return ["vault", "repo", "external"].flatMap((a) => {
+    const group = files.filter((f) => f.area === a);
+    return group.length ? [el("h4", {}, glyph(a === "repo" ? "file" : "vault"), `${AREA_LABEL[a]} · ${group.length}`), ...group.map((f) => fileRow(f, false))] : [];
+  });
+}
+
+// The spine collapses bursts (nine memory-log calls in one second) into one step, so the order stays readable.
+const STEP_KIND = { context_read: "read", context_write: "write", file_write: "file" };
+function steps(run) {
+  const out = [];
+  for (const s of run.steps) {
+    const last = out[out.length - 1], kind = STEP_KIND[s.event];
+    if (last && last.kind === kind && last.command === s.command && new Date(s.ts) - new Date(last.end) < 12e4) {
+      last.ids.push(...s.ids); if (s.path) last.paths.push(s.path); last.end = s.ts; last.n++; continue;
+    }
+    out.push({ kind, command: s.command, ts: s.ts, end: s.ts, ids: [...s.ids], paths: s.path ? [s.path] : [], n: 1 });
+  }
+  return out;
+}
+function stepText(st) {
+  const ids = [...new Set(st.ids)], n = ids.length;
+  if (st.kind === "read") {
+    const what = st.command === "context" ? "Loaded the project memory" : st.command === "memory-search" ? "Searched the memory" : `Read memory (${st.command || "vague"})`;
+    return [what, n ? `${n} ${plural(n, "memory", "memories")} served` : "nothing matched"];
+  }
+  if (st.kind === "write") return [n === 1 ? "Logged a memory" : n ? `Logged ${n} memories` : `Wrote state (${st.command || "vague"})`, n === 1 ? el("code", { textContent: keyOf(ids[0]) }) : null];
+  const files = [...new Set(st.paths)];
+  return [files.length === 1 ? "Wrote a file" : `Wrote ${files.length} files`,
+    files.length === 1 ? el("code", { textContent: files[0].split("/").pop() }) : `${st.n} edits`];
+}
+function spine(run) {
+  const items = steps(run).map((st) => {
+    const [what, detail] = stepText(st);
+    const b = el("button", { type: "button", className: "step " + st.kind },
+      el("time", { dateTime: st.ts, textContent: timeOf(st.ts) }), el("span", { className: "pip" }),
+      el("span", { className: "what" }, what, detail ? el("small", {}, detail) : null));
+    const ids = [...new Set(st.ids)];
+    if (ids.length) { b.dataset.ids = JSON.stringify(ids); hoverLink(b, ids); b.onclick = () => focusTiles(ids); }
+    else b.tabIndex = -1;
+    return el("li", {}, b);
+  });
+  return [
+    el("h3", {}, "What it did", el("span", { className: "sub", textContent: `${timeOf(run.start)} to ${timeOf(run.end)}` })),
+    items.length ? el("ol", {}, el("li", {}, el("div", { className: "step" }, el("time", { dateTime: run.start, textContent: timeOf(run.start) }), el("span", { className: "pip" }),
+      el("span", { className: "what" }, run.skill ? "Started " : "Session activity", run.skill ? el("code", { textContent: "/" + run.skill }) : null))), ...items)
+      : el("p", { className: "meta empty-note", textContent: "This run read and wrote nothing vague can see." }),
+  ];
+}
+
+// Signature move: point at a step and the tiles it touched stand out; point at a tile and its step does.
+function hoverLink(node, ids) {
+  const on = () => light(ids), off = () => light(null);
+  node.addEventListener("mouseenter", on); node.addEventListener("mouseleave", off);
+  node.addEventListener("focusin", on); node.addEventListener("focusout", off);
+}
+function light(ids) {
+  const sheet = $("sheet"), want = ids && new Set(ids);
+  sheet.classList.toggle("lit-on", !!want);
+  for (const t of sheet.querySelectorAll(".tile")) t.classList.toggle("lit", !!want && want.has(t.dataset.id));
+  for (const s of sheet.querySelectorAll(".step[data-ids]")) s.classList.toggle("lit", !!want && JSON.parse(s.dataset.ids).some((i) => want.has(i)));
+}
+function focusTiles(ids) {
+  const first = $("sheet").querySelector(`.tile[data-id="${CSS.escape(ids[0])}"]`);
+  if (!first) return toast("These memories are listed in the History view's memory section.");
+  const det = first.closest("details"); if (det) det.open = true;
+  first.scrollIntoView({ block: "nearest", behavior: REDUCED.matches ? "auto" : "smooth" });
+}
+
+function sentence(run) {
+  const s = run.served.length, c = run.created.length, f = run.files.length, v = vaultFiles(run).length;
+  const who = run.skill ? `/${run.skill}` : "This session";
+  const parts = [s ? `read ${s} ${plural(s, "memory", "memories")}` : "read no memory",
+    c ? `logged ${c} new ${plural(c, "one")}` : null, f ? `wrote ${f} ${plural(f, "file")}${v ? `, ${v} of them in Obsidian` : ""}` : null].filter(Boolean);
+  return `${who} ${parts.length > 1 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts[0]}.`;
+}
+function renderSheet(run, list) {
+  const box = $("sheet");
+  const sig = JSON.stringify([TAB, run?.id, run?.end, run?.steps.length, RV.follow, list[0]?.id, run && run.served.map((s) => RV.mem[s.id]?.ts)]);
+  if (sig === RV.sheetSig) return;
+  const swapped = !RV.sheetSig.includes(`"${run?.id}"`); RV.sheetSig = sig;
+  if (!run) { box.replaceChildren(); return; }
+  const live = TAB === "live";
+  const head = el("div", { className: "sheet-head" },
+    el("div", { className: "grow" },
+      el("h2", { className: run.skill ? "" : "none", textContent: run.skill ? "/" + run.skill : "No skill started" }),
+      el("div", { className: "meta", textContent: [run.repo, run.branch, `${dayOf(run.start)}, ${timeOf(run.start)}`, span(run), `session ${run.session.slice(0, 6)}`].filter(Boolean).join(" · ") }),
+      el("p", { className: "say", textContent: sentence(run) })),
+    el("button", { type: "button", className: "btn open-runs", textContent: "All runs", onclick: () => { document.body.classList.add("drawer"); $("runlist").querySelector("[aria-current=true]")?.focus(); } }),
+    live && !RV.follow && list[0] && list[0] !== run
+      ? el("button", { type: "button", className: "btn primary", textContent: "Follow the latest run", onclick: () => { RV.follow = true; RV.pick.live = null; renderRuns(); } }) : null);
+
+  const servedCol = el("section", { className: "col", "aria-label": "Served to it" },
+    el("h3", {}, "Served to it", el("span", { className: "sub", textContent: run.served.length ? `${run.served.length} ${plural(run.served.length, "memory", "memories")}` : "" })),
+    ...(run.served.length ? byKind(run.served, "served") : [el("p", { className: "meta empty-note", textContent: "Nothing from the memory was served to this run." })]));
+  const createdCol = el("section", { className: "col", "aria-label": "Created by it" },
+    el("h3", {}, "Created by it", el("span", { className: "sub", textContent: run.created.length ? `${run.created.length} ${plural(run.created.length, "memory", "memories")}` : "" })),
+    ...(run.created.length ? byKind(run.created, "created") : [el("p", { className: "meta empty-note", textContent: "It logged no memory." })]),
+    run.files.length ? el("h4", {}, glyph("file"), `Files written · ${run.files.length}`) : null,
+    ...run.files.map((f) => fileRow(f, true)));
+  const spineCol = el("section", { className: "col spine", "aria-label": "What it did" }, ...spine(run));
+
+  let cols;
+  if (live) cols = [servedCol, spineCol, createdCol];
+  else {
+    const filesCol = el("section", { className: "col", "aria-label": "Files it wrote" },
+      el("h3", {}, "Files it wrote", el("span", { className: "sub", textContent: run.files.length ? String(run.files.length) : "" })),
+      ...(run.files.length ? filesByArea(run.files) : [el("p", { className: "meta empty-note", textContent: "This run wrote no file." })]));
+    const memCol = el("section", { className: "col", "aria-label": "Its memory" }, el("h3", {}, "Its memory"),
+      run.served.length ? el("details", { className: "more-mem" }, el("summary", { textContent: `Served ${run.served.length} ${plural(run.served.length, "memory", "memories")}` }), ...byKind(run.served, "served"))
+        : el("p", { className: "meta empty-note", textContent: "No memory was served to it." }),
+      run.created.length ? el("details", { className: "more-mem", open: true }, el("summary", { textContent: `Logged ${run.created.length} ${plural(run.created.length, "memory", "memories")}` }), ...byKind(run.created, "created"))
+        : el("p", { className: "meta empty-note", textContent: "It logged no memory." }));
+    cols = [filesCol, spineCol, memCol];
+  }
+  const focusKey = box.contains(document.activeElement) ? document.activeElement.closest("[data-id]")?.dataset.id : null;
+  box.replaceChildren(head, el("div", { className: "cols" }, ...cols));
+  box.classList.toggle("swap", swapped && !REDUCED.matches);
+  if (focusKey) box.querySelector(`[data-id="${CSS.escape(focusKey)}"] .key`)?.focus();
+}
+
+function setTab(tab) {
+  TAB = tab;
+  document.body.classList.remove("view-live", "view-history", "view-graph"); document.body.classList.add("view-" + tab);
+  for (const b of $("tabs").children) { const on = b.dataset.tab === tab; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; }
+  $("q").placeholder = tab === "graph" ? "Search the graph (press /)" : "Filter runs (press /)";
+  try { history.replaceState(null, "", "#" + tab); } catch { /* a sandboxed frame may refuse; the tab still works */ }
+  runSearch(); setState(null);
+  if (tab === "graph") { resize(); setState(S.nodes.length ? null : "empty"); if (!S.fitted) { fit(); S.fitted = true; } }
+  else if (RV.failed && !RV.loaded) setState("error");
+  else if (!RV.loaded) setState("loading");
+  else renderRuns();
+}
+addEventListener("hashchange", () => { const t = location.hash.slice(1); if (["live", "history", "graph"].includes(t) && t !== TAB) setTab(t); });
+$("tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); });
+$("tabs").addEventListener("keydown", (e) => {
+  const tabs = [...$("tabs").children], i = tabs.indexOf(document.activeElement);
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length]; next.focus(); setTab(next.dataset.tab);
+});
+$("run-filter").addEventListener("click", (e) => { const b = e.target.closest("[data-filter]"); if (b) { RV.filter = b.dataset.filter; renderRuns(); } });
+$("runlist").addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  const list = [...$("runlist").querySelectorAll(".run")], i = list.indexOf(document.activeElement);
+  e.preventDefault(); list[Math.max(0, Math.min(list.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus();
+});
+
 // ── wiring ───────────────────────────────────────────────────────────
 $("preset").addEventListener("change", (e) => applyPreset(e.target.value));
 for (const id of ["from", "to"]) $(id).addEventListener("change", () => setRange($("from").value, $("to").value));
@@ -871,7 +1319,7 @@ $("fit").onclick = fit; $("zin").onclick = () => zoom(1.25); $("zout").onclick =
 $("close").onclick = () => select(null);
 function toggleKeys(open = $("keys").hidden) { $("keys").hidden = !open; $("keys-btn").setAttribute("aria-expanded", String(open)); }
 $("keys-btn").onclick = () => toggleKeys();
-$("retry").onclick = $("banner-retry").onclick = () => load(true);
+$("retry").onclick = $("banner-retry").onclick = () => { load(true); loadRuns(); };
 addEventListener("keydown", (e) => {
   const typing = ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName);
   if (e.key === "/" && !typing) { e.preventDefault(); $("q").focus(); return; }
@@ -886,8 +1334,10 @@ addEventListener("keydown", (e) => {
   if (e.key === "?") toggleKeys(); else if (e.key === "+" || e.key === "=") zoom(1.25); else if (e.key === "-") zoom(.8); else if (e.key === "0") fit();
 });
 addEventListener("resize", resize);
-readTheme(); placeLayers(); resize(); renderLayers(); applyPreset("30"); requestAnimationFrame(frame);
-setInterval(() => { if (!document.hidden) load(false); }, 10000);
+readTheme(); placeLayers(); resize(); renderLayers();
+setTab(["live", "history", "graph"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "live");
+applyPreset("30"); loadRuns(); requestAnimationFrame(frame);
+setInterval(() => { if (!document.hidden) { load(false); loadRuns(); } }, 10000);
 </script>
 </body>
 </html>

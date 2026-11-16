@@ -22,6 +22,7 @@ from vague.events import read_events
 from vague.graph import activity_by_day, build_graph, skill_usage
 from vague.log import get_logger
 from vague.memory import load_ledger
+from vague.runs import agent_runs
 
 
 def _page() -> bytes:
@@ -59,6 +60,16 @@ def graph_payload(since: str | None = None, until: str | None = None) -> dict:
     return graph
 
 
+def runs_payload() -> dict:
+    """Every run, unfiltered: the page picks the live session and the history window itself."""
+    memories = [m.model_dump(mode="json") for m in load_ledger()]
+    payload = agent_runs(events=read_events(), memories=memories, vault_root=vault_root())
+    for run in payload["runs"]:
+        for entry in run["files"]:
+            entry["exists"] = bool(entry.get("path")) and Path(entry["path"]).exists()
+    return payload
+
+
 def _launch(argv: list[str]) -> None:
     subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -91,6 +102,8 @@ class Handler(BaseHTTPRequestHandler):
         elif url.path == "/api/graph":
             query = parse_qs(url.query)
             self._json(200, graph_payload(since=query.get("since", [None])[0], until=query.get("until", [None])[0]))
+        elif url.path == "/api/runs":
+            self._json(200, runs_payload())
         else:
             self._json(404, {"error": "not found"})
 
