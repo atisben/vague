@@ -252,6 +252,86 @@
   details.more-mem summary:hover { color: var(--text); }
   details.more-mem[open] summary { margin-bottom: var(--s2); }
 
+  /* ── guide: a reading view, one walked-through skill run and the parts around it ── */
+  body:not(.view-guide) #guide, body:not(.view-guide) #guide-pane,
+  body.view-guide #runs-pane, body.view-guide #graph-pane, body.view-guide #sheet, body.view-guide #graphview,
+  body.view-guide .search, body.view-guide #layers, body.view-guide .range, body.view-guide #timeline { display: none; }
+  body.view-guide { grid-template-rows: 52px 1fr; }
+  #guide-pane nav { display: grid; gap: 1px; }
+  #guide-pane a { display: block; padding: 5px 6px; border-radius: var(--r-s); color: var(--muted); text-decoration: none; }
+  #guide-pane a:hover { background: var(--bg); color: var(--text); }
+  #guide-pane a[aria-current="true"] { color: var(--text); font-weight: 600; background: var(--accent-wash); }
+  #guide-pane .aside-note { margin: var(--s5) 6px 0; color: var(--muted); font-size: 12px; text-wrap: pretty; }
+
+  #guide { position: absolute; inset: 0; overflow-y: auto; padding: 40px var(--s5) 96px; font-size: 15px; line-height: 1.55; scroll-behavior: smooth; }
+  .g-wrap { max-width: 980px; margin: 0 auto; }
+  .g-wrap p, .g-wrap li { max-width: 68ch; text-wrap: pretty; }
+  .g-intro h2 { margin: 0 0 var(--s3); font: 600 30px/1.15 var(--serif); letter-spacing: -.01em; }
+  .g-intro .lede { margin: 0; font-size: 17px; color: var(--muted); }
+  .g-facts { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); margin: var(--s4) 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
+  .g-facts b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .gsec { margin-top: 64px; scroll-margin-top: var(--s5); }
+  .gsec > h3 { margin: 0 0 var(--s2); font: 600 22px/1.2 var(--serif); }
+  .gsec > p { margin: 0 0 var(--s4); }
+  .g-wrap code { font: 13px var(--mono); background: color-mix(in srgb, var(--line) 55%, transparent); padding: 1px 5px; border-radius: 4px; }
+  .g-wrap pre { margin: 0; font: 12.5px/1.6 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-s);
+                padding: var(--s3); overflow-x: auto; white-space: pre; }
+  .g-wrap pre code { background: none; padding: 0; font: inherit; }
+
+  .g-diagram { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-m); overflow-x: auto; }
+  .g-diagram svg { display: block; min-width: 760px; width: 100%; height: auto; }
+  .gn rect { fill: var(--bg); stroke: var(--line); stroke-width: 1.5; transition: fill .18s var(--ease), stroke .18s var(--ease); }
+  .gn.core rect { fill: var(--panel); stroke: var(--muted); }
+  .gn .t { fill: var(--text); font: 600 14px var(--sans); }
+  .gn .s { fill: var(--muted); font: 11.5px var(--mono); }
+  .gn.on rect { fill: var(--accent-wash); stroke: var(--accent); stroke-width: 2; }
+  .ge path { fill: none; stroke: var(--line); stroke-width: 1.75; transition: stroke .18s var(--ease); }
+  .ge text { fill: var(--muted); font: 11px var(--sans); paint-order: stroke; stroke: var(--panel); stroke-width: 5px; stroke-linejoin: round; opacity: .6; }
+  .ge.on path { stroke: var(--accent); stroke-width: 2.5; }
+  .ge.on text { fill: var(--text); opacity: 1; }
+  .g-arrow { fill: var(--line); }
+  .g-arrow.on { fill: var(--accent); }
+
+  .g-run { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.2fr); gap: var(--s5); margin-top: var(--s4); align-items: start; }
+  .gsteps { list-style: none; margin: 0; padding: 0; position: relative; }
+  .gsteps::before { content: ""; position: absolute; left: 10px; top: 14px; bottom: 14px; width: 1px; background: var(--line); }
+  .gstep button { display: grid; grid-template-columns: 21px 1fr; gap: var(--s2); width: 100%; padding: 7px 6px 7px 0; border: 0; border-radius: var(--r-s);
+                  background: none; text-align: left; cursor: pointer; color: var(--muted); }
+  .gstep button:hover { color: var(--text); }
+  .gstep .pip { width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center; background: var(--panel); border: 1.5px solid var(--line);
+                font: 600 11px var(--sans); font-variant-numeric: tabular-nums; color: var(--muted); position: relative; }
+  .gstep button[aria-current="step"] { color: var(--text); font-weight: 600; }
+  .gstep button[aria-current="step"] .pip { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .gstep.done .pip { border-color: var(--muted); color: var(--text); }
+  .g-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-m); padding: var(--s4) var(--s4) var(--s3); min-width: 0; }
+  .g-panel .count { margin: 0; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .g-panel h4 { margin: 2px 0 var(--s2); font: 600 17px/1.3 var(--serif); }
+  .g-panel p { margin: 0 0 var(--s3); }
+  .g-panel .note { margin: var(--s3) 0 0; font-size: 13px; color: var(--muted); }
+  .g-panel .nav { display: flex; gap: var(--s2); margin-top: var(--s4); }
+
+  .g-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .g-table caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom: var(--s2); }
+  .g-table th, .g-table td { text-align: left; vertical-align: top; padding: var(--s2) var(--s3) var(--s2) 0; border-bottom: 1px solid var(--line); }
+  .g-table thead th { font: 600 13px var(--sans); color: var(--muted); }
+  .g-table tbody th { font-weight: 600; white-space: nowrap; }
+  .g-table tbody th .glyph { margin-right: 6px; vertical-align: -1px; }
+  .g-table tr:last-child > * { border-bottom: 0; }
+  .g-scroll { overflow-x: auto; }
+
+  .g-tree .c { color: var(--muted); }
+  .g-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5); align-items: center; }
+  .g-box { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-m); padding: var(--s3) var(--s4); min-width: 0; }
+  .g-box h4 { margin: 0 0 2px; font: 600 15px/1.3 var(--serif); }
+  .g-box .where { display: block; margin-bottom: var(--s2); font: 12px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+  .g-box ul { margin: 0; padding-left: 1.1em; display: grid; gap: var(--s1); font-size: 14px; }
+  /* The connector is drawn, not typed: a 1px rule and a small triangle in the gap between boxes. */
+  .g-flow .g-box:not(:last-child)::after { content: ""; position: absolute; top: 50%; right: -24px; width: 24px; height: 1px; background: var(--muted); }
+  .g-flow .g-box:not(:last-child)::before { content: ""; position: absolute; top: calc(50% - 4px); right: -25px; border: 4px solid transparent; border-left: 6px solid var(--muted); border-right: 0; }
+  .gsec > p.g-seam { margin: var(--s4) 0 0; }
+  .g-list { margin: 0; padding-left: 1.2em; display: grid; gap: var(--s2); }
+  .g-tabs .btn { white-space: nowrap; }
+
   @media (max-width: 1100px) {
     .cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
     .cols .spine { grid-column: 1 / 3; grid-row: 1; }
@@ -278,7 +358,7 @@
     .close-drawer { display: block; }
     body.view-live { grid-template-rows: auto 1fr; }
     .tabs { order: 3; flex: 1 1 100%; }
-    .tabs button { flex: 1; }
+    .tabs button { flex: 1 1 auto; padding: 3px 6px; white-space: nowrap; }
     .search { order: 4; }
     .range { order: 5; }
     #sheet { padding: var(--s4) var(--s4) 40px; }
@@ -291,10 +371,20 @@
     .hist-hint { display: none; }
     .frow { grid-template-columns: auto 1fr; }
     .frow .acts { grid-column: 2; grid-row: 3; margin-top: var(--s1); }
+    body.view-guide { grid-template-rows: auto 1fr; }
+    #guide { padding: var(--s5) var(--s4) 64px; }
+    .g-intro h2 { font-size: 24px; }
+    .gsec { margin-top: 48px; }
+    .g-run { grid-template-columns: minmax(0, 1fr); }
+    .g-flow { grid-template-columns: minmax(0, 1fr); }
+    .g-flow .g-box:not(:last-child)::after { top: auto; bottom: -24px; right: auto; left: 50%; width: 1px; height: 24px; }
+    .g-flow .g-box:not(:last-child)::before { top: auto; bottom: -25px; right: auto; left: calc(50% - 4px); border: 4px solid transparent; border-top: 6px solid var(--muted); border-bottom: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     #detail, aside, #toast, .tile, .step { transition: none; }
     #sheet.swap > * { animation: none; }
+    #guide { scroll-behavior: auto; }
+    .gn rect, .ge path { transition: none; }
   }
 </style>
 </head>
@@ -305,6 +395,7 @@
     <button type="button" role="tab" id="tab-live" data-tab="live" aria-controls="sheet" title="What the agents of your current session read and wrote">Live</button>
     <button type="button" role="tab" id="tab-history" data-tab="history" aria-controls="sheet" title="Past runs and the files they wrote">History</button>
     <button type="button" role="tab" id="tab-graph" data-tab="graph" aria-controls="graphview" title="Projects, files and memories as one graph">Graph</button>
+    <button type="button" role="tab" id="tab-guide" data-tab="guide" aria-controls="guide" title="How vague works, step by step">How it works</button>
   </div>
   <div class="search">
     <label class="sr-only" for="q">Search the graph</label>
@@ -355,9 +446,179 @@
     <div id="skills"></div>
   </section>
   </div>
+  <div id="guide-pane">
+    <h2 id="h-guide">On this page</h2>
+    <nav aria-labelledby="h-guide">
+      <a href="#g-run">One skill run</a>
+      <a href="#g-memory">What it remembers</a>
+      <a href="#g-state">Where it keeps things</a>
+      <a href="#g-install">How it reaches Claude</a>
+      <a href="#g-checks">Two checks</a>
+      <a href="#g-never">What it never records</a>
+      <a href="#g-tabs">Reading this page</a>
+    </nav>
+    <p class="aside-note">Everything here happens on your machine. Nothing is sent anywhere.</p>
+  </div>
 </aside>
 <main>
   <section id="sheet" role="tabpanel" aria-label="Run context"></section>
+  <section id="guide" role="tabpanel" aria-labelledby="tab-guide" tabindex="-1"><div class="g-wrap">
+    <div class="g-intro">
+      <h2>How vague works</h2>
+      <p class="lede">Skills are Markdown files Claude reads. vague is the small command-line tool under them. It remembers what earlier sessions learned, logs which skills ran, and installs everything into your Claude profiles.</p>
+      <ul class="g-facts" aria-label="vague at a glance">
+        <li>State lives in <b>~/.vague/</b></li>
+        <li><b>2</b> Claude Code hooks</li>
+        <li><b>1</b> memory ledger for every project</li>
+        <li>Nothing leaves your machine</li>
+      </ul>
+    </div>
+
+    <section class="gsec" id="g-run" aria-labelledby="g-run-h">
+      <h3 id="g-run-h">One skill run, step by step</h3>
+      <p>Follow one real run of <code>/dev-implement</code>. Pick a step: the highlighted path in the picture is what moves at that step, and the panel shows the actual command or line written.</p>
+      <div class="g-diagram">
+        <svg id="guide-diagram" viewBox="0 0 1000 480" role="img" aria-labelledby="g-svg-t">
+          <title id="g-svg-t">One skill run: Claude Code, the vague command and the files in ~/.vague</title>
+          <defs>
+            <marker id="gah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="g-arrow"/></marker>
+            <marker id="gah-on" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="g-arrow on"/></marker>
+          </defs>
+          <g class="ge" id="e-prompt"><path d="M125 88 V198"/><text x="134" y="148">prompt</text></g>
+          <g class="ge" id="e-load"><path d="M125 258 V368"/><text x="134" y="318">loads skill</text></g>
+          <g class="ge" id="e-hook"><path d="M230 229 H388"/><text x="240" y="221">log-event</text></g>
+          <g class="ge" id="e-block"><path d="M390 172 H310 V59 H232"/><text x="318" y="112">MEMORY block</text></g>
+          <g class="ge" id="e-pre"><path d="M230 405 H310 V290 H388"/><text x="318" y="352">vague context</text></g>
+          <g class="ge" id="e-mem"><path d="M600 172 H650 V48 H758"/><text x="662" y="41">read · append</text></g>
+          <g class="ge" id="e-ev"><path d="M600 200 H670 V138 H758"/><text x="680" y="131">event line</text></g>
+          <g class="ge" id="e-cfg"><path d="M600 228 H758"/><text x="680" y="221">profiles</text></g>
+          <g class="ge" id="e-git"><path d="M600 276 H670 V318 H758"/><text x="676" y="311">project, branch</text></g>
+          <g class="ge" id="e-read"><path d="M960 138 H984"/><path d="M960 48 H984 V430 H962"/><text x="978" y="384" text-anchor="end">read</text></g>
+
+          <g class="gn" id="n-you"><rect x="20" y="30" width="210" height="58" rx="8"/><text class="t" x="36" y="55">You type /dev-implement</text><text class="s" x="36" y="75">in Claude Code</text></g>
+          <g class="gn" id="n-hooks"><rect x="20" y="200" width="210" height="58" rx="8"/><text class="t" x="36" y="225">Claude Code hooks</text><text class="s" x="36" y="245">prompt, Skill, Write, Edit</text></g>
+          <g class="gn" id="n-skill"><rect x="20" y="370" width="210" height="72" rx="8"/><text class="t" x="36" y="395">dev-implement/SKILL.md</text><text class="s" x="36" y="414">a symlink into</text><text class="s" x="36" y="430">vague/assets/skills/</text></g>
+          <g class="gn core" id="n-vague"><rect x="390" y="150" width="210" height="160" rx="10"/>
+            <text class="t" x="408" y="178">vague command</text>
+            <text class="s" x="408" y="204">context</text>
+            <text class="s" x="408" y="224">memory-log · memory-search</text>
+            <text class="s" x="408" y="244">log-event</text>
+            <text class="s" x="408" y="264">skill-check · design-check</text>
+            <text class="s" x="408" y="284">install · status · ui</text></g>
+          <g class="gn" id="n-mem"><rect x="760" y="20" width="200" height="56" rx="8"/><text class="t" x="776" y="44">memory.jsonl</text><text class="s" x="776" y="63">what sessions learned</text></g>
+          <g class="gn" id="n-ev"><rect x="760" y="110" width="200" height="56" rx="8"/><text class="t" x="776" y="134">events/2026-11.jsonl</text><text class="s" x="776" y="153">what each run did</text></g>
+          <g class="gn" id="n-cfg"><rect x="760" y="200" width="200" height="56" rx="8"/><text class="t" x="776" y="224">config.env</text><text class="s" x="776" y="243">profiles · telemetry</text></g>
+          <g class="gn" id="n-git"><rect x="760" y="290" width="200" height="56" rx="8"/><text class="t" x="776" y="314">your git repo</text><text class="s" x="776" y="333">remote · branch · diff</text></g>
+          <g class="gn" id="n-out"><rect x="760" y="400" width="200" height="60" rx="8"/><text class="t" x="776" y="425">vague ui</text><text class="s" x="776" y="445">this page</text></g>
+        </svg>
+      </div>
+      <div class="g-run">
+        <ol class="gsteps" aria-label="Steps of one skill run">
+          <li class="gstep" data-step="1"><button type="button"><span class="pip">1</span><span>You start a skill</span></button></li>
+          <li class="gstep" data-step="2"><button type="button"><span class="pip">2</span><span>Claude loads the skill</span></button></li>
+          <li class="gstep" data-step="3"><button type="button"><span class="pip">3</span><span>The preamble serves memories</span></button></li>
+          <li class="gstep" data-step="4"><button type="button"><span class="pip">4</span><span>Claude works, writes are logged</span></button></li>
+          <li class="gstep" data-step="5"><button type="button"><span class="pip">5</span><span>Claude keeps a fact</span></button></li>
+          <li class="gstep" data-step="6"><button type="button"><span class="pip">6</span><span>You look back</span></button></li>
+        </ol>
+        <div class="g-panel" aria-live="polite">
+          <p class="count" id="gp-count"></p>
+          <h4 id="gp-title"></h4>
+          <p id="gp-text"></p>
+          <pre><code id="gp-code"></code></pre>
+          <p class="note" id="gp-note"></p>
+          <div class="nav"><button class="btn" type="button" id="gp-prev">Previous step</button><button class="btn primary" type="button" id="gp-next">Next step</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="gsec" id="g-memory" aria-labelledby="g-memory-h">
+      <h3 id="g-memory-h">What it remembers</h3>
+      <p>One ledger, <code>~/.vague/memory.jsonl</code>, holds memories for every project. Each line is one of four kinds. Lines are only ever appended: logging the same key again replaces the fact, and the newest line wins.</p>
+      <div class="g-scroll"><table class="g-table" id="g-kinds">
+        <caption>The four kinds of memory, with the shapes the Live and Graph views draw for them</caption>
+        <thead><tr><th scope="col">Kind</th><th scope="col">What it holds</th><th scope="col">How long it lasts</th></tr></thead>
+        <tbody>
+          <tr><th scope="row" data-glyph="memory">learning</th><td>A durable fact, such as "tests run only in the container"</td><td>Forever</td></tr>
+          <tr><th scope="row" data-glyph="observation">observation</th><td>Feedback about a skill, for <code>/retro</code> to act on</td><td>Until <code>/retro</code> acts on it</td></tr>
+          <tr><th scope="row" data-glyph="note">note</th><td>A working note for other agents on the same project</td><td>Hidden after 7 days</td></tr>
+          <tr><th scope="row" data-glyph="file">doc</th><td>A pointer to a document a skill wrote, such as a vault note</td><td>Forever</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="gsec" id="g-state" aria-labelledby="g-state-h">
+      <h3 id="g-state-h">Where it keeps things</h3>
+      <p>All state lives in one folder, <code>~/.vague/</code>, or in <code>$VAGUE_HOME</code> when you set it. Your repo is only read, for its name and branch.</p>
+<pre class="g-tree"><code>~/.vague/
+├── memory.jsonl          <span class="c">every learning, observation, note and doc pointer</span>
+├── events/
+│   └── 2026-11.jsonl     <span class="c">which skills ran and what they read and wrote, one file per month</span>
+├── config.env            <span class="c">your Claude profiles (VAGUE_CLAUDE_DIRS) and telemetry: local or off</span>
+├── logs/vague.log        <span class="c">a debug log, written only when VAGUE_LOG is set</span>
+├── team/                 <span class="c">state for the mgmt-* skills</span>
+└── interview/            <span class="c">state for the iv-* skills</span></code></pre>
+    </section>
+
+    <section class="gsec" id="g-install" aria-labelledby="g-install-h">
+      <h3 id="g-install-h">How it reaches Claude</h3>
+      <p><code>task install</code> runs <code>vague install</code>. It reads your Claude profiles from <code>config.env</code> and gives each one the same four things. Skills are links, not copies, so an edit in the repo is live at once.</p>
+      <div class="g-flow">
+        <div class="g-box"><h4>The repo ships</h4><span class="where">vague/assets/</span>
+          <ul><li>a folder per skill</li><li>2 reviewer agents</li><li><code>guidelines.md</code></li></ul></div>
+        <div class="g-box"><h4>One runtime per profile</h4><span class="where">from VAGUE_CLAUDE_DIRS</span>
+          <ul><li><code>claude:work</code> for <code>~/.claude-work</code></li><li><code>claude:personal</code> for <code>~/.claude-personal</code></li></ul></div>
+        <div class="g-box"><h4>Each profile gets</h4>
+          <ul>
+            <li><code>skills/</code>: a link to each skill folder</li>
+            <li><code>agents/</code>: a link to each agent</li>
+            <li><code>CLAUDE.md</code>: the guidelines and routing table between the <code>vague:start</code> and <code>vague:end</code> markers. Your own text stays untouched.</li>
+            <li><code>settings.json</code>: the two hooks that run <code>vague log-event</code></li>
+          </ul></div>
+      </div>
+      <p class="g-seam">The two hooks fire on every prompt, and after each <code>Skill</code>, <code>Write</code> or <code>Edit</code> tool call. Every other tool call skips them.</p>
+    </section>
+
+    <section class="gsec" id="g-checks" aria-labelledby="g-checks-h">
+      <h3 id="g-checks-h">Two checks keep skills and UI honest</h3>
+      <p>Both checks hand their findings straight back to Claude, so a mistake is fixed in the same turn it was made.</p>
+      <div class="g-scroll"><table class="g-table">
+        <caption>The two checks side by side</caption>
+        <thead><tr><th scope="col">Aspect</th><th scope="col"><code>vague skill-check</code></th><th scope="col"><code>vague design-check</code></th></tr></thead>
+        <tbody>
+          <tr><th scope="row">When it runs</th><td>On a commit that touches a skill, <code>README.md</code> or <code>CLAUDE.md</code>, and right after Claude edits a bundled skill</td><td>After each UI file Claude edits while <code>/impeccable</code> is loaded, or by hand on any path</td></tr>
+          <tr><th scope="row">What it checks</th><td>Required fields, the preamble, that every <code>vague</code> command named exists, that links resolve</td><td>Eight AI-design tells, such as gradient text, overused fonts and bounce easing</td></tr>
+          <tr><th scope="row">What it skips</th><td>Files outside the bundled skills</td><td>Brand fonts named in the project's <code>design-type</code> memory</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="gsec" id="g-never" aria-labelledby="g-never-h">
+      <h3 id="g-never-h">What it never records</h3>
+      <p>The event log answers "which skill touched what". It holds names and paths, never content:</p>
+      <ul class="g-list">
+        <li>The content of a file. A write logs the file's path only.</li>
+        <li>The text of your prompt. A prompt logs only the skill it started, if any.</li>
+        <li>Reads, searches and shell commands. The hooks never fire on them.</li>
+        <li>The text of a memory. A served memory logs its key, such as <code>atisben-vague/design-type</code>.</li>
+      </ul>
+    </section>
+
+    <section class="gsec" id="g-tabs" aria-labelledby="g-tabs-h">
+      <h3 id="g-tabs-h">Reading this page</h3>
+      <p><code>vague ui</code> serves this page on <code>127.0.0.1:8765</code>. Each tab reads the same two files, <code>memory.jsonl</code> and the event log, from a different angle.</p>
+      <div class="g-scroll"><table class="g-table g-tabs">
+        <caption>The tabs of vague ui</caption>
+        <thead><tr><th scope="col">Tab</th><th scope="col">The question it answers</th><th scope="col">Open it</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Live</th><td>What did the agents of my current session get served, and what did they create?</td><td><button class="btn" type="button" data-goto="live">Open Live</button></td></tr>
+          <tr><th scope="row">History</th><td>Which files did past runs write, with Obsidian notes first?</td><td><button class="btn" type="button" data-goto="history">Open History</button></td></tr>
+          <tr><th scope="row">Graph</th><td>How do projects, branches, memories and files connect?</td><td><button class="btn" type="button" data-goto="graph">Open Graph</button></td></tr>
+        </tbody>
+      </table></div>
+      <p class="g-seam">In the terminal, <code>vague status</code> prints the same picture as a table: one row per project, with its branch, last skill run and memory count.</p>
+    </section>
+  </div></section><!-- /guide -->
   <div id="graphview" role="tabpanel" aria-labelledby="tab-graph">
   <canvas id="c" role="img" aria-label="Graph of your usage. Use search or the lists on the left to browse it."></canvas>
   <div class="viewctl" id="viewctl" role="group" aria-label="Graph view">
@@ -1004,6 +1265,7 @@ function renderLayers() {
 // A run is one skill start and everything its session read and wrote until the next start.
 const RV = { runs: [], mem: {}, byId: new Map(), pick: { live: null, history: null }, follow: true, filter: "all", loaded: false, failed: false, sheetSig: "" };
 let TAB = "live";
+const TABS = ["live", "history", "graph", "guide"], RUN_TABS = ["live", "history"];
 const LIVE_HOURS = 24, ACTIVE_MIN = 15;
 const KIND_GLYPH = { learning: "memory", observation: "observation", note: "note", doc: "file" };
 const KIND_GROUP = { learning: "Learnings", note: "Working notes", doc: "Documents", observation: "Skill feedback" };
@@ -1022,10 +1284,10 @@ const vaultFiles = (run) => run.files.filter((f) => f.area === "vault");
 async function loadRuns() {
   let data;
   try { const res = await fetch("/api/runs"); if (!res.ok) throw new Error(String(res.status)); data = await res.json(); }
-  catch { RV.failed = true; if (!RV.loaded && TAB !== "graph") setState("error"); return; }
+  catch { RV.failed = true; if (!RV.loaded && RUN_TABS.includes(TAB)) setState("error"); return; }
   RV.failed = false; RV.loaded = true; RV.runs = data.runs; RV.mem = data.memories;
   RV.byId = new Map(data.runs.map((r) => [r.id, r]));
-  if (TAB !== "graph") { setState(null); renderRuns(); }
+  if (RUN_TABS.includes(TAB)) { setState(null); renderRuns(); }
 }
 
 // Live: the sessions active in the last day. With none, the latest session, so the view is never blank for a returning user.
@@ -1288,17 +1550,19 @@ function renderSheet(run, list) {
 
 function setTab(tab) {
   TAB = tab;
-  document.body.classList.remove("view-live", "view-history", "view-graph"); document.body.classList.add("view-" + tab);
+  document.body.classList.remove(...TABS.map((t) => "view-" + t)); document.body.classList.add("view-" + tab);
   for (const b of $("tabs").children) { const on = b.dataset.tab === tab; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; }
   $("q").placeholder = tab === "graph" ? "Search the graph (press /)" : "Filter runs (press /)";
   try { history.replaceState(null, "", "#" + tab); } catch { /* a sandboxed frame may refuse; the tab still works */ }
-  runSearch(); setState(null);
+  setState(null);
+  if (tab === "guide") { showStep(GUIDE.step); spy(); return; }
+  runSearch();
   if (tab === "graph") { resize(); setState(S.nodes.length ? null : "empty"); if (!S.fitted) { fit(); S.fitted = true; } }
   else if (RV.failed && !RV.loaded) setState("error");
   else if (!RV.loaded) setState("loading");
   else renderRuns();
 }
-addEventListener("hashchange", () => { const t = location.hash.slice(1); if (["live", "history", "graph"].includes(t) && t !== TAB) setTab(t); });
+addEventListener("hashchange", () => { const t = location.hash.slice(1); if (TABS.includes(t) && t !== TAB) setTab(t); });
 $("tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) setTab(b.dataset.tab); });
 $("tabs").addEventListener("keydown", (e) => {
   const tabs = [...$("tabs").children], i = tabs.indexOf(document.activeElement);
@@ -1312,6 +1576,73 @@ $("runlist").addEventListener("keydown", (e) => {
   e.preventDefault(); list[Math.max(0, Math.min(list.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus();
 });
 
+// ── guide: one skill run, step by step ───────────────────────────────
+const GUIDE = { step: 0, steps: [
+  { title: "You start a skill", nodes: ["n-you", "n-hooks", "n-vague", "n-ev"], edges: ["e-prompt", "e-hook", "e-ev"],
+    text: "Your prompt starts with /dev-implement, so Claude Code's prompt hook runs vague log-event. It records that the skill started. No agent has to remember to do it.",
+    code: '{"event": "skill_start", "skill": "dev-implement",\n "source": "slash", "repo": "atisben-vague",\n "branch": "main", "session": "s1", ...}',
+    note: "Written to ~/.vague/events/2026-11.jsonl, one file per month." },
+  { title: "Claude loads the skill", nodes: ["n-hooks", "n-skill"], edges: ["e-load"],
+    text: "The skill in your Claude profile is a symlink, a file that points at another file. It points into the repo, so Claude always reads the version on your checked-out branch.",
+    code: "~/.claude-personal/skills/dev-implement\n  → ~/projects/personal/vague/vague/assets/skills/dev-implement",
+    note: "Editing a SKILL.md in the repo edits the live skill. No reinstall needed." },
+  { title: "The preamble serves memories", nodes: ["n-skill", "n-vague", "n-mem", "n-cfg", "n-git", "n-ev", "n-you"], edges: ["e-pre", "e-mem", "e-cfg", "e-git", "e-ev", "e-block"],
+    text: "Every skill starts with one shell line. vague asks git which project and branch this is, picks the memories that matter most for this project, and prints them as a MEMORY block Claude reads.",
+    code: 'eval "$(vague context --shell --skill dev-implement)"\n\nSLUG=atisben-vague\nBRANCH=main\nvague memory · scope atisben-vague · 4 memories\nMemories (most relevant first):\n- [tests-need-docker] Tests run only in the container.',
+    note: "vague also logs which memory keys it served. That is the Served column in the Live tab." },
+  { title: "Claude works, writes are logged", nodes: ["n-hooks", "n-vague", "n-ev"], edges: ["e-hook", "e-ev"],
+    text: "Each Write or Edit fires a hook. vague logs the file's path, never its contents. When the file is part of a bundled skill, it also runs skill-check and hands any finding back to Claude.",
+    code: '{"event": "file_write", "skill": "dev-implement",\n "path": "/Users/me/vague/vague/memory.py", ...}',
+    note: "Reads, searches, shell commands and prompt text are never logged." },
+  { title: "Claude keeps a fact", nodes: ["n-vague", "n-mem", "n-ev"], edges: ["e-mem", "e-ev"],
+    text: "When something is worth remembering, the skill appends one line to the ledger. The next session in this project sees it in its preamble, at step 3.",
+    code: 'vague memory-log tests-need-docker \\\n  "Tests run only in the container." \\\n  --files Taskfile.yml --skill dev-implement\n\nOK atisben-vague/tests-need-docker',
+    note: "That line shows up in the Created column of the Live tab." },
+  { title: "You look back", nodes: ["n-mem", "n-ev", "n-out"], edges: ["e-read"],
+    text: "This page reads the ledger and the event log. Live shows what the agents of your current session were served and created. History lists the files past runs wrote. Graph draws it all as one picture.",
+    code: "vague ui        # this page, on http://127.0.0.1:8765\nvague status    # the same data as a table in the terminal",
+    note: "/triage runs vague status as its first step." },
+] };
+const gSteps = [...document.querySelectorAll(".gstep button")];
+function showStep(i) {
+  GUIDE.step = i;
+  const s = GUIDE.steps[i];
+  for (const n of document.querySelectorAll("#guide-diagram .gn")) n.classList.toggle("on", s.nodes.includes(n.id));
+  for (const e of document.querySelectorAll("#guide-diagram .ge")) {
+    const on = s.edges.includes(e.id);
+    e.classList.toggle("on", on);
+    // Only a group's last path ends at its target; a joining branch gets no arrowhead.
+    e.querySelector("path:last-of-type").setAttribute("marker-end", on ? "url(#gah-on)" : "url(#gah)");
+  }
+  gSteps.forEach((b, j) => { if (j === i) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); b.parentElement.classList.toggle("done", j < i); });
+  $("gp-count").textContent = `Step ${i + 1} of ${GUIDE.steps.length}`;
+  $("gp-title").textContent = s.title; $("gp-text").textContent = s.text; $("gp-code").textContent = s.code; $("gp-note").textContent = s.note;
+  $("gp-prev").disabled = i === 0; $("gp-next").disabled = i === GUIDE.steps.length - 1;
+}
+gSteps.forEach((b, i) => b.addEventListener("click", () => showStep(i)));
+$("gp-prev").onclick = () => GUIDE.step > 0 && showStep(GUIDE.step - 1);
+$("gp-next").onclick = () => GUIDE.step < GUIDE.steps.length - 1 && showStep(GUIDE.step + 1);
+for (const th of document.querySelectorAll("#g-kinds [data-glyph]")) th.prepend(glyph(th.dataset.glyph));
+// The aside links scroll the guide's own pane and keep #guide in the URL, so a reload lands back here.
+$("guide-pane").addEventListener("click", (e) => {
+  const a = e.target.closest("a[href^='#g-']"); if (!a) return;
+  e.preventDefault(); const target = $(a.getAttribute("href").slice(1));
+  target.scrollIntoView({ block: "start" }); target.querySelector("h3")?.setAttribute("tabindex", "-1"); target.querySelector("h3")?.focus({ preventScroll: true });
+  if (NARROW.matches) closeDrawer(false);
+});
+$("guide").addEventListener("click", (e) => { const b = e.target.closest("[data-goto]"); if (b) setTab(b.dataset.goto); });
+// Scroll-spy: the section whose heading last crossed the top third is the current one.
+const gLinks = [...document.querySelectorAll("#guide-pane a")];
+function spy() {
+  const box = $("guide"), top = box.getBoundingClientRect().top + box.clientHeight / 3;
+  let current = gLinks[0];
+  for (const a of gLinks) if ($(a.getAttribute("href").slice(1)).getBoundingClientRect().top <= top) current = a;
+  if (box.scrollTop + box.clientHeight >= box.scrollHeight - 4) current = gLinks[gLinks.length - 1];
+  gLinks.forEach((a) => (a === current ? a.setAttribute("aria-current", "true") : a.removeAttribute("aria-current")));
+}
+$("guide").addEventListener("scroll", spy, { passive: true });
+showStep(0); spy();
+
 // ── wiring ───────────────────────────────────────────────────────────
 $("preset").addEventListener("change", (e) => applyPreset(e.target.value));
 for (const id of ["from", "to"]) $(id).addEventListener("change", () => setRange($("from").value, $("to").value));
@@ -1322,7 +1653,7 @@ $("keys-btn").onclick = () => toggleKeys();
 $("retry").onclick = $("banner-retry").onclick = () => { load(true); loadRuns(); };
 addEventListener("keydown", (e) => {
   const typing = ["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName);
-  if (e.key === "/" && !typing) { e.preventDefault(); $("q").focus(); return; }
+  if (e.key === "/" && !typing && TAB !== "guide") { e.preventDefault(); $("q").focus(); return; }
   if (e.key === "Escape") { // one layer per press: search, keys, drawer, then the open panel
     if ($("q").value || $("results").contains(document.activeElement) || document.activeElement === $("q")) return clearSearch();
     if (!$("keys").hidden) return toggleKeys(false);
@@ -1335,7 +1666,7 @@ addEventListener("keydown", (e) => {
 });
 addEventListener("resize", resize);
 readTheme(); placeLayers(); resize(); renderLayers();
-setTab(["live", "history", "graph"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "live");
+setTab(TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "live");
 applyPreset("30"); loadRuns(); requestAnimationFrame(frame);
 setInterval(() => { if (!document.hidden) { load(false); loadRuns(); } }, 10000);
 </script>
