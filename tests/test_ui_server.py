@@ -276,10 +276,10 @@ def test_keyboard_shortcuts_are_listed_in_the_page(page):
     assert 'id="keys-btn"' in page
 
 
-def test_page_offers_live_history_and_graph_tabs(page):
+def test_page_offers_live_history_graph_and_guide_tabs(page):
     tabs = re.findall(r'role="tab" id="tab-(\w+)"', page)
 
-    assert tabs == ["live", "history", "graph"]
+    assert tabs == ["live", "history", "graph", "guide"]
     assert 'addEventListener("hashchange"' in page
 
 
