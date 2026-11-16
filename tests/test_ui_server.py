@@ -89,6 +89,32 @@ def test_graph_endpoint_ignores_a_malformed_date(server):
     assert payload["nodes"]
 
 
+def _append_event(vague_home, **fields):
+    row = {
+        "session": "s", "cwd": "/x", "repo": "me-repo", "branch": "main", "root": "/x", "main_root": "/x",
+        "is_worktree": False, "runtime": "claude", **fields,
+    }
+    with (vague_home / "events" / "2026-11.jsonl").open("a") as handle:
+        handle.write(json.dumps(row) + "\n")
+
+
+def test_runs_endpoint_lists_each_run_with_the_memories_it_was_served(server, vague_home):
+    base, _, repo = server
+    _append_event(vague_home, ts="2026-11-11T10:00:05Z", event="context_read", command="context", ids=["me-repo/k"])
+    _append_event(
+        vague_home, ts="2026-11-11T10:01:00Z", event="file_write", skill="dev-ship",
+        path=str(repo / "src" / "a.py"), root=str(repo),
+    )
+
+    payload = json.load(urllib.request.urlopen(base + "/api/runs"))
+
+    (run,) = payload["runs"]
+    assert run["skill"] == "dev-ship"
+    assert run["served"] == [{"id": "me-repo/k", "count": 1}]
+    assert payload["memories"]["me-repo/k"]["text"] == "t"
+    assert run["files"][0]["exists"] is True
+
+
 def test_graph_marks_file_existence(server):
     base, _, _ = server
 
@@ -248,3 +274,20 @@ def test_layer_toggles_move_onto_the_canvas_on_narrow_screens(page):
 def test_keyboard_shortcuts_are_listed_in_the_page(page):
     assert 'id="keys"' in page
     assert 'id="keys-btn"' in page
+
+
+def test_page_offers_live_history_and_graph_tabs(page):
+    tabs = re.findall(r'role="tab" id="tab-(\w+)"', page)
+
+    assert tabs == ["live", "history", "graph"]
+    assert 'addEventListener("hashchange"' in page
+
+
+def test_run_views_read_runs_from_the_runs_endpoint(page):
+    assert 'fetch("/api/runs")' in page
+    assert page.index('id="runs-pane"') < page.index('id="graph-pane"')
+
+
+def test_run_list_opens_from_the_sheet_on_narrow_screens(page):
+    assert 'className: "btn open-runs"' in page
+    assert '.closest("aside, #vault-badge, .open-runs")' in page

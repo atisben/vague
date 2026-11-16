@@ -97,7 +97,7 @@ def _under(path: str, base: str) -> str | None:
     return str(PurePosixPath(path).relative_to(base)) if PurePosixPath(path).is_relative_to(base) else None
 
 
-def _locate(stored: str, root: str | None, vault_root: str | None) -> tuple[str | None, str, str]:
+def locate(stored: str, root: str | None, vault_root: str | None) -> tuple[str | None, str, str]:
     """(resolved absolute path or None, display name, area) of a file.
 
     A repo-relative path needs the repo's checkout to become absolute. An absolute path is already openable:
@@ -135,7 +135,7 @@ def build_graph(
         if not skill or not repo or not moment or not _in(moment, window):
             continue
         if row.get("event") == "file_write" and row.get("path"):
-            absolute, shown, area = _locate(row["path"], root=row.get("root"), vault_root=vault_root)
+            absolute, shown, area = locate(row["path"], root=row.get("root"), vault_root=vault_root)
             file_id = _file_id(scope=repo, stored=row["path"], absolute=absolute)
             graph.node(f"project:{repo}", "project", repo, repo, moment, root=roots.get(repo))
             graph.node(
@@ -168,7 +168,7 @@ def build_graph(
         # A doc's files are what the skill produced. A learning's files are only the code the fact concerns.
         deliverable = {"deliverable": True} if memory.get("kind") == "doc" else {}
         for relative in dict.fromkeys(memory.get("files") or []):
-            absolute, shown, area = _locate(relative, root=root, vault_root=vault_root)
+            absolute, shown, area = locate(relative, root=root, vault_root=vault_root)
             file_id = _file_id(scope=scope, stored=relative, absolute=absolute)
             graph.node(
                 file_id, "file", PurePosixPath(relative).name, scope, moment, relative=shown, path=absolute,
