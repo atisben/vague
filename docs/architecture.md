@@ -87,7 +87,8 @@ Ranking is deterministic: shared files with the uncommitted changes first, then 
 ~/.vague/
 ├── config.env                ← KEY=value: VAGUE_CLAUDE_DIRS, telemetry
 ├── memory.jsonl              ← one ledger, all projects (append-only): learnings, observations, notes, doc pointers
-├── events/YYYY-MM.jsonl      ← skill starts, memory reads/writes with `ids`
+├── events/YYYY-MM.jsonl      ← skill starts, file writes, memory reads/writes with `ids`
+├── logs/vague.log            ← opt-in debug log (`VAGUE_LOG=debug`)
 ├── team/                     ← mgmt-* state
 └── interview/                ← iv-* state
 ```

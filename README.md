@@ -8,7 +8,7 @@ Skills are markdown files. `vague` is the stable interface between them and the 
 
 - **Slash commands** spanning planning, design, execution, reflection, management, and interview prep (see the Skill Map below).
 - **One memory ledger** in `~/.vague/memory.jsonl` holds every learning and observation, scoped to a project or `global`. Every skill preamble prints a ranked slice of it (at most 1,500 tokens).
-- **Mechanical telemetry:** a Claude Code hook logs each skill start to `~/.vague/events/`, feeding `vague status` with zero agent cooperation.
+- **Mechanical telemetry:** a Claude Code hook logs each skill start, and each file Claude writes during a skill, to `~/.vague/events/`. It feeds `vague status` and `vague ui` with zero agent cooperation.
 - **Installs into Claude Code:** every Claude profile you declare gets the skills, agents, routing block and hooks.
 - **Flat package:** one module per job under `vague/` (`memory.py`, `events.py`, `install.py`, ...), one test file per module.
 
@@ -81,7 +81,7 @@ Then use any slash command in your AI tool.
 
 <!-- skills:end -->
 
-`/impeccable` and its two reviewer agents (`impeccable-finish-reviewer`, `impeccable-motion-reviewer`) are vendored and adapted from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) under Apache-2.0 (see `vague/assets/skills/impeccable/NOTICE.md`). They need subagents, so `vague install` links them into Claude Code runtimes only, never Cursor or Windsurf.
+`/impeccable` and its two reviewer agents (`impeccable-finish-reviewer`, `impeccable-motion-reviewer`) are vendored and adapted from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) under Apache-2.0 (see `vague/assets/skills/impeccable/NOTICE.md`). The reviewers are Claude Code subagents: `vague install` links them into each Claude profile's `agents/` directory.
 
 ---
 ## System design
@@ -126,7 +126,8 @@ All data lives in `~/.vague/`:
 ~/.vague/
 ├── config.env                ← KEY=value: VAGUE_CLAUDE_DIRS, telemetry
 ├── memory.jsonl              ← one ledger, all projects (append-only): learnings, observations, notes, doc pointers
-├── events/YYYY-MM.jsonl      ← skill starts and memory reads/writes (powers `vague status`)
+├── events/YYYY-MM.jsonl      ← skill starts, file writes, memory reads/writes (powers `vague status` and `vague ui`)
+├── logs/vague.log            ← opt-in debug log (`VAGUE_LOG=debug`)
 ├── team/                     ← mgmt-* state
 └── interview/                ← iv-* state
 ```
@@ -198,8 +199,8 @@ removes the marked region without touching the rest of the file.
 
 ```bash
 vague context --shell --skill dev-ship  # eval-able SLUG=/BRANCH=/... + the MEMORY block
-vague status                            # cross-project dashboard: branches, in-flight plans
-vague ui                                # usage graph on localhost: projects, branches, skills, memories, files
+vague status [--json]                   # cross-project dashboard: branches, in-flight plans
+vague ui [--port 8765] [--no-open]      # local web UI, tabs Live, History, Graph and How it works
 vague config-get telemetry              # read config value
 vague config-set telemetry off          # write config value
 vague memory-log <key> "<text>" --files a,b --skill dev-ship  # log a learning (--global: every repo)
@@ -211,15 +212,20 @@ vague memory-search [words...]          # memories containing every word (no wor
 vague memory-search --scope all         # every scope; also --scope global or --scope <project>
 vague memory-search --kind doc --skill plan-eng  # filter by kind (learning|observation|note|doc) and skill
 vague skill-check [paths...]            # check skills against the rules (no path: every skill + README/CLAUDE.md)
+vague skill-list [--validate]           # list the bundled skills
+vague design-check <paths...>           # scan UI files for 8 AI-design tells (/impeccable runs it as a hook)
+vague vault-scan [--json] [--similar <words>]  # inventory the Obsidian vault for /vault-clean (read-only)
 vague install --runtime claude:work     # install/sync one Claude profile
+vague uninstall [--runtime ...]         # remove skills, agents, hooks and the CLAUDE.md block
+vague log-event                         # hook entry point (reads hook JSON on stdin), not for manual use
 ```
 
 ---
 
 ## Telemetry
 
-Everything vague records stays on this machine. A Claude Code hook logs each skill start to
-`~/.vague/events/`, which feeds `vague status`. An opt-in debug log (`VAGUE_LOG=debug`) records every
+Everything vague records stays on this machine. A Claude Code hook logs each skill start, and each file
+Claude writes during a skill, to `~/.vague/events/`. These events feed `vague status` and `vague ui`. An opt-in debug log (`VAGUE_LOG=debug`) records every
 command. [Telemetry](docs/telemetry.md) is the one place that lists what is logged, what never is,
 and how to turn each part off.
 
@@ -228,9 +234,11 @@ and how to turn each part off.
 ## Requirements
 
 - Python 3.11+
+- [`uv`](https://docs.astral.sh/uv/) and [Task](https://taskfile.dev) (for `task install`)
 - `git`
 - `gh` CLI (optional, for PR creation in `/dev-ship`)
 - Claude Code
+- An Obsidian vault (optional, for `/vault*` skills and doc notes): `~/Obsidian`, or set `VAGUE_VAULT`
 
 ---
 
